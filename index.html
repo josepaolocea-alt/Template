@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PromptVault</title>
+  <meta name="description" content="A private notes and templates search app with admin-managed entries." />
+  <link rel="preconnect" href="https://images.unsplash.com" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #07090d;
+      --bg-2: #0d1017;
+      --panel: rgba(18, 22, 31, 0.82);
+      --panel-solid: #12161f;
+      --text: #f6f7fb;
+      --muted: #a2a9b7;
+      --soft: #737c8d;
+      --line: rgba(255, 255, 255, 0.11);
+      --line-strong: rgba(255, 255, 255, 0.18);
+      --accent: #74e5c2;
+      --accent-strong: #30c69d;
+      --accent-blue: #7cc8ff;
+      --accent-warm: #f2b45c;
+      --danger: #ff7987;
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+      --focus: 0 0 0 3px rgba(116, 229, 194, 0.22);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    [data-theme="light"] {
+      color-scheme: light;
+      --bg: #f7f8fb;
+      --bg-2: #edf2f7;
+      --panel: rgba(255, 255, 255, 0.88);
+      --panel-solid: #ffffff;
+      --text: #111827;
+      --muted: #5d6677;
+      --soft: #7b8493;
+      --line: rgba(20, 29, 44, 0.12);
+      --line-strong: rgba(20, 29, 44, 0.2);
+      --accent: #0f9f82;
+      --accent-strong: #08775f;
+      --accent-blue: #2563eb;
+      --accent-warm: #b06a18;
+      --danger: #cc3345;
+      --shadow: 0 24px 70px rgba(36, 48, 72, 0.14);
+      --focus: 0 0 0 3px rgba(15, 159, 130, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--bg);
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background:
+        linear-gradient(var(--line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--line) 1px, transparent 1px),
+        linear-gradient(180deg, var(--bg), var(--bg-2));
+      background-size: 44px 44px, 44px 44px, 100% 100%;
+      color: var(--text);
+      letter-spacing: 0;
+      overflow-x: hidden;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+      color: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.58;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .app-shell {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+      background: color-mix(in srgb, var(--bg) 82%, transparent);
+    }
+
+    .topbar-inner {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      font-weight: 760;
+      letter-spacing: 0;
+    }
+
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      background:
+        linear-gradient(135deg, color-mix(in srgb, var(--accent) 24%, transparent), transparent 46%),
+        var(--panel-solid);
+      box-shadow: inset 0 0 18px color-mix(in srgb, var(--accent) 14%, transparent);
+      flex: 0 0 auto;
+    }
+
+    .brand span:last-child {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .button,
+    .icon-button,
+    .chip {
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--panel-solid) 78%, transparent);
+      color: var(--text);
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, color 160ms ease;
+    }
+
+    .button:hover,
+    .icon-button:hover,
+    .chip:hover {
+      transform: translateY(-1px);
+      border-color: color-mix(in srgb, var(--accent) 44%, var(--line-strong));
+    }
+
+    .button:focus-visible,
+    .icon-button:focus-visible,
+    .chip:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible,
+    select:focus-visible {
+      outline: none;
+      box-shadow: var(--focus);
+      border-color: var(--accent);
+    }
+
+    .button {
+      min-height: 42px;
+      padding: 0 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      white-space: nowrap;
+      font-weight: 680;
+    }
+
+    .button.primary {
+      border-color: color-mix(in srgb, var(--accent) 54%, var(--line-strong));
+      background: var(--accent);
+      color: #05251e;
+    }
+
+    .button.ghost {
+      background: transparent;
+    }
+
+    .icon-button {
+      width: 42px;
+      height: 42px;
+      display: inline-grid;
+      place-items: center;
+      padding: 0;
+      flex: 0 0 auto;
+    }
+
+    .button svg,
+    .icon-button svg,
+    .chip svg {
+      width: 18px;
+      height: 18px;
+      stroke-width: 2;
+      flex: 0 0 auto;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    .hero {
+      min-height: min(650px, calc(100vh - 72px));
+      display: grid;
+      align-items: center;
+      padding: 64px 0 34px;
+    }
+
+    .hero-content {
+      width: min(880px, 100%);
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .eyebrow {
+      margin: 0 0 16px;
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 760;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2.25rem, 6vw, 5.9rem);
+      line-height: 0.95;
+      letter-spacing: 0;
+      text-wrap: balance;
+    }
+
+    .hero-copy {
+      width: min(670px, 100%);
+      margin: 20px auto 0;
+      color: var(--muted);
+      font-size: clamp(1rem, 2vw, 1.18rem);
+      line-height: 1.65;
+      text-wrap: balance;
+    }
+
+    .search-card {
+      width: min(820px, 100%);
+      margin: 34px auto 0;
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--panel-solid) 84%, transparent);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .promptbar {
+      display: grid;
+      grid-template-columns: 52px minmax(0, 1fr) 52px;
+      align-items: center;
+      min-height: 78px;
+    }
+
+    .promptbar > .icon-hold {
+      display: grid;
+      place-items: center;
+      color: var(--soft);
+    }
+
+    .promptbar input {
+      width: 100%;
+      min-width: 0;
+      border: 0;
+      background: transparent;
+      font-size: clamp(1rem, 2vw, 1.24rem);
+      outline: none;
+    }
+
+    .promptbar input::placeholder {
+      color: color-mix(in srgb, var(--muted) 74%, transparent);
+    }
+
+    .submit-search {
+      margin-right: 10px;
+      width: 42px;
+      height: 42px;
+      border-color: color-mix(in srgb, var(--accent) 44%, var(--line-strong));
+      background: var(--accent);
+      color: #05251e;
+    }
+
+    .quick-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 16px;
+    }
+
+    .chip {
+      min-height: 36px;
+      padding: 0 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-weight: 650;
+    }
+
+    .chip.active {
+      color: var(--text);
+      border-color: color-mix(in srgb, var(--accent) 48%, var(--line-strong));
+      background: color-mix(in srgb, var(--accent) 13%, var(--panel-solid));
+    }
+
+    .workspace {
+      padding: 14px 0 60px;
+    }
+
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .side-panel,
+    .results-panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.16);
+    }
+
+    .side-panel {
+      position: sticky;
+      top: 90px;
+      padding: 16px;
+    }
+
+    .panel-label {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 760;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+    }
+
+    .stats {
+      display: grid;
+      gap: 10px;
+    }
+
+    .stat {
+      display: grid;
+      grid-template-columns: 38px 1fr;
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--panel-solid) 68%, transparent);
+    }
+
+    .stat-icon {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      color: var(--accent-blue);
+      background: color-mix(in srgb, var(--accent-blue) 12%, transparent);
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 1.14rem;
+    }
+
+    .stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.35;
+    }
+
+    .filter-stack {
+      display: grid;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .filter-stack .chip {
+      justify-content: flex-start;
+      width: 100%;
+    }
+
+    .source-pill {
+      margin-top: 16px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--muted);
+      font-size: 0.83rem;
+      line-height: 1.45;
+      background: color-mix(in srgb, var(--panel-solid) 54%, transparent);
+    }
+
+    .source-pill strong {
+      color: var(--text);
+    }
+
+    .results-panel {
+      overflow: hidden;
+    }
+
+    .results-toolbar {
+      min-height: 66px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .results-title {
+      min-width: 0;
+    }
+
+    .results-title strong {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .results-title span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.88rem;
+      margin-top: 3px;
+    }
+
+    .select-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      flex: 0 0 auto;
+    }
+
+    .select-wrap select {
+      min-height: 40px;
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      background: var(--panel-solid);
+      padding: 0 36px 0 12px;
+      color: var(--text);
+    }
+
+    .results-list {
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+    }
+
+    .result-card {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 14px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--panel-solid) 76%, transparent);
+    }
+
+    .result-card.has-image {
+      grid-template-columns: 184px minmax(0, 1fr);
+      align-items: stretch;
+    }
+
+    .result-image {
+      min-height: 142px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--bg-2);
+    }
+
+    .result-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .result-body {
+      min-width: 0;
+      display: grid;
+      gap: 10px;
+    }
+
+    .result-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .result-head h2 {
+      margin: 0;
+      font-size: clamp(1.02rem, 2vw, 1.28rem);
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    .result-actions {
+      display: flex;
+      gap: 6px;
+      flex: 0 0 auto;
+    }
+
+    .tiny-button {
+      width: 36px;
+      height: 36px;
+    }
+
+    .result-text {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.62;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tag {
+      min-height: 26px;
+      padding: 4px 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 650;
+      background: color-mix(in srgb, var(--bg-2) 70%, transparent);
+    }
+
+    .kind {
+      color: var(--accent-warm);
+      border-color: color-mix(in srgb, var(--accent-warm) 40%, var(--line));
+    }
+
+    .empty-state {
+      min-height: 260px;
+      display: grid;
+      place-items: center;
+      padding: 34px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .empty-state svg {
+      width: 34px;
+      height: 34px;
+      margin-bottom: 12px;
+      color: var(--accent-blue);
+    }
+
+    .empty-state strong {
+      display: block;
+      color: var(--text);
+      margin-bottom: 6px;
+      font-size: 1.08rem;
+    }
+
+    .modal {
+      width: min(720px, calc(100% - 24px));
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      background: var(--panel-solid);
+      color: var(--text);
+      box-shadow: var(--shadow);
+      padding: 0;
+    }
+
+    .modal::backdrop {
+      background: rgba(0, 0, 0, 0.62);
+      backdrop-filter: blur(8px);
+    }
+
+    .modal-head,
+    .modal-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .modal-foot {
+      border-top: 1px solid var(--line);
+      border-bottom: 0;
+      justify-content: flex-end;
+    }
+
+    .modal-title {
+      margin: 0;
+      font-size: 1.12rem;
+      letter-spacing: 0;
+    }
+
+    .entry-form {
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    label {
+      display: grid;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 0.86rem;
+      font-weight: 700;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--bg) 64%, transparent);
+      color: var(--text);
+    }
+
+    input,
+    select {
+      min-height: 44px;
+      padding: 0 12px;
+    }
+
+    textarea {
+      min-height: 150px;
+      resize: vertical;
+      padding: 12px;
+      line-height: 1.55;
+    }
+
+    .image-preview {
+      min-height: 138px;
+      border: 1px dashed var(--line-strong);
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      color: var(--muted);
+      background: color-mix(in srgb, var(--bg) 60%, transparent);
+      text-align: center;
+      padding: 12px;
+    }
+
+    .image-preview img {
+      width: 100%;
+      height: 210px;
+      display: block;
+      object-fit: cover;
+      border-radius: 6px;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 20px;
+      z-index: 50;
+      transform: translate(-50%, 18px);
+      opacity: 0;
+      pointer-events: none;
+      padding: 10px 14px;
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      background: var(--panel-solid);
+      color: var(--text);
+      box-shadow: var(--shadow);
+      transition: opacity 180ms ease, transform 180ms ease;
+      max-width: min(420px, calc(100% - 24px));
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    @media (max-width: 860px) {
+      .workspace-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .side-panel {
+        position: static;
+      }
+
+      .filter-stack {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .result-card.has-image {
+        grid-template-columns: 1fr;
+      }
+
+      .result-image {
+        aspect-ratio: 16 / 9;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .app-shell {
+        width: min(100% - 22px, 1180px);
+      }
+
+      .topbar-inner {
+        min-height: 64px;
+      }
+
+      .brand span:last-child {
+        max-width: 132px;
+      }
+
+      .button span.optional {
+        display: none;
+      }
+
+      .hero {
+        min-height: auto;
+        padding: 42px 0 26px;
+      }
+
+      .promptbar {
+        grid-template-columns: 44px minmax(0, 1fr) 48px;
+        min-height: 66px;
+      }
+
+      .submit-search {
+        margin-right: 6px;
+      }
+
+      .field-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .results-toolbar {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .select-wrap {
+        width: 100%;
+      }
+
+      .select-wrap select {
+        flex: 1;
+      }
+
+      .filter-stack {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="app-shell topbar-inner">
+      <a class="brand" href="#" aria-label="PromptVault home">
+        <span class="brand-mark"><i data-lucide="sparkles"></i></span>
+        <span>PromptVault</span>
+      </a>
+      <div class="topbar-actions">
+        <button class="icon-button" id="themeToggle" type="button" aria-label="Toggle color theme">
+          <i data-lucide="sun"></i>
+        </button>
+        <button class="button ghost" id="signInButton" type="button">
+          <i data-lucide="log-in"></i>
+          <span class="optional">Sign in</span>
+        </button>
+        <button class="button ghost" id="signOutButton" type="button" hidden>
+          <i data-lucide="log-out"></i>
+          <span class="optional">Sign out</span>
+        </button>
+        <button class="button primary" id="addButton" type="button" hidden>
+          <i data-lucide="plus"></i>
+          <span class="optional">Add data</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero app-shell" aria-labelledby="heroTitle">
+      <div class="hero-content">
+        <p class="eyebrow">Private notes and templates</p>
+        <h1 id="heroTitle">Search your saved knowledge.</h1>
+        <p class="hero-copy">Type a word, phrase, client name, process, screenshot detail, or template idea. The closest saved entries rise to the top as you type.</p>
+
+        <div class="search-card">
+          <form class="promptbar" id="searchForm">
+            <span class="icon-hold"><i data-lucide="search"></i></span>
+            <input id="searchInput" type="search" autocomplete="off" placeholder="Ask for a note, template, image, or phrase..." />
+            <button class="icon-button submit-search" type="submit" aria-label="Search">
+              <i data-lucide="arrow-up"></i>
+            </button>
+          </form>
+        </div>
+
+        <div class="quick-row" aria-label="Quick searches">
+          <button class="chip quick-search" type="button" data-query="proposal template"><i data-lucide="file-text"></i>Proposal</button>
+          <button class="chip quick-search" type="button" data-query="client follow up"><i data-lucide="messages-square"></i>Follow up</button>
+          <button class="chip quick-search" type="button" data-query="invoice screenshot"><i data-lucide="image"></i>Invoice image</button>
+          <button class="chip quick-search" type="button" data-query="onboarding checklist"><i data-lucide="list-checks"></i>Onboarding</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="workspace app-shell" aria-label="Knowledge results">
+      <div class="workspace-grid">
+        <aside class="side-panel">
+          <p class="panel-label">Library</p>
+          <div class="stats">
+            <div class="stat">
+              <span class="stat-icon"><i data-lucide="database"></i></span>
+              <span><strong id="totalCount">0</strong><span>Saved entries</span></span>
+            </div>
+            <div class="stat">
+              <span class="stat-icon"><i data-lucide="image"></i></span>
+              <span><strong id="imageCount">0</strong><span>Image entries</span></span>
+            </div>
+            <div class="stat">
+              <span class="stat-icon"><i data-lucide="shield-check"></i></span>
+              <span><strong id="adminState">Viewer</strong><span>Current access</span></span>
+            </div>
+          </div>
+
+          <div class="filter-stack" aria-label="Entry filters">
+            <button class="chip active" type="button" data-kind="all"><i data-lucide="layout-grid"></i>All</button>
+            <button class="chip" type="button" data-kind="template"><i data-lucide="copy-check"></i>Templates</button>
+            <button class="chip" type="button" data-kind="note"><i data-lucide="notebook-tabs"></i>Notes</button>
+            <button class="chip" type="button" data-kind="image"><i data-lucide="image"></i>Images</button>
+          </div>
+
+          <div class="source-pill">
+            <strong id="sourceName">Local demo</strong><br />
+            <span id="sourceDetail">Add Firebase config when you are ready to sync online.</span>
+          </div>
+        </aside>
+
+        <section class="results-panel">
+          <div class="results-toolbar">
+            <div class="results-title">
+              <strong id="resultsHeading">Recent entries</strong>
+              <span id="resultsMeta">Start typing to rank your notes and templates.</span>
+            </div>
+            <label class="select-wrap">
+              <i data-lucide="arrow-down-up"></i>
+              <select id="sortSelect" aria-label="Sort results">
+                <option value="relevance">Relevance</option>
+                <option value="newest">Newest</option>
+                <option value="title">Title</option>
+              </select>
+            </label>
+          </div>
+          <div class="results-list" id="resultsList"></div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <dialog class="modal" id="entryDialog">
+    <div class="modal-head">
+      <h2 class="modal-title">Add data</h2>
+      <button class="icon-button" type="button" id="closeDialog" aria-label="Close">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <form class="entry-form" id="entryForm">
+      <div class="field-grid">
+        <label>
+          Title
+          <input id="entryTitle" name="title" type="text" required maxlength="120" placeholder="Proposal intro template" />
+        </label>
+        <label>
+          Type
+          <select id="entryKind" name="kind">
+            <option value="template">Template</option>
+            <option value="note">Note</option>
+            <option value="image">Image</option>
+          </select>
+        </label>
+      </div>
+
+      <label>
+        Text
+        <textarea id="entryBody" name="body" placeholder="Paste the note, template, caption, or searchable details here."></textarea>
+      </label>
+
+      <label>
+        Tags
+        <input id="entryTags" name="tags" type="text" placeholder="proposal, client, invoice" />
+      </label>
+
+      <div class="field-grid">
+        <label>
+          Image URL
+          <input id="entryImageUrl" name="imageUrl" type="url" placeholder="https://..." />
+        </label>
+        <label>
+          Image file
+          <input id="entryImageFile" name="imageFile" type="file" accept="image/*" />
+        </label>
+      </div>
+
+      <div class="image-preview" id="imagePreview">
+        <span>No image selected</span>
+      </div>
+
+      <div class="modal-foot">
+        <button class="button ghost" type="button" id="cancelEntry">Cancel</button>
+        <button class="button primary" type="submit" id="saveEntry">
+          <i data-lucide="save"></i>
+          <span>Save entry</span>
+        </button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script type="module">
+    const APP_CONFIG = {
+      firebase: {
+        apiKey: "AIzaSyDwjPqvRJ9mf5TgtGiimSaNNrxAgzRQRVo",
+        authDomain: "template-55504.firebaseapp.com",
+        projectId: "template-55504",
+        storageBucket: "template-55504.firebasestorage.app",
+        messagingSenderId: "2747877884",
+        appId: "1:2747877884:web:228d8e3501baf372318a79",
+        measurementId: "G-V96KPB3DDN"
+      },
+      collectionName: "knowledge",
+      adminEmails: ["you@example.com"],
+      localAdminKey: "admin-demo"
+    };
+
+    const STORAGE_KEY = "promptvault.entries.v1";
+    const THEME_KEY = "promptvault.theme";
+    const LOCAL_ADMIN_KEY = "promptvault.localAdmin";
+
+    const seedEntries = [
+      {
+        id: "seed-proposal",
+        title: "Proposal intro template",
+        kind: "template",
+        body: "Hi {{client_name}},\n\nThanks for sharing the details. Based on what you need, I recommend we focus first on the highest-impact workflow, then build the supporting templates around it.\n\nScope:\n- Audit the current process\n- Draft the core template set\n- Review and polish\n- Handoff with notes",
+        tags: ["proposal", "client", "template", "scope"],
+        imageUrl: "",
+        createdAt: "2026-05-08T09:00:00.000Z"
+      },
+      {
+        id: "seed-follow-up",
+        title: "Client follow-up after no reply",
+        kind: "template",
+        body: "Hi {{name}},\n\nJust checking in on this. I know things get busy, so I wanted to bring it back near the top of your inbox.\n\nWould you like me to proceed with the last version, or should I adjust anything before moving forward?",
+        tags: ["client", "follow up", "email", "reply"],
+        imageUrl: "",
+        createdAt: "2026-05-07T11:30:00.000Z"
+      },
+      {
+        id: "seed-invoice",
+        title: "Invoice screenshot notes",
+        kind: "image",
+        body: "Use this for invoice, billing, receipt, and payment reference searches. The important parts to check are invoice number, due date, total amount, and client name.",
+        tags: ["invoice", "billing", "screenshot", "payment"],
+        imageUrl: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=900&q=80",
+        createdAt: "2026-05-06T15:15:00.000Z"
+      },
+      {
+        id: "seed-onboarding",
+        title: "New project onboarding checklist",
+        kind: "note",
+        body: "Collect access, define owner, confirm deadline, list source files, document approval path, create first draft, and schedule the first review.",
+        tags: ["onboarding", "project", "checklist", "workflow"],
+        imageUrl: "",
+        createdAt: "2026-05-05T08:45:00.000Z"
+      },
+      {
+        id: "seed-brand-board",
+        title: "Brand board reference",
+        kind: "image",
+        body: "Reference for visual style, typography, logo direction, palette, and tone. Useful when searching brand, design, colors, mood, or visual identity.",
+        tags: ["brand", "design", "colors", "image"],
+        imageUrl: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=900&q=80",
+        createdAt: "2026-05-03T14:20:00.000Z"
+      }
+    ];
+
+    const state = {
+      entries: [],
+      query: "",
+      kind: "all",
+      sort: "relevance",
+      isAdmin: false,
+      currentUser: null,
+      firebaseReady: false,
+      fire: null,
+      db: null,
+      auth: null,
+      provider: null
+    };
+
+    const els = {
+      themeToggle: document.querySelector("#themeToggle"),
+      signInButton: document.querySelector("#signInButton"),
+      signOutButton: document.querySelector("#signOutButton"),
+      addButton: document.querySelector("#addButton"),
+      searchForm: document.querySelector("#searchForm"),
+      searchInput: document.querySelector("#searchInput"),
+      quickSearches: document.querySelectorAll(".quick-search"),
+      filterButtons: document.querySelectorAll("[data-kind]"),
+      sortSelect: document.querySelector("#sortSelect"),
+      resultsList: document.querySelector("#resultsList"),
+      resultsHeading: document.querySelector("#resultsHeading"),
+      resultsMeta: document.querySelector("#resultsMeta"),
+      totalCount: document.querySelector("#totalCount"),
+      imageCount: document.querySelector("#imageCount"),
+      adminState: document.querySelector("#adminState"),
+      sourceName: document.querySelector("#sourceName"),
+      sourceDetail: document.querySelector("#sourceDetail"),
+      entryDialog: document.querySelector("#entryDialog"),
+      closeDialog: document.querySelector("#closeDialog"),
+      cancelEntry: document.querySelector("#cancelEntry"),
+      entryForm: document.querySelector("#entryForm"),
+      entryTitle: document.querySelector("#entryTitle"),
+      entryKind: document.querySelector("#entryKind"),
+      entryBody: document.querySelector("#entryBody"),
+      entryTags: document.querySelector("#entryTags"),
+      entryImageUrl: document.querySelector("#entryImageUrl"),
+      entryImageFile: document.querySelector("#entryImageFile"),
+      imagePreview: document.querySelector("#imagePreview"),
+      saveEntry: document.querySelector("#saveEntry"),
+      toast: document.querySelector("#toast")
+    };
+
+    function refreshIcons() {
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+    }
+
+    function isFirebaseConfigured() {
+      return Boolean(APP_CONFIG.firebase.apiKey && APP_CONFIG.firebase.projectId);
+    }
+
+    function escapeHtml(value = "") {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function normalizeTags(tags) {
+      if (Array.isArray(tags)) {
+        return tags.map((tag) => String(tag).trim()).filter(Boolean);
+      }
+
+      return String(tags || "")
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean);
+    }
+
+    function loadLocalEntries() {
+      try {
+        const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+        return Array.isArray(stored) && stored.length ? stored : [...seedEntries];
+      } catch (error) {
+        console.warn("Could not load local entries", error);
+        return [...seedEntries];
+      }
+    }
+
+    function persistLocalEntries() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state.entries));
+      } catch (error) {
+        showToast("This browser could not save the entry locally.");
+        console.warn("Could not save local entries", error);
+      }
+    }
+
+    function applyTheme(theme) {
+      document.documentElement.dataset.theme = theme;
+      localStorage.setItem(THEME_KEY, theme);
+      const icon = theme === "dark" ? "sun" : "moon";
+      els.themeToggle.innerHTML = `<i data-lucide="${icon}"></i>`;
+      refreshIcons();
+    }
+
+    function showToast(message) {
+      els.toast.textContent = message;
+      els.toast.classList.add("show");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => {
+        els.toast.classList.remove("show");
+      }, 2300);
+    }
+
+    function getTimestamp(value) {
+      if (!value) return 0;
+      if (typeof value === "string") return new Date(value).getTime() || 0;
+      if (typeof value.toDate === "function") return value.toDate().getTime();
+      if (typeof value.seconds === "number") return value.seconds * 1000;
+      return Number(value) || 0;
+    }
+
+    function formatDate(value) {
+      const timestamp = getTimestamp(value);
+      if (!timestamp) return "No date";
+      return new Intl.DateTimeFormat(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+      }).format(new Date(timestamp));
+    }
+
+    function tokenize(input) {
+      return String(input || "")
+        .toLowerCase()
+        .split(/\s+/)
+        .map((part) => part.trim())
+        .filter(Boolean);
+    }
+
+    function scoreEntry(entry, terms, rawQuery) {
+      if (!rawQuery) return 1;
+
+      const title = String(entry.title || "").toLowerCase();
+      const body = String(entry.body || "").toLowerCase();
+      const tags = normalizeTags(entry.tags).join(" ").toLowerCase();
+      const kind = String(entry.kind || "").toLowerCase();
+      const exact = rawQuery.toLowerCase();
+      let score = 0;
+
+      if (title.includes(exact)) score += 80;
+      if (tags.includes(exact)) score += 60;
+      if (body.includes(exact)) score += 35;
+      if (kind.includes(exact)) score += 15;
+
+      for (const term of terms) {
+        if (title.includes(term)) score += 18;
+        if (tags.includes(term)) score += 14;
+        if (body.includes(term)) score += 8;
+        if (kind.includes(term)) score += 5;
+      }
+
+      return score;
+    }
+
+    function getVisibleEntries() {
+      const rawQuery = state.query.trim();
+      const terms = tokenize(rawQuery);
+      let rows = state.entries
+        .filter((entry) => state.kind === "all" || entry.kind === state.kind)
+        .map((entry) => ({
+          entry,
+          score: scoreEntry(entry, terms, rawQuery)
+        }))
+        .filter((row) => !rawQuery || row.score > 0);
+
+      if (state.sort === "relevance") {
+        rows.sort((a, b) => {
+          if (b.score !== a.score) return b.score - a.score;
+          return getTimestamp(b.entry.createdAt) - getTimestamp(a.entry.createdAt);
+        });
+      }
+
+      if (state.sort === "newest") {
+        rows.sort((a, b) => getTimestamp(b.entry.createdAt) - getTimestamp(a.entry.createdAt));
+      }
+
+      if (state.sort === "title") {
+        rows.sort((a, b) => String(a.entry.title || "").localeCompare(String(b.entry.title || "")));
+      }
+
+      return rows;
+    }
+
+    function renderStats() {
+      els.totalCount.textContent = state.entries.length;
+      els.imageCount.textContent = state.entries.filter((entry) => Boolean(entry.imageUrl || entry.kind === "image")).length;
+      els.adminState.textContent = state.isAdmin ? "Admin" : "Viewer";
+    }
+
+    function renderResults() {
+      const rows = getVisibleEntries();
+      const hasQuery = Boolean(state.query.trim());
+      const kindLabel = state.kind === "all" ? "entries" : `${state.kind} entries`;
+
+      els.resultsHeading.textContent = hasQuery ? `Results for "${state.query.trim()}"` : "Recent entries";
+      els.resultsMeta.textContent = `${rows.length} ${kindLabel} found`;
+
+      if (!rows.length) {
+        els.resultsList.innerHTML = `
+          <div class="empty-state">
+            <div>
+              <i data-lucide="search-x"></i>
+              <strong>No matches yet</strong>
+              <span>Try another phrase or add a new entry from admin mode.</span>
+            </div>
+          </div>
+        `;
+        refreshIcons();
+        return;
+      }
+
+      els.resultsList.innerHTML = rows.map(({ entry }) => {
+        const tags = normalizeTags(entry.tags);
+        const image = entry.imageUrl ? `
+          <a class="result-image" href="${escapeHtml(entry.imageUrl)}" target="_blank" rel="noreferrer" aria-label="Open image for ${escapeHtml(entry.title)}">
+            <img src="${escapeHtml(entry.imageUrl)}" alt="${escapeHtml(entry.title)}" loading="lazy" />
+          </a>
+        ` : "";
+
+        const body = entry.body ? `<p class="result-text">${escapeHtml(entry.body)}</p>` : `<p class="result-text">Image reference saved without text.</p>`;
+
+        return `
+          <article class="result-card ${entry.imageUrl ? "has-image" : ""}">
+            ${image}
+            <div class="result-body">
+              <div class="result-head">
+                <div>
+                  <h2>${escapeHtml(entry.title)}</h2>
+                  <div class="tag-row" aria-label="Entry metadata">
+                    <span class="tag kind">${escapeHtml(entry.kind || "note")}</span>
+                    <span class="tag">${escapeHtml(formatDate(entry.createdAt))}</span>
+                  </div>
+                </div>
+                <div class="result-actions">
+                  <button class="icon-button tiny-button" type="button" data-action="copy" data-id="${escapeHtml(entry.id)}" aria-label="Copy text">
+                    <i data-lucide="copy"></i>
+                  </button>
+                </div>
+              </div>
+              ${body}
+              <div class="tag-row">
+                ${tags.map((tag) => `<button class="tag" type="button" data-action="tag" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`).join("")}
+              </div>
+            </div>
+          </article>
+        `;
+      }).join("");
+
+      refreshIcons();
+    }
+
+    function render() {
+      renderStats();
+      renderResults();
+      refreshIcons();
+    }
+
+    function updateAuthUI() {
+      els.addButton.hidden = !state.isAdmin;
+      els.signOutButton.hidden = !state.currentUser && !state.isAdmin;
+      els.signInButton.hidden = state.isAdmin && !state.firebaseReady;
+
+      if (state.firebaseReady && state.currentUser) {
+        els.signInButton.hidden = true;
+        els.signOutButton.hidden = false;
+      }
+
+      renderStats();
+    }
+
+    function setSource(name, detail) {
+      els.sourceName.textContent = name;
+      els.sourceDetail.textContent = detail;
+    }
+
+    async function initFirebase() {
+      if (!isFirebaseConfigured()) {
+        setSource("Local demo", "Add Firebase config when you are ready to sync online.");
+        if (localStorage.getItem(LOCAL_ADMIN_KEY) === "true" || new URLSearchParams(location.search).get("admin") === "1") {
+          state.isAdmin = true;
+        }
+        updateAuthUI();
+        return;
+      }
+
+      try {
+        const [appMod, authMod, fireMod] = await Promise.all([
+          import("https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js"),
+          import("https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js"),
+          import("https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js")
+        ]);
+
+        const app = appMod.initializeApp(APP_CONFIG.firebase);
+        state.auth = authMod.getAuth(app);
+        state.provider = new authMod.GoogleAuthProvider();
+        state.db = fireMod.getFirestore(app);
+        state.fire = fireMod;
+        state.firebaseReady = true;
+        setSource("Firebase", "Reading from Firestore collection: " + APP_CONFIG.collectionName);
+
+        authMod.onAuthStateChanged(state.auth, (user) => {
+          state.currentUser = user;
+          state.isAdmin = Boolean(user && APP_CONFIG.adminEmails.includes(user.email));
+          updateAuthUI();
+        });
+
+        const knowledgeRef = fireMod.collection(state.db, APP_CONFIG.collectionName);
+        const knowledgeQuery = fireMod.query(knowledgeRef, fireMod.orderBy("createdAt", "desc"));
+        fireMod.onSnapshot(knowledgeQuery, (snapshot) => {
+          state.entries = snapshot.docs.map((doc) => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              title: data.title || "Untitled",
+              kind: data.kind || "note",
+              body: data.body || "",
+              tags: normalizeTags(data.tags),
+              imageUrl: data.imageUrl || "",
+              createdAt: data.createdAt || ""
+            };
+          });
+          render();
+        }, (error) => {
+          console.warn("Firestore read failed", error);
+          setSource("Local fallback", "Firestore could not load, so local demo data is showing.");
+          showToast("Firebase could not load. Showing local data.");
+        });
+      } catch (error) {
+        console.warn("Firebase init failed", error);
+        setSource("Local fallback", "Firebase setup failed, so local demo data is showing.");
+        showToast("Firebase setup failed. Showing local data.");
+      }
+    }
+
+    function openEntryDialog() {
+      if (!state.isAdmin) {
+        showToast("Admin access is required to add data.");
+        return;
+      }
+
+      els.entryForm.reset();
+      renderImagePreview("");
+      if (typeof els.entryDialog.showModal === "function") {
+        els.entryDialog.showModal();
+      } else {
+        els.entryDialog.setAttribute("open", "");
+      }
+      window.setTimeout(() => els.entryTitle.focus(), 0);
+    }
+
+    function closeEntryDialog() {
+      els.entryDialog.close();
+    }
+
+    function renderImagePreview(url) {
+      if (url) {
+        els.imagePreview.innerHTML = `<img src="${escapeHtml(url)}" alt="Selected image preview" />`;
+        return;
+      }
+
+      els.imagePreview.innerHTML = "<span>No image selected</span>";
+    }
+
+    function readImageFile(file) {
+      return new Promise((resolve, reject) => {
+        if (!file) {
+          resolve("");
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ""));
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function saveEntry(event) {
+      event.preventDefault();
+      if (!state.isAdmin) {
+        showToast("Admin access is required to save entries.");
+        return;
+      }
+
+      els.saveEntry.disabled = true;
+
+      try {
+        const file = els.entryImageFile.files[0];
+        const fileDataUrl = file ? await readImageFile(file) : "";
+        const imageUrl = els.entryImageUrl.value.trim() || fileDataUrl;
+        const now = new Date().toISOString();
+        const entry = {
+          id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+          title: els.entryTitle.value.trim(),
+          kind: els.entryKind.value,
+          body: els.entryBody.value.trim(),
+          tags: normalizeTags(els.entryTags.value),
+          imageUrl,
+          createdAt: now
+        };
+
+        if (!entry.title) {
+          showToast("Title is required.");
+          return;
+        }
+
+        if (state.firebaseReady && state.fire && state.db) {
+          await state.fire.addDoc(state.fire.collection(state.db, APP_CONFIG.collectionName), {
+            title: entry.title,
+            kind: entry.kind,
+            body: entry.body,
+            tags: entry.tags,
+            imageUrl: entry.imageUrl,
+            createdAt: state.fire.serverTimestamp(),
+            createdBy: state.currentUser ? state.currentUser.email : "local-admin"
+          });
+        } else {
+          state.entries = [entry, ...state.entries];
+          persistLocalEntries();
+          render();
+        }
+
+        closeEntryDialog();
+        showToast("Entry saved.");
+      } catch (error) {
+        console.warn("Could not save entry", error);
+        showToast("Could not save this entry.");
+      } finally {
+        els.saveEntry.disabled = false;
+      }
+    }
+
+    async function signIn() {
+      if (!state.firebaseReady) {
+        const key = window.prompt("Enter local admin key");
+        if (key === APP_CONFIG.localAdminKey) {
+          state.isAdmin = true;
+          localStorage.setItem(LOCAL_ADMIN_KEY, "true");
+          updateAuthUI();
+          showToast("Admin mode enabled.");
+        } else if (key !== null) {
+          showToast("Admin key did not match.");
+        }
+        return;
+      }
+
+      try {
+        const authMod = await import("https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js");
+        await authMod.signInWithPopup(state.auth, state.provider);
+      } catch (error) {
+        console.warn("Sign in failed", error);
+        showToast("Sign in failed.");
+      }
+    }
+
+    async function signOut() {
+      if (state.firebaseReady && state.auth) {
+        const authMod = await import("https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js");
+        await authMod.signOut(state.auth);
+      }
+
+      state.currentUser = null;
+      state.isAdmin = false;
+      localStorage.removeItem(LOCAL_ADMIN_KEY);
+      updateAuthUI();
+      showToast("Signed out.");
+    }
+
+    async function copyEntry(id) {
+      const entry = state.entries.find((item) => item.id === id);
+      if (!entry) return;
+
+      const text = entry.body || entry.imageUrl || entry.title;
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast("Copied.");
+      } catch (error) {
+        showToast("Copy failed.");
+      }
+    }
+
+    function wireEvents() {
+      els.themeToggle.addEventListener("click", () => {
+        const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+        applyTheme(next);
+      });
+
+      els.signInButton.addEventListener("click", signIn);
+      els.signOutButton.addEventListener("click", signOut);
+      els.addButton.addEventListener("click", openEntryDialog);
+      els.closeDialog.addEventListener("click", closeEntryDialog);
+      els.cancelEntry.addEventListener("click", closeEntryDialog);
+      els.entryForm.addEventListener("submit", saveEntry);
+
+      els.searchForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        state.query = els.searchInput.value;
+        renderResults();
+      });
+
+      els.searchInput.addEventListener("input", () => {
+        state.query = els.searchInput.value;
+        renderResults();
+      });
+
+      els.quickSearches.forEach((button) => {
+        button.addEventListener("click", () => {
+          els.searchInput.value = button.dataset.query || "";
+          state.query = els.searchInput.value;
+          els.searchInput.focus();
+          renderResults();
+        });
+      });
+
+      els.filterButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          state.kind = button.dataset.kind;
+          els.filterButtons.forEach((item) => item.classList.toggle("active", item === button));
+          renderResults();
+        });
+      });
+
+      els.sortSelect.addEventListener("change", () => {
+        state.sort = els.sortSelect.value;
+        renderResults();
+      });
+
+      els.entryImageUrl.addEventListener("input", () => {
+        renderImagePreview(els.entryImageUrl.value.trim());
+      });
+
+      els.entryImageFile.addEventListener("change", async () => {
+        const file = els.entryImageFile.files[0];
+        if (!file) {
+          renderImagePreview(els.entryImageUrl.value.trim());
+          return;
+        }
+        renderImagePreview(await readImageFile(file));
+      });
+
+      els.resultsList.addEventListener("click", (event) => {
+        const target = event.target.closest("[data-action]");
+        if (!target) return;
+
+        if (target.dataset.action === "copy") {
+          copyEntry(target.dataset.id);
+        }
+
+        if (target.dataset.action === "tag") {
+          els.searchInput.value = target.dataset.tag || "";
+          state.query = els.searchInput.value;
+          renderResults();
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      });
+    }
+
+    function boot() {
+      const savedTheme = localStorage.getItem(THEME_KEY) || "dark";
+      applyTheme(savedTheme);
+      state.entries = loadLocalEntries();
+      wireEvents();
+      render();
+      initFirebase();
+      window.addEventListener("load", refreshIcons);
+    }
+
+    boot();
+  </script>
+</body>
+</html>
