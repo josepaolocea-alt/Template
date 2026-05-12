@@ -1142,13 +1142,26 @@
       refreshIcons();
     }
 
-    function showToast(message) {
+    function showToast(message, duration = 2300) {
       els.toast.textContent = message;
       els.toast.classList.add("show");
       window.clearTimeout(showToast.timer);
       showToast.timer = window.setTimeout(() => {
         els.toast.classList.remove("show");
-      }, 2300);
+      }, duration);
+    }
+
+    function authErrorMessage(error) {
+      const code = error && error.code ? error.code : "";
+      const messages = {
+        "auth/operation-not-allowed": "Enable Google sign-in in Firebase Authentication.",
+        "auth/unauthorized-domain": "Add this website domain in Firebase Authentication authorized domains.",
+        "auth/popup-blocked": "Popup was blocked. Redirecting to Google sign-in...",
+        "auth/popup-closed-by-user": "The sign-in popup was closed before finishing.",
+        "auth/network-request-failed": "Network error while contacting Firebase."
+      };
+
+      return messages[code] || `Sign in failed${code ? `: ${code}` : "."}`;
     }
 
     function getTimestamp(value) {
@@ -1354,6 +1367,11 @@
           updateAuthUI();
         });
 
+        authMod.getRedirectResult(state.auth).catch((error) => {
+          console.warn("Redirect sign in failed", error);
+          showToast(authErrorMessage(error), 6500);
+        });
+
         const knowledgeRef = fireMod.collection(state.db, APP_CONFIG.collectionName);
         const knowledgeQuery = fireMod.query(knowledgeRef, fireMod.orderBy("createdAt", "desc"));
         fireMod.onSnapshot(knowledgeQuery, (snapshot) => {
@@ -1499,7 +1517,12 @@
         await authMod.signInWithPopup(state.auth, state.provider);
       } catch (error) {
         console.warn("Sign in failed", error);
-        showToast("Sign in failed.");
+        showToast(authErrorMessage(error), 6500);
+
+        if (error && error.code === "auth/popup-blocked") {
+          const authMod = await import("https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js");
+          await authMod.signInWithRedirect(state.auth, state.provider);
+        }
       }
     }
 
