@@ -1238,6 +1238,389 @@
       }
     }
 
+    /* Terminal-inspired UI skin */
+    :root {
+      --bg: #000000;
+      --bg-2: #050505;
+      --panel: rgba(0, 0, 0, 0.86);
+      --panel-solid: #050505;
+      --text: #f5f7fa;
+      --muted: #8b949e;
+      --soft: #6e7681;
+      --line: rgba(255, 255, 255, 0.22);
+      --line-strong: rgba(255, 255, 255, 0.42);
+      --accent: #66ff99;
+      --accent-strong: #20df70;
+      --accent-blue: #61d6ff;
+      --accent-warm: #ffd166;
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.72);
+      --font-ui: "SF Mono", "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
+    }
+
+    [data-theme="light"] {
+      --bg: #f7f7f0;
+      --bg-2: #ededdf;
+      --panel: rgba(255, 255, 246, 0.9);
+      --panel-solid: #fffff7;
+      --text: #111111;
+      --muted: #565656;
+      --soft: #727272;
+      --line: rgba(0, 0, 0, 0.22);
+      --line-strong: rgba(0, 0, 0, 0.42);
+      --accent: #007f3f;
+      --accent-strong: #006a34;
+      --accent-blue: #005d90;
+      --accent-warm: #9b5d00;
+    }
+
+    body {
+      background:
+        linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        radial-gradient(circle at var(--pointer-x) var(--pointer-y), color-mix(in srgb, var(--accent) 9%, transparent), transparent 260px),
+        linear-gradient(180deg, var(--bg), var(--bg-2));
+      background-size: 100% 4px, 100% 100%, 100% 100%;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 3px),
+        radial-gradient(circle at 50% 0%, rgba(102, 255, 153, 0.08), transparent 44%);
+      mix-blend-mode: screen;
+      opacity: 0.58;
+    }
+
+    .pointer-field {
+      opacity: 0.5;
+      mix-blend-mode: normal;
+    }
+
+    .pointer-field::before {
+      opacity: 0.08;
+    }
+
+    .pointer-field::after {
+      background-image: radial-gradient(circle, color-mix(in srgb, var(--accent) 82%, transparent) 1px, transparent 1.6px);
+      background-size: 16px 16px;
+      mask-image: radial-gradient(170px circle at var(--pointer-x) var(--pointer-y), #000 0%, #000 26%, transparent 70%);
+    }
+
+    .topbar {
+      border-top: 1px solid var(--line-strong);
+      border-bottom: 1px solid var(--line-strong);
+      background: rgba(0, 0, 0, 0.9);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    [data-theme="light"] .topbar {
+      background: rgba(255, 255, 247, 0.92);
+    }
+
+    .topbar-inner {
+      min-height: 38px;
+    }
+
+    .brand {
+      color: var(--text);
+      font-size: 0.86rem;
+      text-transform: lowercase;
+    }
+
+    .brand::before {
+      content: "visitor@chatjpgc:~$";
+      color: var(--accent);
+      margin-right: 4px;
+    }
+
+    .brand-mark {
+      display: none;
+    }
+
+    .topbar-actions {
+      gap: 6px;
+    }
+
+    .button,
+    .icon-button,
+    .chip {
+      border-radius: 0;
+      border-color: var(--line-strong);
+      background: transparent;
+      box-shadow: none;
+      text-transform: lowercase;
+    }
+
+    .button:hover,
+    .icon-button:hover,
+    .chip:hover {
+      background: var(--text);
+      color: var(--bg);
+      border-color: var(--text);
+      box-shadow: none;
+    }
+
+    .button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #000;
+      box-shadow: none;
+    }
+
+    .button.primary:hover {
+      background: var(--text);
+      color: var(--bg);
+      box-shadow: none;
+    }
+
+    .hero {
+      min-height: auto;
+      align-items: start;
+      padding: 54px 0 24px;
+    }
+
+    .hero-content {
+      width: min(980px, 100%);
+      margin: 0;
+      text-align: left;
+    }
+
+    .hero-content::before {
+      content: "Booting ChatJPGC terminal...\\Aauth: templates public | notes/images protected\\Acommand: search <phrase>";
+      display: block;
+      white-space: pre-wrap;
+      margin: 0 0 28px;
+      color: var(--muted);
+      line-height: 1.75;
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    .eyebrow::before {
+      content: "./";
+      color: var(--text);
+    }
+
+    h1 {
+      font-size: clamp(3rem, 9vw, 8.2rem);
+      line-height: 0.82;
+      text-transform: uppercase;
+      text-shadow:
+        2px 0 var(--accent-blue),
+        -2px 0 var(--accent-warm),
+        0 0 22px color-mix(in srgb, var(--accent) 20%, transparent);
+    }
+
+    .hero-copy {
+      width: min(720px, 100%);
+      margin: 26px 0 0;
+      color: var(--text);
+    }
+
+    .hero-copy::before {
+      content: "> ";
+      color: var(--accent);
+    }
+
+    .search-card {
+      width: min(980px, 100%);
+      margin: 28px 0 0;
+      border-radius: 0;
+      border-color: var(--line-strong);
+      background: rgba(0, 0, 0, 0.82);
+      box-shadow: none;
+    }
+
+    [data-theme="light"] .search-card {
+      background: rgba(255, 255, 247, 0.86);
+    }
+
+    .search-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
+    }
+
+    .search-card:focus-within {
+      transform: none;
+      box-shadow: 0 0 0 1px var(--accent), 0 0 34px color-mix(in srgb, var(--accent) 18%, transparent);
+    }
+
+    .promptbar {
+      grid-template-columns: 190px minmax(0, 1fr) 56px;
+      min-height: 64px;
+    }
+
+    .promptbar > .icon-hold {
+      justify-content: start;
+      padding-left: 18px;
+      color: var(--accent);
+    }
+
+    .promptbar > .icon-hold svg {
+      display: none;
+    }
+
+    .promptbar > .icon-hold::before {
+      content: "visitor@chatjpgc:~$";
+      color: var(--accent);
+      font-size: 0.86rem;
+    }
+
+    .promptbar input {
+      caret-color: var(--accent);
+      color: var(--text);
+      font-size: clamp(0.95rem, 2vw, 1.08rem);
+    }
+
+    .promptbar input::placeholder {
+      color: var(--soft);
+    }
+
+    .submit-search {
+      border-radius: 0;
+      box-shadow: none;
+    }
+
+    .quick-row {
+      justify-content: flex-start;
+    }
+
+    .quick-row .chip::before {
+      content: "run ";
+      color: var(--accent);
+    }
+
+    .workspace {
+      padding-top: 12px;
+    }
+
+    .workspace-grid {
+      grid-template-columns: 320px minmax(0, 1fr);
+      gap: 16px;
+    }
+
+    .side-panel,
+    .results-panel,
+    .result-card,
+    .modal,
+    .source-pill,
+    .stat {
+      border-radius: 0;
+      background: rgba(0, 0, 0, 0.84);
+      box-shadow: none;
+    }
+
+    [data-theme="light"] .side-panel,
+    [data-theme="light"] .results-panel,
+    [data-theme="light"] .result-card,
+    [data-theme="light"] .modal,
+    [data-theme="light"] .source-pill,
+    [data-theme="light"] .stat {
+      background: rgba(255, 255, 247, 0.88);
+    }
+
+    .panel-label,
+    .results-title strong,
+    .modal-title {
+      color: var(--accent);
+      text-transform: lowercase;
+      letter-spacing: 0;
+    }
+
+    .panel-label::before,
+    .results-title strong::before,
+    .modal-title::before {
+      content: "$ ";
+      color: var(--text);
+    }
+
+    .stat-icon {
+      border-radius: 0;
+      background: transparent;
+      border: 1px solid var(--line);
+    }
+
+    .results-toolbar {
+      min-height: 56px;
+      border-bottom-color: var(--line-strong);
+    }
+
+    .result-card {
+      border-color: var(--line);
+      position: relative;
+    }
+
+    .result-card::before {
+      content: "output/" attr(data-kind);
+      position: absolute;
+      top: -9px;
+      left: 12px;
+      padding: 0 6px;
+      color: var(--accent);
+      background: var(--bg);
+      font-size: 0.72rem;
+    }
+
+    .result-card:hover {
+      transform: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 28px color-mix(in srgb, var(--accent) 12%, transparent);
+    }
+
+    .result-head h2::before {
+      content: "> ";
+      color: var(--accent);
+    }
+
+    .result-text {
+      color: color-mix(in srgb, var(--text) 78%, var(--muted));
+    }
+
+    .tag,
+    .kind,
+    .kind-template,
+    .kind-note {
+      border-radius: 0;
+      background: transparent;
+    }
+
+    .kind-template {
+      color: var(--accent-warm);
+    }
+
+    .kind-note {
+      color: var(--accent-blue);
+    }
+
+    input,
+    textarea,
+    select {
+      border-radius: 0;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .image-preview {
+      border-radius: 0;
+      background: var(--bg);
+    }
+
+    .toast {
+      border-radius: 0;
+      background: var(--bg);
+      color: var(--accent);
+    }
+
     @media (max-width: 860px) {
       .workspace-grid {
         grid-template-columns: 1fr;
@@ -1899,7 +2282,7 @@
         const body = entry.body ? `<p class="result-text">${escapeHtml(entry.body)}</p>` : `<p class="result-text">Image reference saved without text.</p>`;
 
         return `
-          <article class="result-card ${entry.imageUrl ? "has-image" : ""}" style="--i:${Math.min(index, 10)}">
+          <article class="result-card ${entry.imageUrl ? "has-image" : ""}" data-kind="${escapeHtml(entry.kind || "note")}" style="--i:${Math.min(index, 10)}">
             ${image}
             <div class="result-body">
               <div class="result-head">
