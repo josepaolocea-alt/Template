@@ -1670,7 +1670,7 @@
 
       els.signInButton.addEventListener("click", signIn);
       els.signOutButton.addEventListener("click", signOut);
-      els.addButton.addEventListener("click", openEntryDialog);
+      els.addButton.addEventListener("click", () => openEntryDialog());
       els.closeDialog.addEventListener("click", closeEntryDialog);
       els.cancelEntry.addEventListener("click", closeEntryDialog);
       els.entryForm.addEventListener("submit", saveEntry);
