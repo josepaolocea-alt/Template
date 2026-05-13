@@ -982,7 +982,7 @@
         measurementId: "G-V96KPB3DDN"
       },
       collectionName: "knowledge",
-      adminEmails: ["you@example.com"],
+      adminEmails: ["paxifox06@gmail.com"],
       localAdminKey: "admin-demo"
     };
 
@@ -1156,7 +1156,7 @@
       const messages = {
         "auth/operation-not-allowed": "Enable Google sign-in in Firebase Authentication.",
         "auth/unauthorized-domain": "Add this website domain in Firebase Authentication authorized domains.",
-        "auth/popup-blocked": "Popup was blocked. Redirecting to Google sign-in...",
+        "auth/popup-blocked": "Popup was blocked. Use redirect sign-in instead.",
         "auth/popup-closed-by-user": "The sign-in popup was closed before finishing.",
         "auth/network-request-failed": "Network error while contacting Firebase."
       };
@@ -1363,8 +1363,14 @@
 
         authMod.onAuthStateChanged(state.auth, (user) => {
           state.currentUser = user;
-          state.isAdmin = Boolean(user && APP_CONFIG.adminEmails.includes(user.email));
+          const userEmail = user && user.email ? user.email.toLowerCase() : "";
+          const adminEmails = APP_CONFIG.adminEmails.map((paxifox06@gmail.com) => email.toLowerCase());
+          state.isAdmin = Boolean(userEmail && adminEmails.includes(paxifox06@gmail.com));
           updateAuthUI();
+
+          if (user && !state.isAdmin) {
+            showToast(`${user.email} is signed in but is not listed as an admin.`, 6500);
+          }
         });
 
         authMod.getRedirectResult(state.auth).catch((error) => {
@@ -1514,15 +1520,11 @@
 
       try {
         const authMod = await import("https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js");
-        await authMod.signInWithPopup(state.auth, state.provider);
+        showToast("Opening Google sign-in...", 6500);
+        await authMod.signInWithRedirect(state.auth, state.provider);
       } catch (error) {
         console.warn("Sign in failed", error);
         showToast(authErrorMessage(error), 6500);
-
-        if (error && error.code === "auth/popup-blocked") {
-          const authMod = await import("https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js");
-          await authMod.signInWithRedirect(state.auth, state.provider);
-        }
       }
     }
 
