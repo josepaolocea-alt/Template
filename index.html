@@ -98,10 +98,11 @@
     .pointer-field {
       position: fixed;
       inset: 0;
-      z-index: 0;
+      z-index: 30;
       overflow: hidden;
       pointer-events: none;
-      opacity: 0.95;
+      opacity: 1;
+      mix-blend-mode: screen;
     }
 
     .pointer-field::before,
@@ -115,7 +116,7 @@
     }
 
     .pointer-field::before {
-      opacity: 0.12;
+      opacity: 0.2;
       mask-image: linear-gradient(to bottom, transparent, #000 12%, #000 82%, transparent);
     }
 
@@ -128,13 +129,14 @@
     }
 
     .has-pointer .pointer-field::after {
-      opacity: 0.42;
+      opacity: 0.72;
     }
 
     .cursor-mark {
       position: fixed;
       left: var(--cursor-x);
       top: var(--cursor-y);
+      z-index: 31;
       pointer-events: none;
       border-radius: 999px;
       transform: translate(-50%, -50%);
@@ -143,18 +145,18 @@
     }
 
     .cursor-mark-core {
-      width: 6px;
-      height: 6px;
+      width: 8px;
+      height: 8px;
       background: var(--accent);
-      box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 44%, transparent);
+      box-shadow: 0 0 24px color-mix(in srgb, var(--accent) 70%, transparent);
     }
 
     .cursor-mark-ring {
-      width: 34px;
-      height: 34px;
-      border: 1px solid color-mix(in srgb, var(--accent) 42%, transparent);
+      width: 42px;
+      height: 42px;
+      border: 1px solid color-mix(in srgb, var(--accent) 68%, transparent);
       background:
-        radial-gradient(circle at center, color-mix(in srgb, var(--accent) 10%, transparent), transparent 62%);
+        radial-gradient(circle at center, color-mix(in srgb, var(--accent) 18%, transparent), transparent 62%);
     }
 
     .has-pointer .cursor-mark {
@@ -1230,7 +1232,7 @@
       }
     }
 
-    @media (pointer: coarse) {
+    @media (hover: none) {
       .pointer-field {
         display: none;
       }
@@ -2513,7 +2515,7 @@
     }
 
     function initPointerField() {
-      const canUsePointer = window.matchMedia("(pointer: fine)").matches;
+      const canUsePointer = window.matchMedia("(hover: hover)").matches;
       const wantsMotion = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (!canUsePointer || !wantsMotion) return;
 
