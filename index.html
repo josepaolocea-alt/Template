@@ -1266,11 +1266,13 @@
     function renderResults() {
       const rows = getVisibleEntries();
       const hasQuery = Boolean(state.query.trim());
+      const canBrowseLibrary = Boolean(state.currentUser || state.isAdmin);
+      const shouldShowWorkspace = hasQuery || canBrowseLibrary;
       const kindLabel = state.kind === "all" ? "entries" : `${state.kind} entries`;
 
-      els.workspace.hidden = !hasQuery;
+      els.workspace.hidden = !shouldShowWorkspace;
 
-      if (!hasQuery) {
+      if (!shouldShowWorkspace) {
         els.resultsHeading.textContent = "Search results";
         els.resultsMeta.textContent = "Type a word or phrase to show matching entries.";
         els.resultsList.innerHTML = "";
@@ -1278,7 +1280,7 @@
         return;
       }
 
-      els.resultsHeading.textContent = `Results for "${state.query.trim()}"`;
+      els.resultsHeading.textContent = hasQuery ? `Results for "${state.query.trim()}"` : "Recent entries";
       els.resultsMeta.textContent = `${rows.length} ${kindLabel} found`;
 
       if (!rows.length) {
