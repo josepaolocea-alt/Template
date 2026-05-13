@@ -677,7 +677,9 @@
 
     textarea {
       min-height: 150px;
-      resize: vertical;
+      max-height: 52vh;
+      resize: none;
+      overflow: hidden;
       padding: 12px;
       line-height: 1.55;
     }
@@ -827,6 +829,10 @@
           <i data-lucide="plus"></i>
           <span class="optional">Add data</span>
         </button>
+        <button class="button ghost" id="csvButton" type="button" hidden>
+          <i data-lucide="upload"></i>
+          <span class="optional">Import CSV</span>
+        </button>
       </div>
     </div>
   </header>
@@ -834,8 +840,8 @@
   <main>
     <section class="hero app-shell" aria-labelledby="heroTitle">
       <div class="hero-content">
-        <p class="eyebrow">Private notes and templates</p>
-        <h1 id="heroTitle">Search your saved knowledge.</h1>
+        <p class="eyebrow">F*ck*ng Notes and Templates</p>
+        <h1 id="heroTitle">ChatJPGC</h1>
         <p class="hero-copy">Type a word, phrase, client name, process, screenshot detail, or template idea. The closest saved entries rise to the top as you type.</p>
 
         <div class="search-card">
@@ -973,6 +979,39 @@
     </form>
   </dialog>
 
+  <dialog class="modal" id="csvDialog">
+    <div class="modal-head">
+      <h2 class="modal-title">Import CSV</h2>
+      <button class="icon-button" type="button" id="closeCsvDialog" aria-label="Close">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <form class="entry-form" id="csvForm">
+      <label>
+        CSV file
+        <input id="csvFile" name="csvFile" type="file" accept=".csv,text/csv" required />
+      </label>
+
+      <div class="source-pill">
+        <strong>CSV columns</strong><br />
+        <span>title, kind, body, tags, imageUrl</span>
+      </div>
+
+      <div class="source-pill">
+        <strong>Kind values</strong><br />
+        <span>Use template or note. Tags can use commas, semicolons, or pipes.</span>
+      </div>
+
+      <div class="modal-foot">
+        <button class="button ghost" type="button" id="cancelCsvImport">Cancel</button>
+        <button class="button primary" type="submit" id="importCsv">
+          <i data-lucide="upload"></i>
+          <span>Import entries</span>
+        </button>
+      </div>
+    </form>
+  </dialog>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script type="module">
@@ -1063,6 +1102,7 @@
       signInButton: document.querySelector("#signInButton"),
       signOutButton: document.querySelector("#signOutButton"),
       addButton: document.querySelector("#addButton"),
+      csvButton: document.querySelector("#csvButton"),
       searchForm: document.querySelector("#searchForm"),
       searchInput: document.querySelector("#searchInput"),
       quickSearches: document.querySelectorAll(".quick-search"),
@@ -1093,6 +1133,12 @@
       imagePreview: document.querySelector("#imagePreview"),
       saveEntry: document.querySelector("#saveEntry"),
       saveEntryLabel: document.querySelector("#saveEntryLabel"),
+      csvDialog: document.querySelector("#csvDialog"),
+      closeCsvDialog: document.querySelector("#closeCsvDialog"),
+      cancelCsvImport: document.querySelector("#cancelCsvImport"),
+      csvForm: document.querySelector("#csvForm"),
+      csvFile: document.querySelector("#csvFile"),
+      importCsv: document.querySelector("#importCsv"),
       toast: document.querySelector("#toast")
     };
 
@@ -1122,6 +1168,13 @@
 
       return String(tags || "")
         .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean);
+    }
+
+    function normalizeCsvTags(tags) {
+      return String(tags || "")
+        .split(/[;,|]/)
         .map((tag) => tag.trim())
         .filter(Boolean);
     }
@@ -1351,6 +1404,7 @@
 
     function updateAuthUI() {
       els.addButton.hidden = !state.isAdmin;
+      els.csvButton.hidden = !state.isAdmin;
       els.signOutButton.hidden = !state.currentUser && !state.isAdmin;
       els.signInButton.hidden = state.isAdmin && !state.firebaseReady;
 
@@ -1468,7 +1522,7 @@
       }
 
       state.editingId = entry ? entry.id : null;
-      els.entryForm.reset();
+      resetEntryForm();
       els.entryDialogTitle.textContent = entry ? "Edit data" : "Add data";
       els.saveEntryLabel.textContent = entry ? "Update entry" : "Save entry";
 
@@ -1481,12 +1535,16 @@
       }
 
       renderImagePreview(entry ? entry.imageUrl : "");
+      window.requestAnimationFrame(resizeEntryBody);
       if (typeof els.entryDialog.showModal === "function") {
         els.entryDialog.showModal();
       } else {
         els.entryDialog.setAttribute("open", "");
       }
-      window.setTimeout(() => els.entryTitle.focus(), 0);
+      window.setTimeout(() => {
+        els.entryTitle.focus();
+        resizeEntryBody();
+      }, 0);
     }
 
     function closeEntryDialog() {
@@ -1494,6 +1552,20 @@
       els.entryDialogTitle.textContent = "Add data";
       els.saveEntryLabel.textContent = "Save entry";
       els.entryDialog.close();
+    }
+
+    function resizeEntryBody() {
+      els.entryBody.style.height = "auto";
+      els.entryBody.style.height = `${els.entryBody.scrollHeight}px`;
+      els.entryBody.style.overflowY = els.entryBody.scrollHeight > els.entryBody.clientHeight ? "auto" : "hidden";
+    }
+
+    function resetEntryForm() {
+      els.entryForm.reset();
+      els.entryBody.style.height = "";
+      els.entryBody.style.overflowY = "hidden";
+      renderImagePreview("");
+      window.requestAnimationFrame(resizeEntryBody);
     }
 
     function renderImagePreview(url) {
@@ -1517,6 +1589,212 @@
         reader.onerror = () => reject(reader.error);
         reader.readAsDataURL(file);
       });
+    }
+
+    function readTextFile(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ""));
+        reader.onerror = () => reject(reader.error);
+        reader.readAsText(file);
+      });
+    }
+
+    function parseCsv(text) {
+      const rows = [];
+      let row = [];
+      let cell = "";
+      let inQuotes = false;
+
+      for (let index = 0; index < text.length; index += 1) {
+        const char = text[index];
+        const next = text[index + 1];
+
+        if (char === '"') {
+          if (inQuotes && next === '"') {
+            cell += '"';
+            index += 1;
+          } else {
+            inQuotes = !inQuotes;
+          }
+          continue;
+        }
+
+        if (char === "," && !inQuotes) {
+          row.push(cell);
+          cell = "";
+          continue;
+        }
+
+        if ((char === "\n" || char === "\r") && !inQuotes) {
+          if (char === "\r" && next === "\n") {
+            index += 1;
+          }
+          row.push(cell);
+          if (row.some((value) => value.trim())) {
+            rows.push(row);
+          }
+          row = [];
+          cell = "";
+          continue;
+        }
+
+        cell += char;
+      }
+
+      row.push(cell);
+      if (row.some((value) => value.trim())) {
+        rows.push(row);
+      }
+
+      return rows;
+    }
+
+    function normalizeCsvHeader(header) {
+      const key = String(header || "")
+        .replace(/^\uFEFF/, "")
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "");
+
+      const aliases = {
+        title: "title",
+        name: "title",
+        kind: "kind",
+        type: "kind",
+        body: "body",
+        text: "body",
+        content: "body",
+        note: "body",
+        template: "body",
+        tags: "tags",
+        tag: "tags",
+        image: "imageUrl",
+        imageurl: "imageUrl",
+        imageuri: "imageUrl",
+        url: "imageUrl",
+        link: "imageUrl"
+      };
+
+      return aliases[key] || key;
+    }
+
+    function normalizeCsvKind(value) {
+      const kind = String(value || "note").trim().toLowerCase();
+      if (kind === "template" || kind === "templates") return "template";
+      if (kind === "image" || kind === "images") return "image";
+      return "note";
+    }
+
+    function entriesFromCsv(text) {
+      const rows = parseCsv(text);
+      if (rows.length < 2) {
+        return { entries: [], skipped: rows.length };
+      }
+
+      const headers = rows[0].map(normalizeCsvHeader);
+      const now = new Date().toISOString();
+      const entries = [];
+      let skipped = 0;
+
+      rows.slice(1).forEach((row) => {
+        const record = {};
+        headers.forEach((header, index) => {
+          if (header) {
+            record[header] = String(row[index] || "").trim();
+          }
+        });
+
+        if (!record.title) {
+          skipped += 1;
+          return;
+        }
+
+        entries.push({
+          id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${entries.length}`,
+          title: record.title,
+          kind: normalizeCsvKind(record.kind),
+          body: record.body || "",
+          tags: normalizeCsvTags(record.tags),
+          imageUrl: record.imageUrl || "",
+          createdAt: now
+        });
+      });
+
+      return { entries, skipped };
+    }
+
+    function openCsvDialog() {
+      if (!state.isAdmin) {
+        showToast("Admin access is required to import CSV files.");
+        return;
+      }
+
+      els.csvForm.reset();
+      if (typeof els.csvDialog.showModal === "function") {
+        els.csvDialog.showModal();
+      } else {
+        els.csvDialog.setAttribute("open", "");
+      }
+    }
+
+    function closeCsvDialog() {
+      els.csvForm.reset();
+      els.csvDialog.close();
+    }
+
+    async function importCsvEntries(event) {
+      event.preventDefault();
+      if (!state.isAdmin) {
+        showToast("Admin access is required to import CSV files.");
+        return;
+      }
+
+      const file = els.csvFile.files[0];
+      if (!file) {
+        showToast("Choose a CSV file first.");
+        return;
+      }
+
+      els.importCsv.disabled = true;
+
+      try {
+        const text = await readTextFile(file);
+        const { entries, skipped } = entriesFromCsv(text);
+
+        if (!entries.length) {
+          showToast("No valid CSV rows found. Each row needs a title.", 5000);
+          return;
+        }
+
+        if (state.firebaseReady && state.fire && state.db) {
+          await Promise.all(entries.map((entry) => state.fire.addDoc(
+            state.fire.collection(state.db, APP_CONFIG.collectionName),
+            {
+              title: entry.title,
+              kind: entry.kind,
+              body: entry.body,
+              tags: entry.tags,
+              imageUrl: entry.imageUrl,
+              createdAt: state.fire.serverTimestamp(),
+              createdBy: state.currentUser ? state.currentUser.email : "local-admin",
+              importedAt: state.fire.serverTimestamp()
+            }
+          )));
+        } else {
+          state.entries = [...entries, ...state.entries];
+          persistLocalEntries();
+          render();
+        }
+
+        closeCsvDialog();
+        showToast(`Imported ${entries.length} entries${skipped ? `, skipped ${skipped}` : ""}.`, 6500);
+      } catch (error) {
+        console.warn("CSV import failed", error);
+        showToast("CSV import failed. Check the file format.", 6500);
+      } finally {
+        els.importCsv.disabled = false;
+      }
     }
 
     async function saveEntry(event) {
@@ -1594,6 +1872,7 @@
         }
 
         closeEntryDialog();
+        resetEntryForm();
         showToast(wasEditing ? "Entry updated." : "Entry saved.");
       } catch (error) {
         console.warn("Could not save entry", error);
@@ -1671,9 +1950,14 @@
       els.signInButton.addEventListener("click", signIn);
       els.signOutButton.addEventListener("click", signOut);
       els.addButton.addEventListener("click", () => openEntryDialog());
+      els.csvButton.addEventListener("click", openCsvDialog);
       els.closeDialog.addEventListener("click", closeEntryDialog);
       els.cancelEntry.addEventListener("click", closeEntryDialog);
       els.entryForm.addEventListener("submit", saveEntry);
+      els.entryBody.addEventListener("input", resizeEntryBody);
+      els.closeCsvDialog.addEventListener("click", closeCsvDialog);
+      els.cancelCsvImport.addEventListener("click", closeCsvDialog);
+      els.csvForm.addEventListener("submit", importCsvEntries);
 
       els.searchForm.addEventListener("submit", (event) => {
         event.preventDefault();

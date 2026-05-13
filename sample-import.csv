@@ -1,0 +1,5 @@
+title,kind,body,tags,imageUrl
+Bank transfer reminder,template,"Hi {{name}},
+
+Please send the bank transfer reference once payment is complete. I will confirm it as soon as it appears on our side.",bank;payment;transfer,
+Bank account notes,note,"Use this entry for bank name, account number, transfer instructions, deposit notes, and payment verification reminders.",bank;account;payment,
