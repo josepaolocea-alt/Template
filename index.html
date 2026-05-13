@@ -1953,6 +1953,28 @@
     </div>
   </dialog>
 
+  <dialog class="modal" id="deleteDialog">
+    <div class="modal-head">
+      <h2 class="modal-title">Delete entry</h2>
+      <button class="icon-button" type="button" id="closeDeleteDialog" aria-label="Close delete confirmation">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <div class="entry-form">
+      <div class="source-pill">
+        <strong id="deleteEntryTitle">Delete this entry?</strong><br />
+        <span>This cannot be undone.</span>
+      </div>
+      <div class="modal-foot">
+        <button class="button ghost" type="button" id="cancelDelete">Cancel</button>
+        <button class="button primary" type="button" id="confirmDelete">
+          <i data-lucide="trash-2"></i>
+          <span>Delete entry</span>
+        </button>
+      </div>
+    </div>
+  </dialog>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script type="module">
@@ -2037,6 +2059,7 @@
       db: null,
       auth: null,
       provider: null,
+      pendingDeleteId: "",
       entriesUnsubscribe: null,
       entriesMode: ""
     };
@@ -2090,6 +2113,11 @@
       imageDialogTitle: document.querySelector("#imageDialogTitle"),
       imageDialogImg: document.querySelector("#imageDialogImg"),
       closeImageDialog: document.querySelector("#closeImageDialog"),
+      deleteDialog: document.querySelector("#deleteDialog"),
+      closeDeleteDialog: document.querySelector("#closeDeleteDialog"),
+      cancelDelete: document.querySelector("#cancelDelete"),
+      confirmDelete: document.querySelector("#confirmDelete"),
+      deleteEntryTitle: document.querySelector("#deleteEntryTitle"),
       toast: document.querySelector("#toast")
     };
 
@@ -3128,7 +3156,7 @@
       }
     }
 
-    async function deleteEntry(id) {
+    function openDeleteDialog(id) {
       if (!state.isAdmin) {
         showToast("Admin access is required to delete entries.");
         return;
@@ -3140,9 +3168,33 @@
         return;
       }
 
-      const confirmed = window.confirm(`Delete "${entry.title || "this entry"}"? This cannot be undone.`);
-      if (!confirmed) return;
+      state.pendingDeleteId = id;
+      els.deleteEntryTitle.textContent = `Delete "${entry.title || "this entry"}"?`;
 
+      if (typeof els.deleteDialog.showModal === "function") {
+        els.deleteDialog.showModal();
+      } else {
+        els.deleteDialog.setAttribute("open", "");
+      }
+    }
+
+    function closeDeleteDialog() {
+      state.pendingDeleteId = "";
+      els.deleteDialog.close();
+      els.confirmDelete.disabled = false;
+    }
+
+    async function confirmDeleteEntry() {
+      const id = state.pendingDeleteId;
+      if (!id) return;
+
+      if (!state.isAdmin) {
+        closeDeleteDialog();
+        showToast("Admin access is required to delete entries.");
+        return;
+      }
+
+      els.confirmDelete.disabled = true;
       try {
         if (state.firebaseReady && state.fire && state.db) {
           await state.fire.deleteDoc(state.fire.doc(state.db, APP_CONFIG.collectionName, id));
@@ -3152,11 +3204,14 @@
           render();
         }
 
+        closeDeleteDialog();
         showToast("Entry deleted.");
       } catch (error) {
         console.warn("Could not delete entry", error);
         const code = error && error.code ? ` (${error.code})` : "";
         showToast(`Could not delete this entry${code}.`, 6500);
+      } finally {
+        els.confirmDelete.disabled = false;
       }
     }
 
@@ -3296,6 +3351,14 @@
           closeImageDialog();
         }
       });
+      els.closeDeleteDialog.addEventListener("click", closeDeleteDialog);
+      els.cancelDelete.addEventListener("click", closeDeleteDialog);
+      els.confirmDelete.addEventListener("click", confirmDeleteEntry);
+      els.deleteDialog.addEventListener("click", (event) => {
+        if (event.target === els.deleteDialog) {
+          closeDeleteDialog();
+        }
+      });
 
       els.searchForm.addEventListener("submit", (event) => {
         event.preventDefault();
@@ -3361,7 +3424,7 @@
         }
 
         if (target.dataset.action === "delete") {
-          deleteEntry(target.dataset.id);
+          openDeleteDialog(target.dataset.id);
         }
 
         if (target.dataset.action === "copy") {
