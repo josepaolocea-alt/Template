@@ -3387,6 +3387,9 @@
       els.filterButtons.forEach((button) => {
         button.addEventListener("click", () => {
           state.kind = button.dataset.kind;
+          state.query = "";
+          state.tagFilter = "";
+          els.searchInput.value = "";
           syncFilterButtons();
           renderResults();
         });
