@@ -1364,8 +1364,8 @@
         authMod.onAuthStateChanged(state.auth, (user) => {
           state.currentUser = user;
           const userEmail = user && user.email ? user.email.toLowerCase() : "";
-          const adminEmails = APP_CONFIG.adminEmails.map((paxifox06@gmail.com) => email.toLowerCase());
-          state.isAdmin = Boolean(userEmail && adminEmails.includes(paxifox06@gmail.com));
+          const adminEmails = APP_CONFIG.adminEmails.map((email) => email.toLowerCase());
+          state.isAdmin = Boolean(userEmail && adminEmails.includes(userEmail));
           updateAuthUI();
 
           if (user && !state.isAdmin) {
