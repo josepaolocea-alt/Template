@@ -887,6 +887,11 @@
             <strong id="sourceName">Local demo</strong><br />
             <span id="sourceDetail">Add Firebase config when you are ready to sync online.</span>
           </div>
+
+          <div class="source-pill">
+            <strong id="authStatusTitle">Not signed in</strong><br />
+            <span id="authStatusDetail">Sign in with the admin Google account to add data.</span>
+          </div>
         </aside>
 
         <section class="results-panel">
@@ -1070,6 +1075,8 @@
       adminState: document.querySelector("#adminState"),
       sourceName: document.querySelector("#sourceName"),
       sourceDetail: document.querySelector("#sourceDetail"),
+      authStatusTitle: document.querySelector("#authStatusTitle"),
+      authStatusDetail: document.querySelector("#authStatusDetail"),
       entryDialog: document.querySelector("#entryDialog"),
       closeDialog: document.querySelector("#closeDialog"),
       cancelEntry: document.querySelector("#cancelEntry"),
@@ -1158,7 +1165,9 @@
         "auth/unauthorized-domain": "Add this website domain in Firebase Authentication authorized domains.",
         "auth/popup-blocked": "Popup was blocked. Use redirect sign-in instead.",
         "auth/popup-closed-by-user": "The sign-in popup was closed before finishing.",
-        "auth/network-request-failed": "Network error while contacting Firebase."
+        "auth/network-request-failed": "Network error while contacting Firebase.",
+        "auth/invalid-api-key": "Firebase API key is invalid.",
+        "auth/app-not-authorized": "This app domain is not authorized for Firebase Auth."
       };
 
       return messages[code] || `Sign in failed${code ? `: ${code}` : "."}`;
@@ -1328,6 +1337,21 @@
         els.signOutButton.hidden = false;
       }
 
+      if (state.currentUser) {
+        els.authStatusTitle.textContent = state.isAdmin ? "Signed in as admin" : "Signed in";
+        els.authStatusDetail.textContent = state.isAdmin
+          ? `${state.currentUser.email} can add data.`
+          : `${state.currentUser.email} is not in adminEmails.`;
+      } else if (state.firebaseReady) {
+        els.authStatusTitle.textContent = "Not signed in";
+        els.authStatusDetail.textContent = "Click Sign in and choose your admin Google account.";
+      } else {
+        els.authStatusTitle.textContent = state.isAdmin ? "Local admin" : "Not signed in";
+        els.authStatusDetail.textContent = state.isAdmin
+          ? "Local prototype admin mode is active."
+          : "Firebase is not ready yet.";
+      }
+
       renderStats();
     }
 
@@ -1375,6 +1399,8 @@
 
         authMod.getRedirectResult(state.auth).catch((error) => {
           console.warn("Redirect sign in failed", error);
+          els.authStatusTitle.textContent = "Redirect sign-in failed";
+          els.authStatusDetail.textContent = authErrorMessage(error);
           showToast(authErrorMessage(error), 6500);
         });
 
@@ -1520,11 +1546,20 @@
 
       try {
         const authMod = await import("https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js");
+        els.authStatusTitle.textContent = "Opening Google sign-in";
+        els.authStatusDetail.textContent = "Complete the Google popup to continue.";
         showToast("Opening Google sign-in...", 6500);
-        await authMod.signInWithRedirect(state.auth, state.provider);
+        await authMod.signInWithPopup(state.auth, state.provider);
       } catch (error) {
         console.warn("Sign in failed", error);
+        els.authStatusTitle.textContent = "Sign-in failed";
+        els.authStatusDetail.textContent = authErrorMessage(error);
         showToast(authErrorMessage(error), 6500);
+
+        if (error && error.code === "auth/popup-blocked") {
+          const authMod = await import("https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js");
+          await authMod.signInWithRedirect(state.auth, state.provider);
+        }
       }
     }
 
