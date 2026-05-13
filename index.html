@@ -778,6 +778,8 @@
       overflow: hidden;
       border: 1px solid var(--line);
       background: var(--bg-2);
+      padding: 0;
+      cursor: zoom-in;
       transition: transform var(--motion-mid) var(--ease-spring), border-color var(--motion-mid) ease;
     }
 
@@ -929,6 +931,24 @@
       color: var(--text);
       box-shadow: var(--shadow);
       padding: 0;
+    }
+
+    .image-dialog {
+      width: min(980px, calc(100% - 24px));
+    }
+
+    .image-dialog-body {
+      padding: 16px;
+      background: var(--bg);
+    }
+
+    .image-dialog-body img {
+      width: 100%;
+      max-height: 78vh;
+      display: block;
+      object-fit: contain;
+      border: 1px solid var(--line);
+      background: #000;
     }
 
     .modal[open] {
@@ -1908,6 +1928,18 @@
     </form>
   </dialog>
 
+  <dialog class="modal image-dialog" id="imageDialog">
+    <div class="modal-head">
+      <h2 class="modal-title" id="imageDialogTitle">Image preview</h2>
+      <button class="icon-button" type="button" id="closeImageDialog" aria-label="Close image preview">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <div class="image-dialog-body">
+      <img id="imageDialogImg" src="" alt="" />
+    </div>
+  </dialog>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script type="module">
@@ -2037,6 +2069,10 @@
       csvForm: document.querySelector("#csvForm"),
       csvFile: document.querySelector("#csvFile"),
       importCsv: document.querySelector("#importCsv"),
+      imageDialog: document.querySelector("#imageDialog"),
+      imageDialogTitle: document.querySelector("#imageDialogTitle"),
+      imageDialogImg: document.querySelector("#imageDialogImg"),
+      closeImageDialog: document.querySelector("#closeImageDialog"),
       toast: document.querySelector("#toast")
     };
 
@@ -2274,9 +2310,9 @@
           </button>
         ` : "";
         const image = entry.imageUrl ? `
-          <a class="result-image" href="${escapeHtml(entry.imageUrl)}" target="_blank" rel="noreferrer" aria-label="Open image for ${escapeHtml(entry.title)}">
+          <button class="result-image" type="button" data-action="preview-image" data-id="${escapeHtml(entry.id)}" aria-label="Preview image for ${escapeHtml(entry.title)}">
             <img src="${escapeHtml(entry.imageUrl)}" alt="${escapeHtml(entry.title)}" loading="lazy" />
-          </a>
+          </button>
         ` : "";
 
         const body = entry.body ? `<p class="result-text">${escapeHtml(entry.body)}</p>` : `<p class="result-text">Image reference saved without text.</p>`;
@@ -2684,6 +2720,30 @@
       els.csvDialog.close();
     }
 
+    function openImageDialog(entryId) {
+      const entry = state.entries.find((item) => item.id === entryId);
+      if (!entry || !entry.imageUrl) {
+        showToast("Image could not be found.");
+        return;
+      }
+
+      els.imageDialogTitle.textContent = entry.title || "Image preview";
+      els.imageDialogImg.src = entry.imageUrl;
+      els.imageDialogImg.alt = entry.title || "Image preview";
+
+      if (typeof els.imageDialog.showModal === "function") {
+        els.imageDialog.showModal();
+      } else {
+        els.imageDialog.setAttribute("open", "");
+      }
+    }
+
+    function closeImageDialog() {
+      els.imageDialog.close();
+      els.imageDialogImg.src = "";
+      els.imageDialogImg.alt = "";
+    }
+
     async function importCsvEntries(event) {
       event.preventDefault();
       if (!state.isAdmin) {
@@ -2964,6 +3024,12 @@
       els.closeCsvDialog.addEventListener("click", closeCsvDialog);
       els.cancelCsvImport.addEventListener("click", closeCsvDialog);
       els.csvForm.addEventListener("submit", importCsvEntries);
+      els.closeImageDialog.addEventListener("click", closeImageDialog);
+      els.imageDialog.addEventListener("click", (event) => {
+        if (event.target === els.imageDialog) {
+          closeImageDialog();
+        }
+      });
 
       els.searchForm.addEventListener("submit", (event) => {
         event.preventDefault();
@@ -3021,6 +3087,10 @@
 
         if (target.dataset.action === "copy") {
           copyEntry(target.dataset.id);
+        }
+
+        if (target.dataset.action === "preview-image") {
+          openImageDialog(target.dataset.id);
         }
 
         if (target.dataset.action === "tag") {
