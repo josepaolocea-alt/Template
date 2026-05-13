@@ -788,6 +788,16 @@
       border-color: color-mix(in srgb, var(--accent-blue) 40%, var(--line));
     }
 
+    .kind-template {
+      color: var(--accent-warm);
+      border-color: color-mix(in srgb, var(--accent-warm) 40%, var(--line));
+    }
+
+    .kind-note {
+      color: var(--accent-blue);
+      border-color: color-mix(in srgb, var(--accent-blue) 40%, var(--line));
+    }
+
     .interaction-ripple {
       position: absolute;
       left: var(--x);
@@ -1772,6 +1782,7 @@
 
       els.resultsList.innerHTML = rows.map(({ entry }, index) => {
         const tags = normalizeTags(entry.tags);
+        const kindClass = String(entry.kind || "note").toLowerCase().replace(/[^a-z0-9-]/g, "");
         const adminActions = state.isAdmin ? `
           <button class="icon-button tiny-button" type="button" data-action="edit" data-id="${escapeHtml(entry.id)}" aria-label="Edit entry">
             <i data-lucide="pencil"></i>
@@ -1793,7 +1804,7 @@
                 <div>
                   <h2>${escapeHtml(entry.title)}</h2>
                   <div class="tag-row" aria-label="Entry metadata">
-                    <span class="tag kind">${escapeHtml(entry.kind || "note")}</span>
+                    <span class="tag kind kind-${escapeHtml(kindClass)}">${escapeHtml(entry.kind || "note")}</span>
                     <span class="tag">${escapeHtml(formatDate(entry.createdAt))}</span>
                   </div>
                 </div>
