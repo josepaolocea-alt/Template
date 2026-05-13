@@ -31,6 +31,10 @@
       --motion-fast: 170ms;
       --motion-mid: 320ms;
       --motion-slow: 680ms;
+      --pointer-x: 50vw;
+      --pointer-y: 50vh;
+      --cursor-x: 50vw;
+      --cursor-y: 50vh;
       --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
       --font-mono: "SF Mono", "Cascadia Code", "Roboto Mono", Consolas, monospace;
       font-family: var(--font-ui);
@@ -84,6 +88,87 @@
       font-weight: 400;
       overflow-x: hidden;
       animation: pageIn var(--motion-slow) var(--ease-out) both;
+    }
+
+    main {
+      position: relative;
+      z-index: 1;
+    }
+
+    .pointer-field {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+      opacity: 0.95;
+    }
+
+    .pointer-field::before,
+    .pointer-field::after {
+      content: "";
+      position: absolute;
+      inset: -24px;
+      background-image: radial-gradient(circle, color-mix(in srgb, var(--muted) 34%, transparent) 1px, transparent 1.7px);
+      background-size: 22px 22px;
+      background-position: center;
+    }
+
+    .pointer-field::before {
+      opacity: 0.12;
+      mask-image: linear-gradient(to bottom, transparent, #000 12%, #000 82%, transparent);
+    }
+
+    .pointer-field::after {
+      opacity: 0;
+      background-image: radial-gradient(circle, color-mix(in srgb, var(--accent) 72%, transparent) 1px, transparent 1.75px);
+      background-size: 18px 18px;
+      mask-image: radial-gradient(190px circle at var(--pointer-x) var(--pointer-y), #000 0%, #000 38%, transparent 72%);
+      transition: opacity var(--motion-mid) ease;
+    }
+
+    .has-pointer .pointer-field::after {
+      opacity: 0.42;
+    }
+
+    .cursor-mark {
+      position: fixed;
+      left: var(--cursor-x);
+      top: var(--cursor-y);
+      pointer-events: none;
+      border-radius: 999px;
+      transform: translate(-50%, -50%);
+      opacity: 0;
+      transition: opacity var(--motion-mid) ease, width var(--motion-mid) var(--ease-spring), height var(--motion-mid) var(--ease-spring);
+    }
+
+    .cursor-mark-core {
+      width: 6px;
+      height: 6px;
+      background: var(--accent);
+      box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 44%, transparent);
+    }
+
+    .cursor-mark-ring {
+      width: 34px;
+      height: 34px;
+      border: 1px solid color-mix(in srgb, var(--accent) 42%, transparent);
+      background:
+        radial-gradient(circle at center, color-mix(in srgb, var(--accent) 10%, transparent), transparent 62%);
+    }
+
+    .has-pointer .cursor-mark {
+      opacity: 1;
+    }
+
+    .pointer-pressing .cursor-mark-core {
+      width: 9px;
+      height: 9px;
+    }
+
+    .pointer-pressing .cursor-mark-ring {
+      width: 24px;
+      height: 24px;
     }
 
     button,
@@ -1139,6 +1224,16 @@
         scroll-behavior: auto !important;
         transition-duration: 1ms !important;
       }
+
+      .pointer-field {
+        display: none;
+      }
+    }
+
+    @media (pointer: coarse) {
+      .pointer-field {
+        display: none;
+      }
     }
 
     @media (max-width: 860px) {
@@ -1218,6 +1313,11 @@
   </style>
 </head>
 <body>
+  <div class="pointer-field" aria-hidden="true">
+    <span class="cursor-mark cursor-mark-ring"></span>
+    <span class="cursor-mark cursor-mark-core"></span>
+  </div>
+
   <header class="topbar">
     <div class="app-shell topbar-inner">
       <a class="brand" href="#" aria-label="PromptVault home">
@@ -2412,8 +2512,56 @@
       ripple.addEventListener("animationend", () => ripple.remove(), { once: true });
     }
 
+    function initPointerField() {
+      const canUsePointer = window.matchMedia("(pointer: fine)").matches;
+      const wantsMotion = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!canUsePointer || !wantsMotion) return;
+
+      const root = document.documentElement;
+      const pointer = {
+        x: window.innerWidth / 2,
+        y: window.innerHeight / 2,
+        currentX: window.innerWidth / 2,
+        currentY: window.innerHeight / 2,
+        frame: null
+      };
+
+      function setPositionVars() {
+        pointer.currentX += (pointer.x - pointer.currentX) * 0.18;
+        pointer.currentY += (pointer.y - pointer.currentY) * 0.18;
+        root.style.setProperty("--cursor-x", `${pointer.currentX}px`);
+        root.style.setProperty("--cursor-y", `${pointer.currentY}px`);
+
+        if (Math.abs(pointer.x - pointer.currentX) > 0.2 || Math.abs(pointer.y - pointer.currentY) > 0.2) {
+          pointer.frame = window.requestAnimationFrame(setPositionVars);
+        } else {
+          pointer.frame = null;
+        }
+      }
+
+      function movePointer(event) {
+        pointer.x = event.clientX;
+        pointer.y = event.clientY;
+        root.style.setProperty("--pointer-x", `${pointer.x}px`);
+        root.style.setProperty("--pointer-y", `${pointer.y}px`);
+        root.classList.add("has-pointer");
+
+        if (!pointer.frame) {
+          pointer.frame = window.requestAnimationFrame(setPositionVars);
+        }
+      }
+
+      window.addEventListener("pointermove", movePointer, { passive: true });
+      window.addEventListener("pointerdown", () => root.classList.add("pointer-pressing"), { passive: true });
+      window.addEventListener("pointerup", () => root.classList.remove("pointer-pressing"), { passive: true });
+      window.addEventListener("pointerleave", () => {
+        root.classList.remove("has-pointer", "pointer-pressing");
+      }, { passive: true });
+    }
+
     function wireEvents() {
       document.addEventListener("pointerdown", addInteractionRipple);
+      initPointerField();
 
       els.themeToggle.addEventListener("click", () => {
         const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
