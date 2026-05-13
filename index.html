@@ -1771,10 +1771,9 @@
         </div>
 
         <div class="quick-row" aria-label="Quick searches">
-          <button class="chip quick-search" type="button" data-query="proposal template"><i data-lucide="file-text"></i>Proposal</button>
-          <button class="chip quick-search" type="button" data-query="client follow up"><i data-lucide="messages-square"></i>Follow up</button>
-          <button class="chip quick-search" type="button" data-query="invoice screenshot"><i data-lucide="image"></i>Invoice image</button>
-          <button class="chip quick-search" type="button" data-query="onboarding checklist"><i data-lucide="list-checks"></i>Onboarding</button>
+          <button class="chip quick-search" type="button" data-tag="voip"><i data-lucide="phone-call"></i>voip</button>
+          <button class="chip quick-search" type="button" data-tag="sms"><i data-lucide="message-square"></i>sms</button>
+          <button class="chip quick-search" type="button" data-tag="sms & voip"><i data-lucide="messages-square"></i>sms & voip</button>
         </div>
       </div>
     </section>
@@ -1867,7 +1866,7 @@
 
       <label>
         Tags
-        <input id="entryTags" name="tags" type="text" placeholder="proposal, client, invoice" />
+        <input id="entryTags" name="tags" type="text" placeholder="voip, sms, sms & voip" />
       </label>
 
       <div class="field-grid">
@@ -2023,6 +2022,7 @@
     const state = {
       entries: [],
       query: "",
+      tagFilter: "",
       kind: "all",
       sort: "relevance",
       editingId: null,
@@ -2230,9 +2230,11 @@
     function getVisibleEntries() {
       const rawQuery = state.query.trim();
       const terms = tokenize(rawQuery);
+      const activeTag = state.tagFilter.trim().toLowerCase();
       let rows = state.entries
         .filter((entry) => state.isAdmin || entry.kind === "template")
         .filter((entry) => state.kind === "all" || entry.kind === state.kind)
+        .filter((entry) => !activeTag || normalizeTags(entry.tags).some((tag) => tag.toLowerCase() === activeTag))
         .map((entry) => ({
           entry,
           score: scoreEntry(entry, terms, rawQuery)
@@ -3209,18 +3211,22 @@
       els.searchForm.addEventListener("submit", (event) => {
         event.preventDefault();
         state.query = els.searchInput.value;
+        state.tagFilter = "";
         renderResults();
       });
 
       els.searchInput.addEventListener("input", () => {
         state.query = els.searchInput.value;
+        state.tagFilter = "";
         renderResults();
       });
 
       els.quickSearches.forEach((button) => {
         button.addEventListener("click", () => {
-          els.searchInput.value = button.dataset.query || "";
+          const tag = button.dataset.tag || "";
+          els.searchInput.value = tag;
           state.query = els.searchInput.value;
+          state.tagFilter = tag.toLowerCase();
           els.searchInput.focus();
           renderResults();
         });
@@ -3280,6 +3286,7 @@
         if (target.dataset.action === "tag") {
           els.searchInput.value = target.dataset.tag || "";
           state.query = els.searchInput.value;
+          state.tagFilter = state.query.toLowerCase();
           renderResults();
           window.scrollTo({ top: 0, behavior: "smooth" });
         }
