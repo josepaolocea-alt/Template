@@ -1749,6 +1749,10 @@
           <i data-lucide="upload"></i>
           <span class="optional">Import CSV</span>
         </button>
+        <button class="button ghost" id="exportButton" type="button" hidden>
+          <i data-lucide="download"></i>
+          <span class="optional">Export all</span>
+        </button>
       </div>
     </div>
   </header>
@@ -2043,6 +2047,7 @@
       signOutButton: document.querySelector("#signOutButton"),
       addButton: document.querySelector("#addButton"),
       csvButton: document.querySelector("#csvButton"),
+      exportButton: document.querySelector("#exportButton"),
       searchForm: document.querySelector("#searchForm"),
       searchInput: document.querySelector("#searchInput"),
       quickSearches: document.querySelectorAll(".quick-search"),
@@ -2322,6 +2327,9 @@
           <button class="icon-button tiny-button" type="button" data-action="edit" data-id="${escapeHtml(entry.id)}" aria-label="Edit entry">
             <i data-lucide="pencil"></i>
           </button>
+          <button class="icon-button tiny-button" type="button" data-action="delete" data-id="${escapeHtml(entry.id)}" aria-label="Delete entry">
+            <i data-lucide="trash-2"></i>
+          </button>
         ` : "";
         const attachmentActions = entry.attachmentUrl ? `
           <button class="icon-button tiny-button" type="button" data-action="download-file" data-id="${escapeHtml(entry.id)}" aria-label="Download attachment for ${escapeHtml(entry.title)}">
@@ -2382,6 +2390,7 @@
     function updateAuthUI() {
       els.addButton.hidden = !state.isAdmin;
       els.csvButton.hidden = !state.isAdmin;
+      els.exportButton.hidden = !state.isAdmin;
       els.signOutButton.hidden = !state.currentUser && !state.isAdmin;
       els.signInButton.hidden = state.isAdmin && !state.firebaseReady;
 
@@ -2809,6 +2818,53 @@
       return { entries, skipped };
     }
 
+    function csvCell(value) {
+      const text = Array.isArray(value)
+        ? value.join("; ")
+        : String(value || "");
+      return `"${text.replaceAll('"', '""')}"`;
+    }
+
+    function exportAllEntries() {
+      if (!state.isAdmin) {
+        showToast("Admin access is required to export data.");
+        return;
+      }
+
+      if (!state.entries.length) {
+        showToast("There are no entries to export.");
+        return;
+      }
+
+      const headers = ["id", "title", "kind", "body", "tags", "imageUrl", "attachmentUrl", "attachmentName", "createdAt"];
+      const rows = state.entries.map((entry) => [
+        entry.id,
+        entry.title,
+        entry.kind,
+        entry.body,
+        normalizeTags(entry.tags),
+        entry.imageUrl,
+        entry.attachmentUrl,
+        entry.attachmentName,
+        entry.createdAt && typeof entry.createdAt.toDate === "function" ? entry.createdAt.toDate().toISOString() : entry.createdAt
+      ]);
+      const csv = [
+        headers.join(","),
+        ...rows.map((row) => row.map(csvCell).join(","))
+      ].join("\r\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const date = new Date().toISOString().slice(0, 10);
+      link.href = url;
+      link.download = `chatjpgc-export-${date}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      showToast(`Exported ${state.entries.length} entries.`);
+    }
+
     function openCsvDialog() {
       if (!state.isAdmin) {
         showToast("Admin access is required to import CSV files.");
@@ -3072,6 +3128,38 @@
       }
     }
 
+    async function deleteEntry(id) {
+      if (!state.isAdmin) {
+        showToast("Admin access is required to delete entries.");
+        return;
+      }
+
+      const entry = state.entries.find((item) => item.id === id);
+      if (!entry) {
+        showToast("That entry could not be found.");
+        return;
+      }
+
+      const confirmed = window.confirm(`Delete "${entry.title || "this entry"}"? This cannot be undone.`);
+      if (!confirmed) return;
+
+      try {
+        if (state.firebaseReady && state.fire && state.db) {
+          await state.fire.deleteDoc(state.fire.doc(state.db, APP_CONFIG.collectionName, id));
+        } else {
+          state.entries = state.entries.filter((item) => item.id !== id);
+          persistLocalEntries();
+          render();
+        }
+
+        showToast("Entry deleted.");
+      } catch (error) {
+        console.warn("Could not delete entry", error);
+        const code = error && error.code ? ` (${error.code})` : "";
+        showToast(`Could not delete this entry${code}.`, 6500);
+      }
+    }
+
     async function downloadAttachment(id) {
       const entry = state.entries.find((item) => item.id === id);
       if (!entry) {
@@ -3194,6 +3282,7 @@
       els.signOutButton.addEventListener("click", signOut);
       els.addButton.addEventListener("click", () => openEntryDialog());
       els.csvButton.addEventListener("click", openCsvDialog);
+      els.exportButton.addEventListener("click", exportAllEntries);
       els.closeDialog.addEventListener("click", closeEntryDialog);
       els.cancelEntry.addEventListener("click", closeEntryDialog);
       els.entryForm.addEventListener("submit", saveEntry);
@@ -3269,6 +3358,10 @@
 
         if (target.dataset.action === "edit") {
           openEntryDialog(target.dataset.id);
+        }
+
+        if (target.dataset.action === "delete") {
+          deleteEntry(target.dataset.id);
         }
 
         if (target.dataset.action === "copy") {
