@@ -1885,6 +1885,16 @@
         <span>No image selected</span>
       </div>
 
+      <label>
+        Attachment URL
+        <input id="entryAttachmentUrl" name="attachmentUrl" type="url" placeholder="Paste a public PDF, document, or file link" />
+      </label>
+
+      <div class="source-pill" id="attachmentPreview">
+        <strong>No attachment</strong><br />
+        <span>Paste a PDF or document link to show a download button on this entry.</span>
+      </div>
+
       <div class="modal-foot">
         <button class="button ghost" type="button" id="cancelEntry">Cancel</button>
         <button class="button primary" type="submit" id="saveEntry">
@@ -1910,7 +1920,7 @@
 
       <div class="source-pill">
         <strong>CSV columns</strong><br />
-        <span>title, kind, body, tags, imageUrl</span>
+        <span>title, kind, body, tags, imageUrl, attachmentUrl, attachmentName</span>
       </div>
 
       <div class="source-pill">
@@ -2061,6 +2071,8 @@
       entryImageUrl: document.querySelector("#entryImageUrl"),
       entryImageFile: document.querySelector("#entryImageFile"),
       imagePreview: document.querySelector("#imagePreview"),
+      entryAttachmentUrl: document.querySelector("#entryAttachmentUrl"),
+      attachmentPreview: document.querySelector("#attachmentPreview"),
       saveEntry: document.querySelector("#saveEntry"),
       saveEntryLabel: document.querySelector("#saveEntryLabel"),
       csvDialog: document.querySelector("#csvDialog"),
@@ -2309,6 +2321,14 @@
             <i data-lucide="pencil"></i>
           </button>
         ` : "";
+        const attachmentActions = entry.attachmentUrl ? `
+          <button class="icon-button tiny-button" type="button" data-action="download-file" data-id="${escapeHtml(entry.id)}" aria-label="Download attachment for ${escapeHtml(entry.title)}">
+            <i data-lucide="download"></i>
+          </button>
+        ` : "";
+        const attachmentTag = entry.attachmentUrl
+          ? `<span class="tag">${escapeHtml(attachmentDisplayName(entry))}</span>`
+          : "";
         const image = entry.imageUrl ? `
           <button class="result-image" type="button" data-action="preview-image" data-id="${escapeHtml(entry.id)}" aria-label="Preview image for ${escapeHtml(entry.title)}">
             <img src="${escapeHtml(entry.imageUrl)}" alt="${escapeHtml(entry.title)}" loading="lazy" />
@@ -2327,10 +2347,12 @@
                   <div class="tag-row" aria-label="Entry metadata">
                     <span class="tag kind kind-${escapeHtml(kindClass)}">${escapeHtml(entry.kind || "note")}</span>
                     <span class="tag">${escapeHtml(formatDate(entry.createdAt))}</span>
+                    ${attachmentTag}
                   </div>
                 </div>
                 <div class="result-actions">
                   ${adminActions}
+                  ${attachmentActions}
                   <button class="icon-button tiny-button" type="button" data-action="copy" data-id="${escapeHtml(entry.id)}" aria-label="Copy text">
                     <i data-lucide="copy"></i>
                   </button>
@@ -2424,6 +2446,11 @@
             body: data.body || "",
             tags: normalizeTags(data.tags),
             imageUrl: data.imageUrl || "",
+            attachmentUrl: data.attachmentUrl || "",
+            attachmentPath: data.attachmentPath || "",
+            attachmentName: data.attachmentName || "",
+            attachmentType: data.attachmentType || "",
+            attachmentSize: Number(data.attachmentSize || 0),
             createdAt: data.createdAt || ""
           };
         });
@@ -2509,9 +2536,11 @@
         els.entryBody.value = entry.body || "";
         els.entryTags.value = normalizeTags(entry.tags).join(", ");
         els.entryImageUrl.value = entry.imageUrl || "";
+        els.entryAttachmentUrl.value = entry.attachmentUrl || "";
       }
 
       renderImagePreview(entry ? entry.imageUrl : "");
+      renderAttachmentPreview(entry);
       window.requestAnimationFrame(resizeEntryBody);
       if (typeof els.entryDialog.showModal === "function") {
         els.entryDialog.showModal();
@@ -2542,6 +2571,7 @@
       els.entryBody.style.height = "";
       els.entryBody.style.overflowY = "hidden";
       renderImagePreview("");
+      renderAttachmentPreview(null);
       window.requestAnimationFrame(resizeEntryBody);
     }
 
@@ -2554,7 +2584,54 @@
       els.imagePreview.innerHTML = "<span>No image selected</span>";
     }
 
+    function formatBytes(bytes = 0) {
+      const size = Number(bytes || 0);
+      if (!size) return "";
+      const units = ["B", "KB", "MB", "GB"];
+      const power = Math.min(Math.floor(Math.log(size) / Math.log(1024)), units.length - 1);
+      const value = size / (1024 ** power);
+      return `${value.toFixed(value >= 10 || power === 0 ? 0 : 1)} ${units[power]}`;
+    }
+
+    function externalAttachmentName(url = "") {
+      try {
+        const parsed = new URL(url);
+        const name = decodeURIComponent(parsed.pathname.split("/").filter(Boolean).pop() || "");
+        return name || "Linked attachment";
+      } catch (error) {
+        return "Linked attachment";
+      }
+    }
+
+    function attachmentDisplayName(entry = {}) {
+      return entry.attachmentName || externalAttachmentName(entry.attachmentUrl || "") || "Attachment";
+    }
+
+    function renderAttachmentPreview(entryOrFile) {
+      if (!entryOrFile || (!entryOrFile.name && !entryOrFile.attachmentUrl)) {
+        els.attachmentPreview.innerHTML = `
+          <strong>No attachment</strong><br />
+          <span>Paste a PDF or document link to show a download button on this entry.</span>
+        `;
+        return;
+      }
+
+      const name = entryOrFile.name || attachmentDisplayName(entryOrFile);
+      const size = entryOrFile.size || entryOrFile.attachmentSize || 0;
+      const type = entryOrFile.type || entryOrFile.attachmentType || "External link";
+      const detail = [type, formatBytes(size)].filter(Boolean).join(" - ");
+
+      els.attachmentPreview.innerHTML = `
+        <strong>${escapeHtml(name)}</strong><br />
+        <span>${escapeHtml(detail || "Ready to download")}</span>
+      `;
+    }
+
     function readImageFile(file) {
+      return readFileAsDataUrl(file);
+    }
+
+    function readFileAsDataUrl(file) {
       return new Promise((resolve, reject) => {
         if (!file) {
           resolve("");
@@ -2566,6 +2643,30 @@
         reader.onerror = () => reject(reader.error);
         reader.readAsDataURL(file);
       });
+    }
+
+    async function getAttachmentFields(existingEntry, attachmentUrl) {
+      const cleanUrl = String(attachmentUrl || "").trim();
+
+      if (cleanUrl) {
+        return {
+          attachmentUrl: cleanUrl,
+          attachmentPath: "",
+          attachmentName: existingEntry && existingEntry.attachmentUrl === cleanUrl
+            ? existingEntry.attachmentName || externalAttachmentName(cleanUrl)
+            : externalAttachmentName(cleanUrl),
+          attachmentType: existingEntry && existingEntry.attachmentUrl === cleanUrl ? existingEntry.attachmentType || "" : "",
+          attachmentSize: existingEntry && existingEntry.attachmentUrl === cleanUrl ? existingEntry.attachmentSize || 0 : 0
+        };
+      }
+
+      return {
+        attachmentUrl: "",
+        attachmentPath: "",
+        attachmentName: "",
+        attachmentType: "",
+        attachmentSize: 0
+      };
     }
 
     function readTextFile(file) {
@@ -2694,6 +2795,11 @@
           body: record.body || "",
           tags: normalizeCsvTags(record.tags),
           imageUrl: record.imageUrl || "",
+          attachmentUrl: record.attachmentUrl || "",
+          attachmentPath: "",
+          attachmentName: record.attachmentName || (record.attachmentUrl ? externalAttachmentName(record.attachmentUrl) : ""),
+          attachmentType: "",
+          attachmentSize: 0,
           createdAt: now
         });
       });
@@ -2777,6 +2883,11 @@
               body: entry.body,
               tags: entry.tags,
               imageUrl: entry.imageUrl,
+              attachmentUrl: entry.attachmentUrl,
+              attachmentPath: entry.attachmentPath,
+              attachmentName: entry.attachmentName,
+              attachmentType: entry.attachmentType,
+              attachmentSize: entry.attachmentSize,
               createdAt: state.fire.serverTimestamp(),
               createdBy: state.currentUser ? state.currentUser.email : "local-admin",
               importedAt: state.fire.serverTimestamp()
@@ -2809,59 +2920,75 @@
 
       try {
         const wasEditing = Boolean(state.editingId);
-        const file = els.entryImageFile.files[0];
-        const fileDataUrl = file ? await readImageFile(file) : "";
-        const imageUrl = els.entryImageUrl.value.trim() || fileDataUrl;
-        const now = new Date().toISOString();
-        const entry = {
-          id: state.editingId || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())),
-          title: els.entryTitle.value.trim(),
-          kind: els.entryKind.value,
-          body: els.entryBody.value.trim(),
-          tags: normalizeTags(els.entryTags.value),
-          imageUrl,
-          createdAt: now
-        };
+        const existingEntry = state.editingId
+          ? state.entries.find((item) => item.id === state.editingId)
+          : null;
+        const title = els.entryTitle.value.trim();
+        const kind = els.entryKind.value;
+        const body = els.entryBody.value.trim();
+        const tags = normalizeTags(els.entryTags.value);
+        const imageFile = els.entryImageFile.files[0];
 
-        if (!entry.title) {
+        if (!title) {
           showToast("Title is required.");
           return;
         }
 
+        const fileDataUrl = imageFile ? await readImageFile(imageFile) : "";
+        const imageUrl = fileDataUrl || els.entryImageUrl.value.trim();
+        const now = new Date().toISOString();
+
         if (state.firebaseReady && state.fire && state.db) {
+          const docRef = state.editingId
+            ? state.fire.doc(state.db, APP_CONFIG.collectionName, state.editingId)
+            : state.fire.doc(state.fire.collection(state.db, APP_CONFIG.collectionName));
+          const attachmentFields = await getAttachmentFields(
+            existingEntry,
+            els.entryAttachmentUrl.value
+          );
           const payload = {
-            title: entry.title,
-            kind: entry.kind,
-            body: entry.body,
-            tags: entry.tags,
-            imageUrl: entry.imageUrl,
+            title,
+            kind,
+            body,
+            tags,
+            imageUrl,
+            ...attachmentFields,
             updatedAt: state.fire.serverTimestamp(),
             updatedBy: state.currentUser ? state.currentUser.email : "local-admin"
           };
 
           if (state.editingId) {
-            await state.fire.updateDoc(
-              state.fire.doc(state.db, APP_CONFIG.collectionName, state.editingId),
-              payload
-            );
+            await state.fire.updateDoc(docRef, payload);
           } else {
-            await state.fire.addDoc(state.fire.collection(state.db, APP_CONFIG.collectionName), {
+            await state.fire.setDoc(docRef, {
               ...payload,
               createdAt: state.fire.serverTimestamp(),
               createdBy: state.currentUser ? state.currentUser.email : "local-admin"
             });
           }
         } else {
+          const localId = state.editingId || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
+          const attachmentFields = await getAttachmentFields(
+            existingEntry,
+            els.entryAttachmentUrl.value
+          );
+          const entry = {
+            id: localId,
+            title,
+            kind,
+            body,
+            tags,
+            imageUrl,
+            ...attachmentFields,
+            createdAt: existingEntry ? existingEntry.createdAt : now
+          };
+
           if (state.editingId) {
             state.entries = state.entries.map((item) => {
               if (item.id !== state.editingId) return item;
               return {
                 ...item,
-                title: entry.title,
-                kind: entry.kind,
-                body: entry.body,
-                tags: entry.tags,
-                imageUrl: entry.imageUrl,
+                ...entry,
                 updatedAt: now
               };
             });
@@ -2877,7 +3004,8 @@
         showToast(wasEditing ? "Entry updated." : "Entry saved.");
       } catch (error) {
         console.warn("Could not save entry", error);
-        showToast("Could not save this entry.");
+        const code = error && error.code ? ` (${error.code})` : "";
+        showToast(`Could not save this entry${code}.`, 6500);
       } finally {
         els.saveEntry.disabled = false;
       }
@@ -2939,6 +3067,53 @@
         showToast("Copied.");
       } catch (error) {
         showToast("Copy failed.");
+      }
+    }
+
+    async function downloadAttachment(id) {
+      const entry = state.entries.find((item) => item.id === id);
+      if (!entry) {
+        showToast("Attachment could not be found.");
+        return;
+      }
+
+      try {
+        let url = entry.attachmentUrl || "";
+
+        if (!url) {
+          showToast("Attachment link could not be found.");
+          return;
+        }
+
+        const name = attachmentDisplayName(entry);
+        let downloadUrl = url;
+        let objectUrl = "";
+
+        try {
+          const response = await fetch(url);
+          if (response.ok) {
+            const blob = await response.blob();
+            objectUrl = URL.createObjectURL(blob);
+            downloadUrl = objectUrl;
+          }
+        } catch (error) {
+          console.warn("Direct file download fallback used", error);
+        }
+
+        const link = document.createElement("a");
+        link.href = downloadUrl;
+        link.download = name;
+        link.rel = "noopener";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        if (objectUrl) {
+          window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+        }
+      } catch (error) {
+        console.warn("Attachment download failed", error);
+        showToast("Could not download this attachment.");
       }
     }
 
@@ -3077,6 +3252,11 @@
         renderImagePreview(await readImageFile(file));
       });
 
+      els.entryAttachmentUrl.addEventListener("input", () => {
+        const url = els.entryAttachmentUrl.value.trim();
+        renderAttachmentPreview(url ? { attachmentUrl: url, attachmentName: externalAttachmentName(url) } : null);
+      });
+
       els.resultsList.addEventListener("click", (event) => {
         const target = event.target.closest("[data-action]");
         if (!target) return;
@@ -3087,6 +3267,10 @@
 
         if (target.dataset.action === "copy") {
           copyEntry(target.dataset.id);
+        }
+
+        if (target.dataset.action === "download-file") {
+          downloadAttachment(target.dataset.id);
         }
 
         if (target.dataset.action === "preview-image") {

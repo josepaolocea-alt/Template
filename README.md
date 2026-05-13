@@ -33,22 +33,24 @@ The app reads and writes documents in the `knowledge` collection. Each document 
   "body": "Template or note text",
   "tags": ["proposal", "client"],
   "imageUrl": "https://example.com/image.jpg",
+  "attachmentUrl": "https://example.com/file.pdf",
+  "attachmentName": "file.pdf",
   "createdAt": "server timestamp",
   "createdBy": "admin@example.com"
 }
 ```
 
-For production images, Firebase Storage is better than storing uploaded base64 images in Firestore.
+PDF/document attachments use links only, so Firebase Storage and the Blaze plan are not required. Upload the file somewhere else, then paste the public or shareable URL into `attachmentUrl`.
 
 ## CSV import
 
 Admin users can import templates and notes from a CSV file. Use these columns:
 
 ```csv
-title,kind,body,tags,imageUrl
+title,kind,body,tags,imageUrl,attachmentUrl,attachmentName
 ```
 
-`kind` can be `template` or `note`. Tags can be separated with commas, semicolons, or pipes. See `sample-import.csv` for a working example.
+`kind` can be `template`, `note`, or `image`. Tags can be separated with commas, semicolons, or pipes. CSV import supports attachment links through `attachmentUrl`. See `sample-import.csv` for a working example.
 
 ## Publish on GitHub
 
