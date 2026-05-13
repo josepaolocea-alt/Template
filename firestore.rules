@@ -10,7 +10,7 @@ service cloud.firestore {
     }
 
     match /knowledge/{entryId} {
-      allow read: if true;
+      allow read: if isAdmin() || resource.data.kind == "template";
       allow create, update, delete: if isAdmin();
     }
   }

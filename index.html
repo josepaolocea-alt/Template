@@ -1495,7 +1495,9 @@
       fire: null,
       db: null,
       auth: null,
-      provider: null
+      provider: null,
+      entriesUnsubscribe: null,
+      entriesMode: ""
     };
 
     const els = {
@@ -1686,6 +1688,7 @@
       const rawQuery = state.query.trim();
       const terms = tokenize(rawQuery);
       let rows = state.entries
+        .filter((entry) => state.isAdmin || entry.kind === "template")
         .filter((entry) => state.kind === "all" || entry.kind === state.kind)
         .map((entry) => ({
           entry,
@@ -1713,8 +1716,22 @@
 
     function renderStats() {
       els.totalCount.textContent = state.entries.length;
-      els.imageCount.textContent = state.entries.filter((entry) => Boolean(entry.imageUrl || entry.kind === "image")).length;
+      els.imageCount.textContent = state.isAdmin
+        ? state.entries.filter((entry) => Boolean(entry.imageUrl || entry.kind === "image")).length
+        : 0;
       els.adminState.textContent = state.isAdmin ? "Admin" : "Viewer";
+    }
+
+    function syncFilterButtons() {
+      if (!state.isAdmin && state.kind !== "all" && state.kind !== "template") {
+        state.kind = "all";
+      }
+
+      els.filterButtons.forEach((button) => {
+        const kind = button.dataset.kind;
+        button.hidden = !state.isAdmin && (kind === "note" || kind === "image");
+        button.classList.toggle("active", kind === state.kind);
+      });
     }
 
     function renderResults() {
@@ -1722,13 +1739,15 @@
       const hasQuery = Boolean(state.query.trim());
       const canBrowseLibrary = Boolean(state.currentUser || state.isAdmin);
       const shouldShowWorkspace = hasQuery || canBrowseLibrary;
-      const kindLabel = state.kind === "all" ? "entries" : `${state.kind} entries`;
+      const kindLabel = state.isAdmin
+        ? (state.kind === "all" ? "entries" : `${state.kind} entries`)
+        : "templates";
 
       els.workspace.hidden = !shouldShowWorkspace;
 
       if (!shouldShowWorkspace) {
         els.resultsHeading.textContent = "Search results";
-        els.resultsMeta.textContent = "Type a word or phrase to show matching entries.";
+        els.resultsMeta.textContent = "Type a word or phrase to show matching templates.";
         els.resultsList.innerHTML = "";
         refreshIcons();
         return;
@@ -1743,7 +1762,7 @@
             <div>
               <i data-lucide="search-x"></i>
               <strong>No matches yet</strong>
-              <span>Try another phrase or add a new entry from admin mode.</span>
+              <span>${state.isAdmin ? "Try another phrase or add a new entry from admin mode." : "Try another phrase to search public templates."}</span>
             </div>
           </div>
         `;
@@ -1799,6 +1818,7 @@
 
     function render() {
       renderStats();
+      syncFilterButtons();
       renderResults();
       refreshIcons();
     }
@@ -1863,11 +1883,57 @@
         state.firebaseReady = true;
         setSource("Firebase", "Reading from Firestore collection: " + APP_CONFIG.collectionName);
 
+        const snapshotToEntries = (snapshot) => snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            title: data.title || "Untitled",
+            kind: data.kind || "note",
+            body: data.body || "",
+            tags: normalizeTags(data.tags),
+            imageUrl: data.imageUrl || "",
+            createdAt: data.createdAt || ""
+          };
+        });
+
+        const subscribeEntries = () => {
+          const mode = state.isAdmin ? "admin" : "templates";
+          if (state.entriesUnsubscribe && state.entriesMode === mode) {
+            return;
+          }
+
+          if (state.entriesUnsubscribe) {
+            state.entriesUnsubscribe();
+          }
+
+          state.entriesMode = mode;
+          const knowledgeRef = fireMod.collection(state.db, APP_CONFIG.collectionName);
+          const knowledgeQuery = state.isAdmin
+            ? fireMod.query(knowledgeRef, fireMod.orderBy("createdAt", "desc"))
+            : fireMod.query(knowledgeRef, fireMod.where("kind", "==", "template"));
+
+          state.entriesUnsubscribe = fireMod.onSnapshot(knowledgeQuery, (snapshot) => {
+            state.entries = snapshotToEntries(snapshot);
+            render();
+          }, (error) => {
+            console.warn("Firestore read failed", error);
+            state.entries = [];
+            render();
+            setSource("Firebase", state.isAdmin
+              ? "Admin data could not load. Check Firestore rules."
+              : "Templates could not load. Check Firestore rules.");
+            showToast("Firebase could not load entries.", 6500);
+          });
+        };
+
+        subscribeEntries();
+
         authMod.onAuthStateChanged(state.auth, (user) => {
           state.currentUser = user;
           const userEmail = user && user.email ? user.email.toLowerCase() : "";
           const adminEmails = APP_CONFIG.adminEmails.map((email) => email.toLowerCase());
           state.isAdmin = Boolean(userEmail && adminEmails.includes(userEmail));
+          subscribeEntries();
           updateAuthUI();
 
           if (user && !state.isAdmin) {
@@ -1880,28 +1946,6 @@
           els.authStatusTitle.textContent = "Redirect sign-in failed";
           els.authStatusDetail.textContent = authErrorMessage(error);
           showToast(authErrorMessage(error), 6500);
-        });
-
-        const knowledgeRef = fireMod.collection(state.db, APP_CONFIG.collectionName);
-        const knowledgeQuery = fireMod.query(knowledgeRef, fireMod.orderBy("createdAt", "desc"));
-        fireMod.onSnapshot(knowledgeQuery, (snapshot) => {
-          state.entries = snapshot.docs.map((doc) => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              title: data.title || "Untitled",
-              kind: data.kind || "note",
-              body: data.body || "",
-              tags: normalizeTags(data.tags),
-              imageUrl: data.imageUrl || "",
-              createdAt: data.createdAt || ""
-            };
-          });
-          render();
-        }, (error) => {
-          console.warn("Firestore read failed", error);
-          setSource("Local fallback", "Firestore could not load, so local demo data is showing.");
-          showToast("Firebase could not load. Showing local data.");
         });
       } catch (error) {
         console.warn("Firebase init failed", error);
@@ -2400,7 +2444,7 @@
       els.filterButtons.forEach((button) => {
         button.addEventListener("click", () => {
           state.kind = button.dataset.kind;
-          els.filterButtons.forEach((item) => item.classList.toggle("active", item === button));
+          syncFilterButtons();
           renderResults();
         });
       });
