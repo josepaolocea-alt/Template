@@ -2266,7 +2266,11 @@
       const activeTag = state.tagFilter.trim().toLowerCase();
       let rows = state.entries
         .filter((entry) => state.isAdmin || entry.kind === "template")
-        .filter((entry) => state.kind === "all" || entry.kind === state.kind)
+        .filter((entry) => {
+          if (state.kind === "all") return true;
+          if (state.kind === "image") return entry.kind === "image" || Boolean(entry.imageUrl);
+          return entry.kind === state.kind;
+        })
         .filter((entry) => !activeTag || normalizeTags(entry.tags).some((tag) => tag.toLowerCase() === activeTag))
         .map((entry) => ({
           entry,
