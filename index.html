@@ -857,7 +857,7 @@
       </div>
     </section>
 
-    <section class="workspace app-shell" aria-label="Knowledge results">
+    <section class="workspace app-shell" id="workspace" aria-label="Knowledge results" hidden>
       <div class="workspace-grid">
         <aside class="side-panel">
           <p class="panel-label">Library</p>
@@ -917,7 +917,7 @@
 
   <dialog class="modal" id="entryDialog">
     <div class="modal-head">
-      <h2 class="modal-title">Add data</h2>
+      <h2 class="modal-title" id="entryDialogTitle">Add data</h2>
       <button class="icon-button" type="button" id="closeDialog" aria-label="Close">
         <i data-lucide="x"></i>
       </button>
@@ -967,7 +967,7 @@
         <button class="button ghost" type="button" id="cancelEntry">Cancel</button>
         <button class="button primary" type="submit" id="saveEntry">
           <i data-lucide="save"></i>
-          <span>Save entry</span>
+          <span id="saveEntryLabel">Save entry</span>
         </button>
       </div>
     </form>
@@ -1048,6 +1048,7 @@
       query: "",
       kind: "all",
       sort: "relevance",
+      editingId: null,
       isAdmin: false,
       currentUser: null,
       firebaseReady: false,
@@ -1067,6 +1068,7 @@
       quickSearches: document.querySelectorAll(".quick-search"),
       filterButtons: document.querySelectorAll("[data-kind]"),
       sortSelect: document.querySelector("#sortSelect"),
+      workspace: document.querySelector("#workspace"),
       resultsList: document.querySelector("#resultsList"),
       resultsHeading: document.querySelector("#resultsHeading"),
       resultsMeta: document.querySelector("#resultsMeta"),
@@ -1078,6 +1080,7 @@
       authStatusTitle: document.querySelector("#authStatusTitle"),
       authStatusDetail: document.querySelector("#authStatusDetail"),
       entryDialog: document.querySelector("#entryDialog"),
+      entryDialogTitle: document.querySelector("#entryDialogTitle"),
       closeDialog: document.querySelector("#closeDialog"),
       cancelEntry: document.querySelector("#cancelEntry"),
       entryForm: document.querySelector("#entryForm"),
@@ -1089,6 +1092,7 @@
       entryImageFile: document.querySelector("#entryImageFile"),
       imagePreview: document.querySelector("#imagePreview"),
       saveEntry: document.querySelector("#saveEntry"),
+      saveEntryLabel: document.querySelector("#saveEntryLabel"),
       toast: document.querySelector("#toast")
     };
 
@@ -1264,7 +1268,17 @@
       const hasQuery = Boolean(state.query.trim());
       const kindLabel = state.kind === "all" ? "entries" : `${state.kind} entries`;
 
-      els.resultsHeading.textContent = hasQuery ? `Results for "${state.query.trim()}"` : "Recent entries";
+      els.workspace.hidden = !hasQuery;
+
+      if (!hasQuery) {
+        els.resultsHeading.textContent = "Search results";
+        els.resultsMeta.textContent = "Type a word or phrase to show matching entries.";
+        els.resultsList.innerHTML = "";
+        refreshIcons();
+        return;
+      }
+
+      els.resultsHeading.textContent = `Results for "${state.query.trim()}"`;
       els.resultsMeta.textContent = `${rows.length} ${kindLabel} found`;
 
       if (!rows.length) {
@@ -1283,6 +1297,11 @@
 
       els.resultsList.innerHTML = rows.map(({ entry }) => {
         const tags = normalizeTags(entry.tags);
+        const adminActions = state.isAdmin ? `
+          <button class="icon-button tiny-button" type="button" data-action="edit" data-id="${escapeHtml(entry.id)}" aria-label="Edit entry">
+            <i data-lucide="pencil"></i>
+          </button>
+        ` : "";
         const image = entry.imageUrl ? `
           <a class="result-image" href="${escapeHtml(entry.imageUrl)}" target="_blank" rel="noreferrer" aria-label="Open image for ${escapeHtml(entry.title)}">
             <img src="${escapeHtml(entry.imageUrl)}" alt="${escapeHtml(entry.title)}" loading="lazy" />
@@ -1304,6 +1323,7 @@
                   </div>
                 </div>
                 <div class="result-actions">
+                  ${adminActions}
                   <button class="icon-button tiny-button" type="button" data-action="copy" data-id="${escapeHtml(entry.id)}" aria-label="Copy text">
                     <i data-lucide="copy"></i>
                   </button>
@@ -1353,6 +1373,7 @@
       }
 
       renderStats();
+      renderResults();
     }
 
     function setSource(name, detail) {
@@ -1432,14 +1453,32 @@
       }
     }
 
-    function openEntryDialog() {
+    function openEntryDialog(entryId = null) {
       if (!state.isAdmin) {
         showToast("Admin access is required to add data.");
         return;
       }
 
+      const entry = entryId ? state.entries.find((item) => item.id === entryId) : null;
+      if (entryId && !entry) {
+        showToast("That entry could not be found.");
+        return;
+      }
+
+      state.editingId = entry ? entry.id : null;
       els.entryForm.reset();
-      renderImagePreview("");
+      els.entryDialogTitle.textContent = entry ? "Edit data" : "Add data";
+      els.saveEntryLabel.textContent = entry ? "Update entry" : "Save entry";
+
+      if (entry) {
+        els.entryTitle.value = entry.title || "";
+        els.entryKind.value = entry.kind || "note";
+        els.entryBody.value = entry.body || "";
+        els.entryTags.value = normalizeTags(entry.tags).join(", ");
+        els.entryImageUrl.value = entry.imageUrl || "";
+      }
+
+      renderImagePreview(entry ? entry.imageUrl : "");
       if (typeof els.entryDialog.showModal === "function") {
         els.entryDialog.showModal();
       } else {
@@ -1449,6 +1488,9 @@
     }
 
     function closeEntryDialog() {
+      state.editingId = null;
+      els.entryDialogTitle.textContent = "Add data";
+      els.saveEntryLabel.textContent = "Save entry";
       els.entryDialog.close();
     }
 
@@ -1485,12 +1527,13 @@
       els.saveEntry.disabled = true;
 
       try {
+        const wasEditing = Boolean(state.editingId);
         const file = els.entryImageFile.files[0];
         const fileDataUrl = file ? await readImageFile(file) : "";
         const imageUrl = els.entryImageUrl.value.trim() || fileDataUrl;
         const now = new Date().toISOString();
         const entry = {
-          id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+          id: state.editingId || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())),
           title: els.entryTitle.value.trim(),
           kind: els.entryKind.value,
           body: els.entryBody.value.trim(),
@@ -1505,23 +1548,51 @@
         }
 
         if (state.firebaseReady && state.fire && state.db) {
-          await state.fire.addDoc(state.fire.collection(state.db, APP_CONFIG.collectionName), {
+          const payload = {
             title: entry.title,
             kind: entry.kind,
             body: entry.body,
             tags: entry.tags,
             imageUrl: entry.imageUrl,
-            createdAt: state.fire.serverTimestamp(),
-            createdBy: state.currentUser ? state.currentUser.email : "local-admin"
-          });
+            updatedAt: state.fire.serverTimestamp(),
+            updatedBy: state.currentUser ? state.currentUser.email : "local-admin"
+          };
+
+          if (state.editingId) {
+            await state.fire.updateDoc(
+              state.fire.doc(state.db, APP_CONFIG.collectionName, state.editingId),
+              payload
+            );
+          } else {
+            await state.fire.addDoc(state.fire.collection(state.db, APP_CONFIG.collectionName), {
+              ...payload,
+              createdAt: state.fire.serverTimestamp(),
+              createdBy: state.currentUser ? state.currentUser.email : "local-admin"
+            });
+          }
         } else {
-          state.entries = [entry, ...state.entries];
+          if (state.editingId) {
+            state.entries = state.entries.map((item) => {
+              if (item.id !== state.editingId) return item;
+              return {
+                ...item,
+                title: entry.title,
+                kind: entry.kind,
+                body: entry.body,
+                tags: entry.tags,
+                imageUrl: entry.imageUrl,
+                updatedAt: now
+              };
+            });
+          } else {
+            state.entries = [entry, ...state.entries];
+          }
           persistLocalEntries();
           render();
         }
 
         closeEntryDialog();
-        showToast("Entry saved.");
+        showToast(wasEditing ? "Entry updated." : "Entry saved.");
       } catch (error) {
         console.warn("Could not save entry", error);
         showToast("Could not save this entry.");
@@ -1651,6 +1722,10 @@
       els.resultsList.addEventListener("click", (event) => {
         const target = event.target.closest("[data-action]");
         if (!target) return;
+
+        if (target.dataset.action === "edit") {
+          openEntryDialog(target.dataset.id);
+        }
 
         if (target.dataset.action === "copy") {
           copyEntry(target.dataset.id);
