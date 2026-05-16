@@ -512,8 +512,21 @@
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
+      align-items: center;
       justify-content: center;
       margin-top: 16px;
+    }
+
+    .quick-row-icon {
+      display: inline-flex;
+      align-items: center;
+      color: var(--muted);
+    }
+
+    .quick-row-icon svg {
+      width: 18px;
+      height: 18px;
+      stroke-width: 2;
     }
 
     .quick-row .chip {
@@ -885,6 +898,11 @@
     .kind-note {
       color: var(--accent-blue);
       border-color: color-mix(in srgb, var(--accent-blue) 40%, var(--line));
+    }
+
+    .kind-process {
+      color: var(--accent);
+      border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
     }
 
     .interaction-ripple {
@@ -1623,7 +1641,8 @@
     .tag,
     .kind,
     .kind-template,
-    .kind-note {
+    .kind-note,
+    .kind-process {
       border-radius: 0;
       background: transparent;
     }
@@ -1634,6 +1653,10 @@
 
     .kind-note {
       color: var(--accent-blue);
+    }
+
+    .kind-process {
+      color: var(--accent);
     }
 
     input,
@@ -1815,6 +1838,7 @@
             <button class="chip active" type="button" data-kind="all"><i data-lucide="layout-grid"></i>All</button>
             <button class="chip" type="button" data-kind="template"><i data-lucide="copy-check"></i>Templates</button>
             <button class="chip" type="button" data-kind="note"><i data-lucide="notebook-tabs"></i>Notes</button>
+            <button class="chip" type="button" data-kind="process"><i data-lucide="workflow"></i>Process</button>
             <button class="chip" type="button" data-kind="image"><i data-lucide="image"></i>Images</button>
           </div>
 
@@ -1868,6 +1892,7 @@
           <select id="entryKind" name="kind">
             <option value="template">Template</option>
             <option value="note">Note</option>
+            <option value="process">Process</option>
             <option value="image">Image</option>
           </select>
         </label>
@@ -1938,7 +1963,7 @@
 
       <div class="source-pill">
         <strong>Kind values</strong><br />
-        <span>Use template or note. Tags can use commas, semicolons, or pipes.</span>
+        <span>Use template, note, process, or image. Tags can use commas, semicolons, or pipes.</span>
       </div>
 
       <div class="modal-foot">
@@ -2043,6 +2068,15 @@
         tags: ["onboarding", "project", "checklist", "workflow"],
         imageUrl: "",
         createdAt: "2026-05-05T08:45:00.000Z"
+      },
+      {
+        id: "seed-handoff-process",
+        title: "Client handoff process",
+        kind: "process",
+        body: "Step-by-step process for handing a finished project to the client.\n\n1. Confirm all deliverables are approved\n2. Package final files and access\n3. Record a short walkthrough\n4. Send the handoff summary\n5. Schedule a check-in one week later",
+        tags: ["handoff", "process", "client", "workflow"],
+        imageUrl: "",
+        createdAt: "2026-05-04T10:10:00.000Z"
       },
       {
         id: "seed-brand-board",
@@ -2321,7 +2355,7 @@
 
       els.filterButtons.forEach((button) => {
         const kind = button.dataset.kind;
-        button.hidden = !state.isAdmin && (kind === "note" || kind === "image");
+        button.hidden = !state.isAdmin && (kind === "note" || kind === "process" || kind === "image");
         button.classList.toggle("active", kind === state.kind);
       });
     }
@@ -2346,8 +2380,9 @@
 
       if (signature !== tagRowSignature) {
         tagRowSignature = signature;
-        els.quickRow.innerHTML = tags
-          .map((tag) => `<button class="chip quick-search" type="button" data-tag="${escapeHtml(tag)}"><i data-lucide="tag"></i>${escapeHtml(tag)}</button>`)
+        const tagIcon = `<span class="quick-row-icon" aria-hidden="true"><i data-lucide="tag"></i></span>`;
+        els.quickRow.innerHTML = tagIcon + tags
+          .map((tag) => `<button class="chip quick-search" type="button" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`)
           .join("");
         refreshIcons();
       }
@@ -2850,6 +2885,7 @@
       const kind = String(value || "note").trim().toLowerCase();
       if (kind === "template" || kind === "templates") return "template";
       if (kind === "image" || kind === "images") return "image";
+      if (kind === "process" || kind === "processes") return "process";
       return "note";
     }
 
