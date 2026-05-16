@@ -1329,6 +1329,20 @@
       mask-image: radial-gradient(170px circle at var(--pointer-x) var(--pointer-y), #000 0%, #000 26%, transparent 70%);
     }
 
+    /* Signed in: drop the mouse-following animation for a snappier feel.
+       Hover effects on buttons and result cards are pure CSS :hover, so they stay. */
+    .signed-in .pointer-field::after,
+    .signed-in .cursor-mark {
+      display: none;
+    }
+
+    .signed-in body {
+      background:
+        linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(180deg, var(--bg), var(--bg-2));
+      background-size: 100% 4px, 100% 100%;
+    }
+
     .topbar {
       border-top: 1px solid var(--line-strong);
       border-bottom: 1px solid var(--line-strong);
@@ -2420,6 +2434,7 @@
     }
 
     function updateAuthUI() {
+      document.documentElement.classList.toggle("signed-in", Boolean(state.currentUser));
       els.addButton.hidden = !state.isAdmin;
       els.csvButton.hidden = !state.isAdmin;
       els.exportButton.hidden = !state.isAdmin;
@@ -3309,6 +3324,7 @@
       }
 
       function movePointer(event) {
+        if (root.classList.contains("signed-in")) return;
         pointer.x = event.clientX;
         pointer.y = event.clientY;
         root.style.setProperty("--pointer-x", `${pointer.x}px`);
