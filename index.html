@@ -1788,11 +1788,7 @@
           </form>
         </div>
 
-        <div class="quick-row" aria-label="Quick searches">
-          <button class="chip quick-search" type="button" data-tag="voip"><i data-lucide="phone-call"></i>voip</button>
-          <button class="chip quick-search" type="button" data-tag="sms"><i data-lucide="message-square"></i>sms</button>
-          <button class="chip quick-search" type="button" data-tag="sms & voip"><i data-lucide="messages-square"></i>sms & voip</button>
-        </div>
+        <div class="quick-row" id="quickRow" aria-label="Tags"></div>
       </div>
     </section>
 
@@ -2087,7 +2083,7 @@
       exportButton: document.querySelector("#exportButton"),
       searchForm: document.querySelector("#searchForm"),
       searchInput: document.querySelector("#searchInput"),
-      quickSearches: document.querySelectorAll(".quick-search"),
+      quickRow: document.querySelector("#quickRow"),
       filterButtons: document.querySelectorAll("[data-kind]"),
       sortSelect: document.querySelector("#sortSelect"),
       workspace: document.querySelector("#workspace"),
@@ -2330,7 +2326,42 @@
       });
     }
 
+    function collectAllTags() {
+      const seen = new Map();
+      state.entries.forEach((entry) => {
+        normalizeTags(entry.tags).forEach((tag) => {
+          const key = tag.toLowerCase();
+          if (!seen.has(key)) seen.set(key, tag);
+        });
+      });
+      return [...seen.values()].sort((a, b) => a.localeCompare(b));
+    }
+
+    let tagRowSignature = null;
+
+    function renderTagRow() {
+      const tags = collectAllTags();
+      const signature = tags.join("|").toLowerCase();
+      const activeTag = state.tagFilter.trim().toLowerCase();
+
+      if (signature !== tagRowSignature) {
+        tagRowSignature = signature;
+        els.quickRow.innerHTML = tags
+          .map((tag) => `<button class="chip quick-search" type="button" data-tag="${escapeHtml(tag)}"><i data-lucide="tag"></i>${escapeHtml(tag)}</button>`)
+          .join("");
+        refreshIcons();
+      }
+
+      els.quickRow.hidden = tags.length === 0;
+
+      els.quickRow.querySelectorAll(".quick-search").forEach((button) => {
+        const isActive = Boolean(activeTag) && (button.dataset.tag || "").toLowerCase() === activeTag;
+        button.classList.toggle("active", isActive);
+      });
+    }
+
     function renderResults() {
+      renderTagRow();
       const rows = getVisibleEntries();
       const hasQuery = Boolean(state.query.trim());
       const canBrowseLibrary = Boolean(state.currentUser || state.isAdmin);
@@ -3393,15 +3424,24 @@
         renderResults();
       });
 
-      els.quickSearches.forEach((button) => {
-        button.addEventListener("click", () => {
-          const tag = button.dataset.tag || "";
+      els.quickRow.addEventListener("click", (event) => {
+        const button = event.target.closest(".quick-search");
+        if (!button) return;
+        const tag = button.dataset.tag || "";
+        const isActive = state.tagFilter && state.tagFilter === tag.toLowerCase();
+
+        if (isActive) {
+          els.searchInput.value = "";
+          state.query = "";
+          state.tagFilter = "";
+        } else {
           els.searchInput.value = tag;
-          state.query = els.searchInput.value;
+          state.query = tag;
           state.tagFilter = tag.toLowerCase();
-          els.searchInput.focus();
-          renderResults();
-        });
+        }
+
+        els.searchInput.focus();
+        renderResults();
       });
 
       els.filterButtons.forEach((button) => {
