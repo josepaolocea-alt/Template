@@ -52,6 +52,18 @@ title,kind,body,tags,imageUrl,attachmentUrl,attachmentName
 
 `kind` can be `template`, `note`, or `image`. Tags can be separated with commas, semicolons, or pipes. CSV import supports attachment links through `attachmentUrl`. See `sample-import.csv` for a working example.
 
+## AI content generation
+
+Admins can draft entry text with Claude using the "Generate with AI" button in
+the Add data dialog. The Anthropic API key is never placed in `index.html`; it
+lives in a small Cloudflare Worker (the `ai-worker/` folder) that the app calls.
+
+1. Follow `ai-worker/README.md` to install, add your Anthropic API key, and run
+   or deploy the Worker.
+2. Set `APP_CONFIG.aiWorkerUrl` in `index.html` to the Worker URL.
+3. Open the Add data dialog, fill in a title and tags, then click
+   `Generate with AI`. The button is hidden when `aiWorkerUrl` is empty.
+
 ## Publish on GitHub
 
 1. Push these files to a GitHub repo.

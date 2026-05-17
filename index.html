@@ -1066,6 +1066,25 @@
       line-height: 1.5;
     }
 
+    .ai-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: -4px;
+    }
+
+    .ai-hint {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 500;
+    }
+
+    #generateBody[aria-busy="true"] {
+      opacity: 0.7;
+      pointer-events: none;
+    }
+
     .image-preview {
       min-height: 138px;
       border: 1px dashed var(--line-strong);
@@ -1903,6 +1922,14 @@
         <textarea id="entryBody" name="body" placeholder="Paste the note, template, caption, or searchable details here."></textarea>
       </label>
 
+      <div class="ai-row" id="aiRow">
+        <button class="button ghost" type="button" id="generateBody">
+          <i data-lucide="sparkles"></i>
+          <span id="generateBodyLabel">Generate with AI</span>
+        </button>
+        <span class="ai-hint">Drafts Text from the title, type, and tags.</span>
+      </div>
+
       <label>
         Tags
         <input id="entryTags" name="tags" type="text" placeholder="voip, sms, sms & voip" />
@@ -2025,7 +2052,11 @@
       },
       collectionName: "knowledge",
       adminEmails: ["paxifox06@gmail.com"],
-      localAdminKey: "admin-demo"
+      localAdminKey: "admin-demo",
+      // URL of the PromptVault AI Worker. Leave empty to hide AI features.
+      // Local dev:  http://localhost:8787
+      // Deployed:   https://promptvault-ai.<your-subdomain>.workers.dev
+      aiWorkerUrl: ""
     };
 
     const STORAGE_KEY = "promptvault.entries.v1";
@@ -2139,6 +2170,9 @@
       entryTitle: document.querySelector("#entryTitle"),
       entryKind: document.querySelector("#entryKind"),
       entryBody: document.querySelector("#entryBody"),
+      aiRow: document.querySelector("#aiRow"),
+      generateBody: document.querySelector("#generateBody"),
+      generateBodyLabel: document.querySelector("#generateBodyLabel"),
       entryTags: document.querySelector("#entryTags"),
       entryImageUrl: document.querySelector("#entryImageUrl"),
       entryImageFile: document.querySelector("#entryImageFile"),
@@ -2688,6 +2722,51 @@
       els.entryBody.style.height = "auto";
       els.entryBody.style.height = `${els.entryBody.scrollHeight}px`;
       els.entryBody.style.overflowY = els.entryBody.scrollHeight > els.entryBody.clientHeight ? "auto" : "hidden";
+    }
+
+    async function generateEntryBody() {
+      if (!APP_CONFIG.aiWorkerUrl) {
+        showToast("Set APP_CONFIG.aiWorkerUrl to enable AI generation.");
+        return;
+      }
+
+      const title = els.entryTitle.value.trim();
+      const tags = els.entryTags.value.trim();
+      if (!title && !tags) {
+        showToast("Add a title or some tags first, then generate.");
+        return;
+      }
+
+      const button = els.generateBody;
+      const originalLabel = els.generateBodyLabel.textContent;
+      button.setAttribute("aria-busy", "true");
+      els.generateBodyLabel.textContent = "Generating...";
+
+      try {
+        const response = await fetch(`${APP_CONFIG.aiWorkerUrl.replace(/\/$/, "")}/generate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            kind: els.entryKind.value,
+            title,
+            tags
+          })
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.text) {
+          throw new Error(data.error || `Request failed (${response.status}).`);
+        }
+
+        els.entryBody.value = data.text;
+        resizeEntryBody();
+        showToast("Draft generated. Review and edit before saving.");
+      } catch (error) {
+        showToast(error && error.message ? error.message : "AI generation failed.");
+      } finally {
+        button.removeAttribute("aria-busy");
+        els.generateBodyLabel.textContent = originalLabel;
+      }
     }
 
     function resetEntryForm() {
@@ -3423,6 +3502,8 @@
       els.signInButton.addEventListener("click", signIn);
       els.signOutButton.addEventListener("click", signOut);
       els.addButton.addEventListener("click", () => openEntryDialog());
+      els.generateBody.addEventListener("click", generateEntryBody);
+      els.aiRow.hidden = !APP_CONFIG.aiWorkerUrl;
       els.csvButton.addEventListener("click", openCsvDialog);
       els.exportButton.addEventListener("click", exportAllEntries);
       els.closeDialog.addEventListener("click", closeEntryDialog);
