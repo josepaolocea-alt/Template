@@ -1066,12 +1066,16 @@
       line-height: 1.5;
     }
 
+    .ai-block {
+      display: grid;
+      gap: 10px;
+    }
+
     .ai-row {
       display: flex;
       align-items: center;
       gap: 10px;
       flex-wrap: wrap;
-      margin-top: -4px;
     }
 
     .ai-hint {
@@ -1922,12 +1926,18 @@
         <textarea id="entryBody" name="body" placeholder="Paste the note, template, caption, or searchable details here."></textarea>
       </label>
 
-      <div class="ai-row" id="aiRow">
-        <button class="button ghost" type="button" id="generateBody">
-          <i data-lucide="sparkles"></i>
-          <span id="generateBodyLabel">Generate with AI</span>
-        </button>
-        <span class="ai-hint">Drafts Text from the title, type, and tags.</span>
+      <div class="ai-block" id="aiRow">
+        <label>
+          AI instructions (optional)
+          <input id="entryInstructions" type="text" placeholder="e.g. a polite, short reply checking with the vendor about a delayed delivery" />
+        </label>
+        <div class="ai-row">
+          <button class="button ghost" type="button" id="generateBody">
+            <i data-lucide="sparkles"></i>
+            <span id="generateBodyLabel">Generate with AI</span>
+          </button>
+          <span class="ai-hint">Uses the title, type, tags, and your instructions.</span>
+        </div>
       </div>
 
       <label>
@@ -2169,6 +2179,7 @@
       entryKind: document.querySelector("#entryKind"),
       entryBody: document.querySelector("#entryBody"),
       aiRow: document.querySelector("#aiRow"),
+      entryInstructions: document.querySelector("#entryInstructions"),
       generateBody: document.querySelector("#generateBody"),
       generateBodyLabel: document.querySelector("#generateBodyLabel"),
       entryTags: document.querySelector("#entryTags"),
@@ -2730,8 +2741,9 @@
 
       const title = els.entryTitle.value.trim();
       const tags = els.entryTags.value.trim();
-      if (!title && !tags) {
-        showToast("Add a title or some tags first, then generate.");
+      const instructions = els.entryInstructions.value.trim();
+      if (!title && !tags && !instructions) {
+        showToast("Add a title, tags, or AI instructions first.");
         return;
       }
 
@@ -2747,7 +2759,8 @@
           body: JSON.stringify({
             kind: els.entryKind.value,
             title,
-            tags
+            tags,
+            instructions
           })
         });
 
