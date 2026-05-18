@@ -2,16 +2,22 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
     function isAdmin() {
-      return request.auth != null
-        && request.auth.token.email in [
-          "paxifox06@gmail.com"
-        ];
+      return isSignedIn() && request.auth.token.email in ["paxifox06@gmail.com", "jpgc06.2023@gmail.com"];
+    }
+
+    function isOwner() {
+      return isSignedIn() && request.auth.token.email == resource.data.createdBy;
     }
 
     match /knowledge/{entryId} {
-      allow read: if isAdmin() || resource.data.kind == "template";
-      allow create, update, delete: if isAdmin();
+      allow read: if isSignedIn() || resource.data.kind == "template";
+      allow create: if isAdmin() || (isSignedIn() && request.resource.data.createdBy == request.auth.token.email);
+      allow update, delete: if isAdmin() || isOwner();
     }
   }
 }

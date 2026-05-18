@@ -4,25 +4,29 @@ A static HTML app for searching personal notes, templates, and image references 
 
 ## Use it locally
 
-Open `index.html` in a browser. Dark mode is the default.
+Open `index.html` in a browser. Dark mode is the default. Visitors who are not
+signed in can search public templates. Signing in is required to add entries or
+to browse notes, processes, and images.
 
-For local admin mode, click `Sign in` and enter:
+## Sign-in and access
 
-```text
-admin-demo
-```
-
-Then `Add data` appears. This local admin key is only for the prototype. Use Firebase Auth and Firestore rules before sharing the app publicly.
+- **Admin** signs in with the Google account listed in `googleAllowedEmails`.
+  Any other Google account is rejected. Admins can manage every entry.
+- **Members** sign in with email and password (accounts created by the admin in
+  the Firebase console). Members can see all entries and add their own, but can
+  only edit or delete the entries they created.
+- Admin accounts are listed in `APP_CONFIG.adminEmails` and in `firestore.rules`.
 
 ## Connect Firebase
 
 1. Create a Firebase project.
-2. Enable Authentication with Google provider.
-3. Enable Firestore Database.
-4. Open `index.html`.
-5. Fill in `APP_CONFIG.firebase` with your Firebase web app config.
-6. Replace `you@example.com` in `adminEmails` with your admin email.
-7. Deploy the included `firestore.rules`, or copy the rule logic into Firebase Console.
+2. Enable Authentication with the Google and Email/Password providers.
+3. Add member accounts under Authentication > Users (email and password).
+4. Enable Firestore Database.
+5. Open `index.html`.
+6. Fill in `APP_CONFIG.firebase` with your Firebase web app config.
+7. Set `adminEmails`, `googleAllowedEmails`, and the emails in `firestore.rules`.
+8. Deploy the included `firestore.rules`, or copy the rule logic into Firebase Console.
 
 The app reads and writes documents in the `knowledge` collection. Each document can include:
 
@@ -54,12 +58,11 @@ title,kind,body,tags,imageUrl,attachmentUrl,attachmentName
 
 ## AI content generation
 
-Admins can draft entry text with Claude using the "Generate with AI" button in
-the Add data dialog. The Anthropic API key is never placed in `index.html`; it
-lives in a small Cloudflare Worker (the `ai-worker/` folder) that the app calls.
+Admins can draft entry text with AI using the "Generate with AI" button in the
+Add data dialog. The AI runs in a small Cloudflare Worker (the `ai-worker/`
+folder) using Cloudflare Workers AI — no API key and no billing required.
 
-1. Follow `ai-worker/README.md` to install, add your Anthropic API key, and run
-   or deploy the Worker.
+1. Follow `ai-worker/README.md` to install and deploy the Worker.
 2. Set `APP_CONFIG.aiWorkerUrl` in `index.html` to the Worker URL.
 3. Open the Add data dialog, fill in a title and tags, then click
    `Generate with AI`. The button is hidden when `aiWorkerUrl` is empty.

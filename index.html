@@ -2074,6 +2074,41 @@
     </div>
   </dialog>
 
+  <dialog class="modal" id="authDialog">
+    <div class="modal-head">
+      <h2 class="modal-title">Sign in</h2>
+      <button class="icon-button" type="button" id="closeAuthDialog" aria-label="Close sign-in">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <form class="entry-form" id="authForm">
+      <label>
+        Email
+        <input id="authEmail" name="authEmail" type="email" autocomplete="username" required placeholder="you@example.com" />
+      </label>
+      <label>
+        Password
+        <input id="authPassword" name="authPassword" type="password" autocomplete="current-password" required placeholder="Your password" />
+      </label>
+      <div class="modal-foot">
+        <button class="button primary" type="submit" id="authSubmit">
+          <i data-lucide="log-in"></i>
+          <span>Sign in</span>
+        </button>
+      </div>
+    </form>
+    <div class="source-pill">
+      <strong>Admin sign-in</strong><br />
+      <span>The Google option is only for the admin account. Everyone else uses email and password.</span>
+    </div>
+    <div class="modal-foot">
+      <button class="button ghost" type="button" id="googleSignInButton">
+        <i data-lucide="log-in"></i>
+        <span>Continue with Google</span>
+      </button>
+    </div>
+  </dialog>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script type="module">
@@ -2088,15 +2123,14 @@
         measurementId: "G-V96KPB3DDN"
       },
       collectionName: "knowledge",
-      adminEmails: ["paxifox06@gmail.com"],
-      localAdminKey: "admin-demo",
+      adminEmails: ["paxifox06@gmail.com", "jpgc06.2023@gmail.com"],
+      googleAllowedEmails: ["paxifox06@gmail.com"],
       // URL of the PromptVault AI Worker. Leave empty to hide AI features.
       aiWorkerUrl: "https://promptvault-ai.josepaolo-cea.workers.dev"
     };
 
     const STORAGE_KEY = "promptvault.entries.v1";
     const THEME_KEY = "promptvault.theme";
-    const LOCAL_ADMIN_KEY = "promptvault.localAdmin";
 
     const seedEntries = [
       {
@@ -2238,8 +2272,23 @@
       cancelDelete: document.querySelector("#cancelDelete"),
       confirmDelete: document.querySelector("#confirmDelete"),
       deleteEntryTitle: document.querySelector("#deleteEntryTitle"),
+      authDialog: document.querySelector("#authDialog"),
+      closeAuthDialog: document.querySelector("#closeAuthDialog"),
+      authForm: document.querySelector("#authForm"),
+      authEmail: document.querySelector("#authEmail"),
+      authPassword: document.querySelector("#authPassword"),
+      authSubmit: document.querySelector("#authSubmit"),
+      googleSignInButton: document.querySelector("#googleSignInButton"),
       toast: document.querySelector("#toast")
     };
+
+    function canManageEntry(entry) {
+      if (!entry) return false;
+      if (state.isAdmin) return true;
+      if (!state.currentUser) return false;
+      const owner = String(entry.createdBy || "").toLowerCase();
+      return Boolean(owner) && owner === String(state.currentUser.email || "").toLowerCase();
+    }
 
     function refreshIcons() {
       if (window.lucide) {
@@ -2317,13 +2366,19 @@
     function authErrorMessage(error) {
       const code = error && error.code ? error.code : "";
       const messages = {
-        "auth/operation-not-allowed": "Enable Google sign-in in Firebase Authentication.",
+        "auth/operation-not-allowed": "Enable this sign-in method in Firebase Authentication.",
         "auth/unauthorized-domain": "Add this website domain in Firebase Authentication authorized domains.",
         "auth/popup-blocked": "Popup was blocked. Use redirect sign-in instead.",
         "auth/popup-closed-by-user": "The sign-in popup was closed before finishing.",
         "auth/network-request-failed": "Network error while contacting Firebase.",
         "auth/invalid-api-key": "Firebase API key is invalid.",
-        "auth/app-not-authorized": "This app domain is not authorized for Firebase Auth."
+        "auth/app-not-authorized": "This app domain is not authorized for Firebase Auth.",
+        "auth/invalid-email": "That email address looks invalid.",
+        "auth/invalid-credential": "Email or password is incorrect.",
+        "auth/wrong-password": "Email or password is incorrect.",
+        "auth/user-not-found": "Email or password is incorrect.",
+        "auth/user-disabled": "This account has been disabled.",
+        "auth/too-many-requests": "Too many attempts. Wait a moment and try again."
       };
 
       return messages[code] || `Sign in failed${code ? `: ${code}` : "."}`;
@@ -2385,7 +2440,7 @@
       const terms = tokenize(rawQuery);
       const activeTag = state.tagFilter.trim().toLowerCase();
       let rows = state.entries
-        .filter((entry) => state.isAdmin || entry.kind === "template")
+        .filter((entry) => state.isAdmin || state.currentUser || entry.kind === "template")
         .filter((entry) => {
           if (state.kind === "all") return true;
           if (state.kind === "image") return entry.kind === "image" || Boolean(entry.imageUrl);
@@ -2418,20 +2473,21 @@
 
     function renderStats() {
       els.totalCount.textContent = state.entries.length;
-      els.imageCount.textContent = state.isAdmin
+      els.imageCount.textContent = state.currentUser || state.isAdmin
         ? state.entries.filter((entry) => Boolean(entry.imageUrl || entry.kind === "image")).length
         : 0;
-      els.adminState.textContent = state.isAdmin ? "Admin" : "Viewer";
+      els.adminState.textContent = state.isAdmin ? "Admin" : (state.currentUser ? "Member" : "Viewer");
     }
 
     function syncFilterButtons() {
-      if (!state.isAdmin && state.kind !== "all" && state.kind !== "template") {
+      const canSeeAll = Boolean(state.currentUser || state.isAdmin);
+      if (!canSeeAll && state.kind !== "all" && state.kind !== "template") {
         state.kind = "all";
       }
 
       els.filterButtons.forEach((button) => {
         const kind = button.dataset.kind;
-        button.hidden = !state.isAdmin && (kind === "note" || kind === "process" || kind === "image");
+        button.hidden = !canSeeAll && (kind === "note" || kind === "process" || kind === "image");
         button.classList.toggle("active", kind === state.kind);
       });
     }
@@ -2477,7 +2533,7 @@
       const hasQuery = Boolean(state.query.trim());
       const canBrowseLibrary = Boolean(state.currentUser || state.isAdmin);
       const shouldShowWorkspace = hasQuery || canBrowseLibrary;
-      const kindLabel = state.isAdmin
+      const kindLabel = (state.currentUser || state.isAdmin)
         ? (state.kind === "all" ? "entries" : `${state.kind} entries`)
         : "templates";
 
@@ -2500,7 +2556,7 @@
             <div>
               <i data-lucide="search-x"></i>
               <strong>No matches yet</strong>
-              <span>${state.isAdmin ? "Try another phrase or add a new entry from admin mode." : "Try another phrase to search public templates."}</span>
+              <span>${(state.currentUser || state.isAdmin) ? "Try another phrase or add a new entry." : "Try another phrase to search public templates."}</span>
             </div>
           </div>
         `;
@@ -2511,7 +2567,7 @@
       els.resultsList.innerHTML = rows.map(({ entry }, index) => {
         const tags = normalizeTags(entry.tags);
         const kindClass = String(entry.kind || "note").toLowerCase().replace(/[^a-z0-9-]/g, "");
-        const adminActions = state.isAdmin ? `
+        const adminActions = canManageEntry(entry) ? `
           <button class="icon-button tiny-button" type="button" data-action="edit" data-id="${escapeHtml(entry.id)}" aria-label="Edit entry">
             <i data-lucide="pencil"></i>
           </button>
@@ -2576,32 +2632,26 @@
     }
 
     function updateAuthUI() {
-      document.documentElement.classList.toggle("signed-in", Boolean(state.currentUser));
-      els.addButton.hidden = !state.isAdmin;
+      const signedIn = Boolean(state.currentUser);
+      document.documentElement.classList.toggle("signed-in", signedIn);
+      els.addButton.hidden = !signedIn;
       els.aiButton.hidden = !state.isAdmin || !APP_CONFIG.aiWorkerUrl;
       els.csvButton.hidden = !state.isAdmin;
       els.exportButton.hidden = !state.isAdmin;
-      els.signOutButton.hidden = !state.currentUser && !state.isAdmin;
-      els.signInButton.hidden = state.isAdmin && !state.firebaseReady;
+      els.signOutButton.hidden = !signedIn;
+      els.signInButton.hidden = signedIn;
 
-      if (state.firebaseReady && state.currentUser) {
-        els.signInButton.hidden = true;
-        els.signOutButton.hidden = false;
-      }
-
-      if (state.currentUser) {
+      if (signedIn) {
         els.authStatusTitle.textContent = state.isAdmin ? "Signed in as admin" : "Signed in";
         els.authStatusDetail.textContent = state.isAdmin
-          ? `${state.currentUser.email} can add data.`
-          : `${state.currentUser.email} is not in adminEmails.`;
+          ? `${state.currentUser.email} can manage every entry.`
+          : `${state.currentUser.email} can add and manage their own entries.`;
       } else if (state.firebaseReady) {
         els.authStatusTitle.textContent = "Not signed in";
-        els.authStatusDetail.textContent = "Click Sign in and choose your admin Google account.";
+        els.authStatusDetail.textContent = "Sign in to add entries and browse notes, processes, and images.";
       } else {
-        els.authStatusTitle.textContent = state.isAdmin ? "Local admin" : "Not signed in";
-        els.authStatusDetail.textContent = state.isAdmin
-          ? "Local prototype admin mode is active."
-          : "Firebase is not ready yet.";
+        els.authStatusTitle.textContent = "Not signed in";
+        els.authStatusDetail.textContent = "Firebase is not ready yet.";
       }
 
       renderStats();
@@ -2616,9 +2666,6 @@
     async function initFirebase() {
       if (!isFirebaseConfigured()) {
         setSource("Local demo", "Add Firebase config when you are ready to sync online.");
-        if (localStorage.getItem(LOCAL_ADMIN_KEY) === "true" || new URLSearchParams(location.search).get("admin") === "1") {
-          state.isAdmin = true;
-        }
         updateAuthUI();
         return;
       }
@@ -2652,12 +2699,13 @@
             attachmentName: data.attachmentName || "",
             attachmentType: data.attachmentType || "",
             attachmentSize: Number(data.attachmentSize || 0),
-            createdAt: data.createdAt || ""
+            createdAt: data.createdAt || "",
+            createdBy: data.createdBy || ""
           };
         });
 
         const subscribeEntries = () => {
-          const mode = state.isAdmin ? "admin" : "templates";
+          const mode = state.currentUser ? "all" : "templates";
           if (state.entriesUnsubscribe && state.entriesMode === mode) {
             return;
           }
@@ -2668,7 +2716,7 @@
 
           state.entriesMode = mode;
           const knowledgeRef = fireMod.collection(state.db, APP_CONFIG.collectionName);
-          const knowledgeQuery = state.isAdmin
+          const knowledgeQuery = state.currentUser
             ? fireMod.query(knowledgeRef, fireMod.orderBy("createdAt", "desc"))
             : fireMod.query(knowledgeRef, fireMod.where("kind", "==", "template"));
 
@@ -2679,8 +2727,8 @@
             console.warn("Firestore read failed", error);
             state.entries = [];
             render();
-            setSource("Firebase", state.isAdmin
-              ? "Admin data could not load. Check Firestore rules."
+            setSource("Firebase", state.currentUser
+              ? "Entries could not load. Check Firestore rules."
               : "Templates could not load. Check Firestore rules.");
             showToast("Firebase could not load entries.", 6500);
           });
@@ -2689,16 +2737,23 @@
         subscribeEntries();
 
         authMod.onAuthStateChanged(state.auth, (user) => {
+          if (user) {
+            const email = (user.email || "").toLowerCase();
+            const usedGoogle = (user.providerData || []).some((p) => p && p.providerId === "google.com");
+            const googleAllowed = (APP_CONFIG.googleAllowedEmails || []).map((e) => e.toLowerCase());
+            if (usedGoogle && !googleAllowed.includes(email)) {
+              showToast("This Google account is not allowed. Use the email and password form instead.", 7000);
+              authMod.signOut(state.auth);
+              return;
+            }
+          }
+
           state.currentUser = user;
           const userEmail = user && user.email ? user.email.toLowerCase() : "";
           const adminEmails = APP_CONFIG.adminEmails.map((email) => email.toLowerCase());
           state.isAdmin = Boolean(userEmail && adminEmails.includes(userEmail));
           subscribeEntries();
           updateAuthUI();
-
-          if (user && !state.isAdmin) {
-            showToast(`${user.email} is signed in but is not listed as an admin.`, 6500);
-          }
         });
 
         authMod.getRedirectResult(state.auth).catch((error) => {
@@ -2715,14 +2770,19 @@
     }
 
     function openEntryDialog(entryId = null) {
-      if (!state.isAdmin) {
-        showToast("Admin access is required to add data.");
+      if (!state.currentUser && !state.isAdmin) {
+        showToast("Sign in to add data.");
         return;
       }
 
       const entry = entryId ? state.entries.find((item) => item.id === entryId) : null;
       if (entryId && !entry) {
         showToast("That entry could not be found.");
+        return;
+      }
+
+      if (entry && !canManageEntry(entry)) {
+        showToast("You can only edit your own entries.");
         return;
       }
 
@@ -3247,8 +3307,16 @@
 
     async function saveEntry(event) {
       event.preventDefault();
-      if (!state.isAdmin) {
-        showToast("Admin access is required to save entries.");
+      if (!state.currentUser && !state.isAdmin) {
+        showToast("Sign in to save entries.");
+        return;
+      }
+
+      const editingEntry = state.editingId
+        ? state.entries.find((item) => item.id === state.editingId)
+        : null;
+      if (editingEntry && !canManageEntry(editingEntry)) {
+        showToast("You can only edit your own entries.");
         return;
       }
 
@@ -3256,9 +3324,7 @@
 
       try {
         const wasEditing = Boolean(state.editingId);
-        const existingEntry = state.editingId
-          ? state.entries.find((item) => item.id === state.editingId)
-          : null;
+        const existingEntry = editingEntry;
         const title = els.entryTitle.value.trim();
         const kind = els.entryKind.value;
         const body = els.entryBody.value.trim();
@@ -3347,30 +3413,57 @@
       }
     }
 
-    async function signIn() {
+    function openAuthDialog() {
       if (!state.firebaseReady) {
-        const key = window.prompt("Enter local admin key");
-        if (key === APP_CONFIG.localAdminKey) {
-          state.isAdmin = true;
-          localStorage.setItem(LOCAL_ADMIN_KEY, "true");
-          updateAuthUI();
-          showToast("Admin mode enabled.");
-        } else if (key !== null) {
-          showToast("Admin key did not match.");
-        }
+        showToast("Sign-in is not ready yet. Check your connection and reload.", 6500);
         return;
       }
 
+      els.authForm.reset();
+      els.authSubmit.disabled = false;
+      if (typeof els.authDialog.showModal === "function") {
+        els.authDialog.showModal();
+      } else {
+        els.authDialog.setAttribute("open", "");
+      }
+    }
+
+    function closeAuthDialog() {
+      els.authForm.reset();
+      els.authDialog.close();
+    }
+
+    async function signInWithEmail(event) {
+      event.preventDefault();
+      const email = els.authEmail.value.trim();
+      const password = els.authPassword.value;
+      if (!email || !password) {
+        showToast("Enter your email and password.");
+        return;
+      }
+
+      els.authSubmit.disabled = true;
       try {
         const authMod = await import("https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js");
-        els.authStatusTitle.textContent = "Opening Google sign-in";
-        els.authStatusDetail.textContent = "Complete the Google popup to continue.";
+        await authMod.signInWithEmailAndPassword(state.auth, email, password);
+        closeAuthDialog();
+        showToast("Signed in.");
+      } catch (error) {
+        console.warn("Email sign in failed", error);
+        showToast(authErrorMessage(error), 6500);
+      } finally {
+        els.authSubmit.disabled = false;
+      }
+    }
+
+    async function signInWithGoogle() {
+      try {
+        const authMod = await import("https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js");
         showToast("Opening Google sign-in...", 6500);
         await authMod.signInWithPopup(state.auth, state.provider);
+        closeAuthDialog();
       } catch (error) {
-        console.warn("Sign in failed", error);
-        els.authStatusTitle.textContent = "Sign-in failed";
-        els.authStatusDetail.textContent = authErrorMessage(error);
+        console.warn("Google sign in failed", error);
         showToast(authErrorMessage(error), 6500);
 
         if (error && error.code === "auth/popup-blocked") {
@@ -3388,7 +3481,6 @@
 
       state.currentUser = null;
       state.isAdmin = false;
-      localStorage.removeItem(LOCAL_ADMIN_KEY);
       updateAuthUI();
       showToast("Signed out.");
     }
@@ -3407,14 +3499,19 @@
     }
 
     function openDeleteDialog(id) {
-      if (!state.isAdmin) {
-        showToast("Admin access is required to delete entries.");
+      if (!state.currentUser && !state.isAdmin) {
+        showToast("Sign in to delete entries.");
         return;
       }
 
       const entry = state.entries.find((item) => item.id === id);
       if (!entry) {
         showToast("That entry could not be found.");
+        return;
+      }
+
+      if (!canManageEntry(entry)) {
+        showToast("You can only delete your own entries.");
         return;
       }
 
@@ -3438,9 +3535,10 @@
       const id = state.pendingDeleteId;
       if (!id) return;
 
-      if (!state.isAdmin) {
+      const pendingEntry = state.entries.find((item) => item.id === id);
+      if (!canManageEntry(pendingEntry)) {
         closeDeleteDialog();
-        showToast("Admin access is required to delete entries.");
+        showToast("You can only delete your own entries.");
         return;
       }
 
@@ -3584,8 +3682,16 @@
         applyTheme(next);
       });
 
-      els.signInButton.addEventListener("click", signIn);
+      els.signInButton.addEventListener("click", openAuthDialog);
       els.signOutButton.addEventListener("click", signOut);
+      els.closeAuthDialog.addEventListener("click", closeAuthDialog);
+      els.authForm.addEventListener("submit", signInWithEmail);
+      els.googleSignInButton.addEventListener("click", signInWithGoogle);
+      els.authDialog.addEventListener("click", (event) => {
+        if (event.target === els.authDialog) {
+          closeAuthDialog();
+        }
+      });
       els.addButton.addEventListener("click", () => openEntryDialog());
       els.aiButton.addEventListener("click", openAiDialog);
       els.aiForm.addEventListener("submit", runAiGenerate);
