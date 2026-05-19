@@ -74,7 +74,7 @@
     html {
       min-height: 100%;
       background: var(--bg);
-      font-size: 80%;
+      font-size: 88%;
     }
 
     body {
@@ -271,6 +271,37 @@
       min-width: 0;
     }
 
+    .menu {
+      position: relative;
+      display: inline-flex;
+    }
+
+    .menu-panel {
+      position: absolute;
+      top: calc(100% + 10px);
+      right: 0;
+      min-width: 200px;
+      display: grid;
+      gap: 4px;
+      padding: 6px;
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      background: var(--panel-solid);
+      box-shadow: var(--shadow);
+      z-index: 40;
+      animation: menuIn 180ms var(--ease-out) both;
+    }
+
+    .menu-panel .button {
+      width: 100%;
+      justify-content: flex-start;
+    }
+
+    @keyframes menuIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
     .button,
     .icon-button,
     .chip {
@@ -378,10 +409,10 @@
     }
 
     .hero {
-      min-height: min(650px, calc(100vh - 72px));
+      min-height: min(460px, calc(100vh - 72px));
       display: grid;
       align-items: center;
-      padding: 64px 0 34px;
+      padding: 44px 0 30px;
     }
 
     .hero-content {
@@ -586,6 +617,14 @@
       align-items: start;
     }
 
+    .workspace.panel-collapsed .side-panel {
+      display: none;
+    }
+
+    .workspace.panel-collapsed .workspace-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
     .side-panel,
     .results-panel {
       border: 1px solid var(--line);
@@ -715,6 +754,11 @@
 
     .results-title {
       min-width: 0;
+      flex: 1;
+    }
+
+    .panel-toggle {
+      flex: 0 0 auto;
     }
 
     .results-title strong {
@@ -1542,18 +1586,25 @@
           <i data-lucide="plus"></i>
           <span class="optional">Add data</span>
         </button>
-        <button class="button ghost" id="aiButton" type="button" hidden>
-          <i data-lucide="sparkles"></i>
-          <span class="optional">AI</span>
-        </button>
-        <button class="button ghost" id="csvButton" type="button" hidden>
-          <i data-lucide="upload"></i>
-          <span class="optional">Import CSV</span>
-        </button>
-        <button class="button ghost" id="exportButton" type="button" hidden>
-          <i data-lucide="download"></i>
-          <span class="optional">Export all</span>
-        </button>
+        <div class="menu" id="moreMenu" hidden>
+          <button class="icon-button" id="menuButton" type="button" aria-label="More actions" aria-haspopup="true" aria-expanded="false">
+            <i data-lucide="ellipsis"></i>
+          </button>
+          <div class="menu-panel" id="menuPanel" hidden>
+            <button class="button ghost" id="aiButton" type="button" hidden>
+              <i data-lucide="sparkles"></i>
+              <span>AI generate</span>
+            </button>
+            <button class="button ghost" id="csvButton" type="button">
+              <i data-lucide="upload"></i>
+              <span>Import CSV</span>
+            </button>
+            <button class="button ghost" id="exportButton" type="button">
+              <i data-lucide="download"></i>
+              <span>Export all</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </header>
@@ -1561,7 +1612,7 @@
   <main>
     <section class="hero app-shell" aria-labelledby="heroTitle">
       <div class="hero-content">
-        <p class="eyebrow">F*ck*ng Notes and Templates</p>
+        <p class="eyebrow">Notes &amp; Templates Vault</p>
         <h1 id="heroTitle">ChatJPGC</h1>
         <p class="hero-copy">Type a word, phrase, client name, process, screenshot detail, or template idea. The closest saved entries rise to the top as you type.</p>
 
@@ -1579,7 +1630,7 @@
       </div>
     </section>
 
-    <section class="workspace app-shell" id="workspace" aria-label="Knowledge results" hidden>
+    <section class="workspace app-shell" id="workspace" aria-label="Knowledge results">
       <div class="workspace-grid">
         <aside class="side-panel">
           <p class="panel-label">Library</p>
@@ -1619,6 +1670,9 @@
 
         <section class="results-panel">
           <div class="results-toolbar">
+            <button class="icon-button panel-toggle" id="panelToggle" type="button" aria-label="Hide side panel" aria-expanded="true" title="Hide side panel">
+              <i data-lucide="panel-left-close"></i>
+            </button>
             <div class="results-title">
               <strong id="resultsHeading">Recent entries</strong>
               <span id="resultsMeta">Start typing to rank your notes and templates.</span>
@@ -1867,6 +1921,7 @@
 
     const STORAGE_KEY = "promptvault.entries.v1";
     const THEME_KEY = "promptvault.theme";
+    const PANEL_KEY = "promptvault.panel";
 
     const seedEntries = [
       {
@@ -1946,6 +2001,10 @@
 
     const els = {
       themeToggle: document.querySelector("#themeToggle"),
+      moreMenu: document.querySelector("#moreMenu"),
+      menuButton: document.querySelector("#menuButton"),
+      menuPanel: document.querySelector("#menuPanel"),
+      panelToggle: document.querySelector("#panelToggle"),
       signInButton: document.querySelector("#signInButton"),
       signOutButton: document.querySelector("#signOutButton"),
       addButton: document.querySelector("#addButton"),
@@ -2088,6 +2147,23 @@
       const icon = theme === "dark" ? "sun" : "moon";
       els.themeToggle.innerHTML = `<i data-lucide="${icon}"></i>`;
       refreshIcons();
+    }
+
+    function applyPanelState(collapsed) {
+      els.workspace.classList.toggle("panel-collapsed", collapsed);
+      const label = collapsed ? "Show side panel" : "Hide side panel";
+      els.panelToggle.setAttribute("aria-expanded", String(!collapsed));
+      els.panelToggle.setAttribute("aria-label", label);
+      els.panelToggle.title = label;
+      els.panelToggle.innerHTML = `<i data-lucide="${collapsed ? "panel-left-open" : "panel-left-close"}"></i>`;
+      localStorage.setItem(PANEL_KEY, collapsed ? "1" : "0");
+      refreshIcons();
+    }
+
+    function toggleMenu(open) {
+      const show = typeof open === "boolean" ? open : els.menuPanel.hidden;
+      els.menuPanel.hidden = !show;
+      els.menuButton.setAttribute("aria-expanded", String(show));
     }
 
     function showToast(message, duration = 2300) {
@@ -2266,21 +2342,9 @@
       renderTagRow();
       const rows = getVisibleEntries();
       const hasQuery = Boolean(state.query.trim());
-      const canBrowseLibrary = Boolean(state.currentUser || state.isAdmin);
-      const shouldShowWorkspace = hasQuery || canBrowseLibrary;
       const kindLabel = (state.currentUser || state.isAdmin)
         ? (state.kind === "all" ? "entries" : `${state.kind} entries`)
         : "templates";
-
-      els.workspace.hidden = !shouldShowWorkspace;
-
-      if (!shouldShowWorkspace) {
-        els.resultsHeading.textContent = "Search results";
-        els.resultsMeta.textContent = "Type a word or phrase to show matching templates.";
-        els.resultsList.innerHTML = "";
-        refreshIcons();
-        return;
-      }
 
       els.resultsHeading.textContent = hasQuery ? `Results for "${state.query.trim()}"` : "Recent entries";
       els.resultsMeta.textContent = `${rows.length} ${kindLabel} found`;
@@ -2372,8 +2436,8 @@
       document.documentElement.classList.toggle("signed-in", signedIn);
       els.addButton.hidden = !signedIn;
       els.aiButton.hidden = !state.isAdmin || !APP_CONFIG.aiWorkerUrl;
-      els.csvButton.hidden = !state.isAdmin;
-      els.exportButton.hidden = !state.isAdmin;
+      els.moreMenu.hidden = !state.isAdmin;
+      if (els.moreMenu.hidden) toggleMenu(false);
       els.signOutButton.hidden = !signedIn;
       els.signInButton.hidden = signedIn;
 
@@ -3413,6 +3477,21 @@
       document.addEventListener("pointerdown", addInteractionRipple);
       initPointerField();
 
+      els.panelToggle.addEventListener("click", () => {
+        applyPanelState(!els.workspace.classList.contains("panel-collapsed"));
+      });
+      els.menuButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        toggleMenu();
+      });
+      els.menuPanel.addEventListener("click", () => toggleMenu(false));
+      document.addEventListener("click", (event) => {
+        if (!els.moreMenu.contains(event.target)) toggleMenu(false);
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") toggleMenu(false);
+      });
+
       els.themeToggle.addEventListener("click", () => {
         const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
         applyTheme(next);
@@ -3567,6 +3646,7 @@
     function boot() {
       const savedTheme = localStorage.getItem(THEME_KEY) || "dark";
       applyTheme(savedTheme);
+      applyPanelState(localStorage.getItem(PANEL_KEY) === "1");
       state.entries = loadLocalEntries();
       wireEvents();
       render();
