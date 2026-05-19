@@ -71,6 +71,7 @@
     html {
       min-height: 100%;
       background: var(--bg);
+      font-size: 80%;
     }
 
     body {
@@ -84,7 +85,7 @@
       color: var(--text);
       letter-spacing: 0;
       font-family: var(--font-ui);
-      font-size: 16px;
+      font-size: 1rem;
       font-weight: 400;
       overflow-x: hidden;
       animation: pageIn var(--motion-slow) var(--ease-out) both;
@@ -1300,407 +1301,113 @@
       }
     }
 
-    /* Terminal-inspired UI skin */
+    /* Minimal monochrome skin */
     :root {
-      --bg: #08090c;
-      --bg-2: #0e1014;
-      --panel: rgba(8, 9, 12, 0.86);
-      --panel-solid: #0b0d11;
-      --text: #f5f7fa;
-      --muted: #8b949e;
-      --soft: #6e7681;
-      --line: rgba(255, 255, 255, 0.22);
-      --line-strong: rgba(255, 255, 255, 0.42);
-      --accent: #66ff99;
-      --accent-strong: #20df70;
-      --accent-blue: #61d6ff;
-      --accent-warm: #ffd166;
-      --shadow: 0 24px 80px rgba(0, 0, 0, 0.72);
-      --font-ui: "SF Mono", "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
+      --bg: #0a0a0b;
+      --bg-2: #101012;
+      --panel: rgba(20, 20, 22, 0.82);
+      --panel-solid: #161618;
+      --text: #f3f3f4;
+      --muted: #97979d;
+      --soft: #66666c;
+      --line: rgba(255, 255, 255, 0.085);
+      --line-strong: rgba(255, 255, 255, 0.17);
+      --accent: #f3f3f4;
+      --accent-strong: #d6d6d9;
+      --accent-blue: #c4c4c8;
+      --accent-warm: #c4c4c8;
+      --shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+      --focus: 0 0 0 3px rgba(255, 255, 255, 0.16);
     }
 
     [data-theme="light"] {
-      --bg: #f7f7f0;
-      --bg-2: #ededdf;
-      --panel: rgba(255, 255, 246, 0.9);
-      --panel-solid: #fffff7;
-      --text: #111111;
-      --muted: #565656;
-      --soft: #727272;
-      --line: rgba(0, 0, 0, 0.22);
-      --line-strong: rgba(0, 0, 0, 0.42);
-      --accent: #007f3f;
-      --accent-strong: #006a34;
-      --accent-blue: #005d90;
-      --accent-warm: #9b5d00;
+      --bg: #ffffff;
+      --bg-2: #f3f3f4;
+      --panel: rgba(255, 255, 255, 0.9);
+      --panel-solid: #ffffff;
+      --text: #0c0c0d;
+      --muted: #6c6c72;
+      --soft: #9a9aa0;
+      --line: rgba(0, 0, 0, 0.09);
+      --line-strong: rgba(0, 0, 0, 0.17);
+      --accent: #0c0c0d;
+      --accent-strong: #2b2b2e;
+      --accent-blue: #3c3c40;
+      --accent-warm: #3c3c40;
+      --shadow: 0 24px 60px rgba(0, 0, 0, 0.12);
+      --focus: 0 0 0 3px rgba(0, 0, 0, 0.14);
     }
 
     body {
-      background:
-        linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-        radial-gradient(circle at var(--pointer-x) var(--pointer-y), color-mix(in srgb, var(--accent) 9%, transparent), transparent 260px),
-        linear-gradient(180deg, var(--bg), var(--bg-2));
-      background-size: 100% 4px, 100% 100%, 100% 100%;
+      background: linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+      background-attachment: fixed;
     }
 
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      z-index: 0;
-      pointer-events: none;
-      background:
-        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 3px),
-        radial-gradient(circle at 50% 0%, rgba(102, 255, 153, 0.08), transparent 44%);
-      mix-blend-mode: screen;
-      opacity: 0.58;
-    }
-
-    .pointer-field {
-      opacity: 0.5;
-      mix-blend-mode: normal;
-    }
-
-    .pointer-field::before {
-      opacity: 0.08;
-    }
-
-    .pointer-field::after {
-      background-image: radial-gradient(circle, color-mix(in srgb, var(--accent) 82%, transparent) 1px, transparent 1.6px);
-      background-size: 16px 16px;
-      mask-image: radial-gradient(170px circle at var(--pointer-x) var(--pointer-y), #000 0%, #000 26%, transparent 70%);
-    }
-
-    /* Signed in: drop the mouse-following animation for a snappier feel.
-       Hover effects on buttons and result cards are pure CSS :hover, so they stay. */
-    .signed-in .pointer-field::after,
-    .signed-in .cursor-mark {
-      display: none;
-    }
-
-    .signed-in body {
-      background:
-        linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-        linear-gradient(180deg, var(--bg), var(--bg-2));
-      background-size: 100% 4px, 100% 100%;
-    }
-
-    .topbar {
-      border-top: 1px solid var(--line-strong);
-      border-bottom: 1px solid var(--line-strong);
-      background: rgba(0, 0, 0, 0.9);
-      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08);
-    }
-
-    [data-theme="light"] .topbar {
-      background: rgba(255, 255, 247, 0.92);
-    }
-
-    .topbar-inner {
-      min-height: 38px;
-    }
-
-    .brand {
-      color: var(--text);
-      font-size: 0.86rem;
-      text-transform: lowercase;
-    }
-
-    .brand::before {
-      content: "visitor@chatjpgc:~$";
-      color: var(--accent);
-      margin-right: 4px;
-    }
-
-    .brand-mark {
-      display: none;
-    }
-
-    .topbar-actions {
-      gap: 6px;
-    }
-
-    .button,
-    .icon-button,
-    .chip {
-      border-radius: 0;
-      border-color: var(--line-strong);
-      background: transparent;
-      box-shadow: none;
-      text-transform: lowercase;
-    }
-
-    .button:hover,
-    .icon-button:hover,
-    .chip:hover {
-      background: var(--text);
-      color: var(--bg);
-      border-color: var(--text);
-      box-shadow: none;
-    }
-
+    /* Primary action: solid block, background-colored label. */
     .button.primary {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #000;
+      color: var(--bg);
       box-shadow: none;
     }
 
     .button.primary:hover {
-      background: var(--text);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    .submit-search {
       color: var(--bg);
-      box-shadow: none;
-    }
-
-    .hero {
-      min-height: auto;
-      align-items: start;
-      padding: 64px 0 36px;
-    }
-
-    .hero-content {
-      width: min(980px, 100%);
-      margin: 0;
-      text-align: left;
-    }
-
-    .hero-content::before {
-      content: "Booting ChatJPGC terminal...\A auth: templates public | notes/images protected\A command: search <phrase>";
-      display: block;
-      white-space: pre-wrap;
-      margin: 0 0 28px;
-      color: var(--muted);
-      line-height: 1.75;
     }
 
     .eyebrow {
-      color: var(--accent);
-      letter-spacing: 0;
-      text-transform: none;
+      color: var(--muted);
     }
 
-    .eyebrow::before {
-      content: "./";
-      color: var(--text);
-    }
-
-    h1 {
-      font-size: clamp(3rem, 9vw, 8.2rem);
-      line-height: 0.82;
-      text-transform: uppercase;
-      text-shadow:
-        0 0 1px color-mix(in srgb, var(--accent-blue) 38%, transparent),
-        0 0 40px color-mix(in srgb, var(--accent) 22%, transparent);
-    }
-
-    .hero-copy {
-      width: min(720px, 100%);
-      margin: 26px 0 0;
-      color: var(--text);
-    }
-
-    .hero-copy::before {
-      content: "> ";
-      color: var(--accent);
-    }
-
-    .search-card {
-      width: min(980px, 100%);
-      margin: 28px 0 0;
-      border-radius: 0;
-      border-color: var(--line-strong);
-      background: rgba(0, 0, 0, 0.82);
-      box-shadow: none;
-    }
-
-    [data-theme="light"] .search-card {
-      background: rgba(255, 255, 247, 0.86);
-    }
-
-    .search-card::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
-    }
-
-    .search-card:focus-within {
-      transform: none;
-      box-shadow: 0 0 0 1px var(--accent), 0 0 34px color-mix(in srgb, var(--accent) 18%, transparent);
-    }
-
-    .promptbar {
-      grid-template-columns: 190px minmax(0, 1fr) 56px;
-      min-height: 64px;
-    }
-
-    .promptbar > .icon-hold {
-      justify-content: start;
-      padding-left: 18px;
-      color: var(--accent);
-    }
-
-    .promptbar > .icon-hold svg {
+    /* Signed in: drop the cursor-follow field; CSS :hover effects stay. */
+    .signed-in .pointer-field,
+    .signed-in .cursor-mark {
       display: none;
     }
 
-    .promptbar > .icon-hold::before {
-      content: "visitor@chatjpgc:~$";
-      color: var(--accent);
-      font-size: 0.86rem;
+    /* Signed in: snappier transitions, no entrance animations.
+       Result cards keep their intro animation; hover effects are untouched. */
+    .signed-in {
+      --motion-slow: 240ms;
+      --motion-mid: 190ms;
+    }
+
+    .signed-in body,
+    .signed-in .topbar,
+    .signed-in .hero-content,
+    .signed-in .eyebrow,
+    .signed-in h1,
+    .signed-in .hero-copy,
+    .signed-in .search-card,
+    .signed-in .quick-row .chip,
+    .signed-in .workspace:not([hidden]),
+    .signed-in .stats .stat,
+    .signed-in .filter-stack .chip {
+      animation: none !important;
+    }
+
+    .signed-in .search-card:focus-within::before {
+      animation: none;
+    }
+
+    h1 {
+      font-weight: 760;
+      letter-spacing: -0.02em;
     }
 
     .promptbar input {
       caret-color: var(--accent);
-      color: var(--text);
-      font-size: clamp(0.95rem, 2vw, 1.08rem);
-    }
-
-    .promptbar input::placeholder {
-      color: var(--soft);
-    }
-
-    .submit-search {
-      border-radius: 0;
-      box-shadow: none;
-    }
-
-    .quick-row {
-      justify-content: flex-start;
-    }
-
-    .quick-row .chip::before {
-      content: "run ";
-      color: var(--accent);
-    }
-
-    .workspace {
-      padding-top: 12px;
     }
 
     .workspace-grid {
-      grid-template-columns: 320px minmax(0, 1fr);
+      grid-template-columns: 300px minmax(0, 1fr);
       gap: 16px;
     }
 
-    .side-panel,
-    .results-panel,
-    .result-card,
-    .modal,
-    .source-pill,
-    .stat {
-      border-radius: 0;
-      background: rgba(0, 0, 0, 0.84);
-      box-shadow: none;
-    }
-
-    [data-theme="light"] .side-panel,
-    [data-theme="light"] .results-panel,
-    [data-theme="light"] .result-card,
-    [data-theme="light"] .modal,
-    [data-theme="light"] .source-pill,
-    [data-theme="light"] .stat {
-      background: rgba(255, 255, 247, 0.88);
-    }
-
-    .panel-label,
-    .results-title strong,
-    .modal-title {
-      color: var(--accent);
-      text-transform: lowercase;
-      letter-spacing: 0;
-    }
-
-    .panel-label::before,
-    .results-title strong::before,
-    .modal-title::before {
-      content: "$ ";
-      color: var(--text);
-    }
-
-    .stat-icon {
-      border-radius: 0;
-      background: transparent;
-      border: 1px solid var(--line);
-    }
-
-    .results-toolbar {
-      min-height: 56px;
-      border-bottom-color: var(--line-strong);
-    }
-
-    .result-card {
-      border-color: var(--line);
-      position: relative;
-    }
-
-    .result-card::before {
-      content: "output/" attr(data-kind);
-      position: absolute;
-      top: -9px;
-      left: 12px;
-      padding: 0 6px;
-      color: var(--accent);
-      background: var(--bg);
-      font-size: 0.72rem;
-    }
-
-    .result-card:hover {
-      transform: translateY(-3px);
-      border-color: var(--accent);
-      box-shadow:
-        0 0 30px color-mix(in srgb, var(--accent) 14%, transparent),
-        0 16px 40px rgba(0, 0, 0, 0.5);
-    }
-
-    .result-head h2::before {
-      content: "> ";
-      color: var(--accent);
-    }
-
     .result-text {
-      color: color-mix(in srgb, var(--text) 78%, var(--muted));
-    }
-
-    .tag,
-    .kind,
-    .kind-template,
-    .kind-note,
-    .kind-process {
-      border-radius: 0;
-      background: transparent;
-    }
-
-    .kind-template {
-      color: var(--accent-warm);
-    }
-
-    .kind-note {
-      color: var(--accent-blue);
-    }
-
-    .kind-process {
-      color: var(--accent);
-    }
-
-    input,
-    textarea,
-    select {
-      border-radius: 0;
-      background: var(--bg);
-      color: var(--text);
-    }
-
-    .image-preview {
-      border-radius: 0;
-      background: var(--bg);
-    }
-
-    .toast {
-      border-radius: 0;
-      background: var(--bg);
-      color: var(--accent);
+      color: color-mix(in srgb, var(--text) 76%, var(--muted));
     }
 
     .stats .stat,
