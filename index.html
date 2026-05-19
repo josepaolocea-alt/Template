@@ -777,6 +777,10 @@
       transition: transform var(--motion-mid) var(--ease-spring), border-color var(--motion-mid) ease, background var(--motion-mid) ease, box-shadow var(--motion-mid) ease;
     }
 
+    .results-list.static-cards .result-card {
+      animation: none;
+    }
+
     .result-card:hover {
       transform: translateY(-3px);
       border-color: color-mix(in srgb, var(--accent) 28%, var(--line));
@@ -2248,7 +2252,6 @@
         els.quickRow.innerHTML = tagIcon + tags
           .map((tag) => `<button class="chip quick-search" type="button" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`)
           .join("");
-        refreshIcons();
       }
 
       els.quickRow.hidden = tags.length === 0;
@@ -2259,7 +2262,7 @@
       });
     }
 
-    function renderResults() {
+    function renderResults(animate = false) {
       renderTagRow();
       const rows = getVisibleEntries();
       const hasQuery = Boolean(state.query.trim());
@@ -2295,6 +2298,8 @@
         refreshIcons();
         return;
       }
+
+      els.resultsList.classList.toggle("static-cards", !animate);
 
       els.resultsList.innerHTML = rows.map(({ entry }, index) => {
         const tags = normalizeTags(entry.tags);
@@ -2359,8 +2364,7 @@
     function render() {
       renderStats();
       syncFilterButtons();
-      renderResults();
-      refreshIcons();
+      renderResults(true);
     }
 
     function updateAuthUI() {
@@ -2387,7 +2391,7 @@
       }
 
       renderStats();
-      renderResults();
+      renderResults(true);
     }
 
     function setSource(name, detail) {
@@ -3453,17 +3457,23 @@
         }
       });
 
+      let searchTimer = null;
+
       els.searchForm.addEventListener("submit", (event) => {
         event.preventDefault();
+        window.clearTimeout(searchTimer);
         state.query = els.searchInput.value;
         state.tagFilter = "";
         renderResults();
       });
 
       els.searchInput.addEventListener("input", () => {
-        state.query = els.searchInput.value;
-        state.tagFilter = "";
-        renderResults();
+        window.clearTimeout(searchTimer);
+        searchTimer = window.setTimeout(() => {
+          state.query = els.searchInput.value;
+          state.tagFilter = "";
+          renderResults();
+        }, 140);
       });
 
       els.quickRow.addEventListener("click", (event) => {
