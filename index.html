@@ -2316,18 +2316,27 @@
       renderTagRow();
       const rows = getVisibleEntries();
       const hasQuery = Boolean(state.query.trim());
+      const hasKindFilter = state.kind && state.kind !== "all";
+      const hasTagFilter = Boolean(state.tagFilter);
+      const shouldShow = hasQuery || hasKindFilter || hasTagFilter;
       const kindLabel = (state.currentUser || state.isAdmin)
         ? (state.kind === "all" ? "entries" : `${state.kind} entries`)
         : "templates";
 
-      els.workspace.hidden = !hasQuery;
+      els.workspace.hidden = !shouldShow;
 
-      if (!hasQuery) {
+      if (!shouldShow) {
         els.resultsList.innerHTML = "";
         return;
       }
 
-      els.resultsHeading.textContent = `Results for "${state.query.trim()}"`;
+      if (hasQuery) {
+        els.resultsHeading.textContent = `Results for "${state.query.trim()}"`;
+      } else if (hasTagFilter) {
+        els.resultsHeading.textContent = `Tagged "${state.tagFilter}"`;
+      } else {
+        els.resultsHeading.textContent = `${state.kind.charAt(0).toUpperCase()}${state.kind.slice(1)}`;
+      }
       els.resultsMeta.textContent = `${rows.length} ${kindLabel} found`;
 
       if (!rows.length) {
@@ -3551,6 +3560,7 @@
           state.tagFilter = "";
           syncFilterButtons();
           renderResults();
+          closeLibraryDialog();
         });
       });
 
