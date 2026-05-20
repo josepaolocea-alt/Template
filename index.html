@@ -1611,6 +1611,45 @@
         white-space: pre-wrap;
         word-wrap: break-word;
       }
+      .ask-answer-card {
+        padding: 0.9rem 1rem;
+        border-radius: 0.5rem;
+        margin: 1rem 0 0.75rem;
+        border: 1px solid var(--border, #e5e7eb);
+        background: var(--surface, #fff);
+      }
+      .ask-answer-card.from-sources {
+        background: #ecfdf5;
+        border-color: #10b981;
+      }
+      .ask-answer-card.general {
+        background: #eff6ff;
+        border-color: #3b82f6;
+      }
+      .ask-answer-head {
+        margin-bottom: 0.5rem;
+      }
+      .ask-answer-badge {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-strong, #1f2937);
+      }
+      .ask-answer-card.from-sources .ask-answer-badge {
+        color: #047857;
+      }
+      .ask-answer-card.general .ask-answer-badge {
+        color: #1d4ed8;
+      }
+      .ask-answer-text {
+        font-size: 0.95rem;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        color: var(--text-strong, #1f2937);
+      }
+      .ask-answer-actions {
+        margin-top: 0.75rem;
+      }
   </style>
 </head>
 <body>
@@ -1838,6 +1877,18 @@
       </div>
 
       <div id="askResultsWrap" hidden>
+        <div class="ask-answer-card" id="askAnswerCard" hidden>
+          <div class="ask-answer-head">
+            <span class="ask-answer-badge" id="askAnswerBadge"></span>
+          </div>
+          <div class="ask-answer-text" id="askAnswerText"></div>
+          <div class="ask-answer-actions" id="askAnswerActions" hidden>
+            <button class="button ghost" type="button" id="askSaveAsEntry">
+              <i data-lucide="plus"></i>
+              <span>Save this as a new entry</span>
+            </button>
+          </div>
+        </div>
         <h3 class="ask-results-heading" id="askResultsHeading">Top matches</h3>
         <ul id="askResultsList" class="ask-results"></ul>
       </div>
@@ -2158,6 +2209,11 @@
       askResultsWrap: document.querySelector("#askResultsWrap"),
       askResultsHeading: document.querySelector("#askResultsHeading"),
       askResultsList: document.querySelector("#askResultsList"),
+      askAnswerCard: document.querySelector("#askAnswerCard"),
+      askAnswerBadge: document.querySelector("#askAnswerBadge"),
+      askAnswerText: document.querySelector("#askAnswerText"),
+      askAnswerActions: document.querySelector("#askAnswerActions"),
+      askSaveAsEntry: document.querySelector("#askSaveAsEntry"),
       entryTags: document.querySelector("#entryTags"),
       entryImageUrl: document.querySelector("#entryImageUrl"),
       entryImageFile: document.querySelector("#entryImageFile"),
@@ -2883,6 +2939,26 @@
     const ASK_MAX_RESULTS = 5;
     const ASK_SNIPPET_LENGTH = 180;
 
+    async function fetchAnswer(question, sources) {
+      if (!APP_CONFIG.aiWorkerUrl) {
+        throw new Error("AI worker URL is not configured.");
+      }
+      const workerUrl = APP_CONFIG.aiWorkerUrl.replace(/\/$/, "");
+      const response = await fetch(`${workerUrl}/ask`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question, sources })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.answer) {
+        throw new Error(data.error || `HTTP ${response.status}`);
+      }
+      return {
+        answer: data.answer,
+        mode: data.mode || (Array.isArray(sources) && sources.length ? "with_sources" : "general")
+      };
+    }
+
     async function fetchEmbedding(text) {
       if (!APP_CONFIG.aiWorkerUrl) {
         throw new Error("AI worker URL is not configured.");
@@ -2982,6 +3058,9 @@
       els.askForm.reset();
       els.askResultsList.innerHTML = "";
       els.askResultsWrap.hidden = true;
+      els.askAnswerCard.hidden = true;
+      els.askAnswerActions.hidden = true;
+      state.lastAskAnswer = null;
       if (typeof els.askDialog.showModal === "function") {
         els.askDialog.showModal();
       } else {
@@ -2994,11 +3073,10 @@
       els.askDialog.close();
     }
 
-    function renderAskResults(matches) {
+    function renderAskMatches(matches) {
       els.askResultsList.innerHTML = "";
       if (matches.length === 0) {
         els.askResultsHeading.textContent = "No entries with embeddings yet";
-        els.askResultsWrap.hidden = false;
         return;
       }
 
@@ -3027,7 +3105,20 @@
         `;
       }).join("");
       els.askResultsList.innerHTML = html;
-      els.askResultsWrap.hidden = false;
+    }
+
+    function renderAskAnswer({ answer, mode, sourceTitles }) {
+      const isFromSources = mode === "with_sources";
+      els.askAnswerCard.className = `ask-answer-card ${isFromSources ? "from-sources" : "general"}`;
+      const sourcesHint = isFromSources && sourceTitles.length
+        ? ` — using: ${sourceTitles.join(", ")}`
+        : "";
+      els.askAnswerBadge.textContent = isFromSources
+        ? `📚 Based on your notes${sourcesHint}`
+        : "🌐 No matching notes — answered from general knowledge";
+      els.askAnswerText.textContent = answer;
+      els.askAnswerActions.hidden = isFromSources;
+      els.askAnswerCard.hidden = false;
     }
 
     async function runAskSearch(event) {
@@ -3054,6 +3145,7 @@
       const originalLabel = els.askSubmitLabel.textContent;
       els.askSubmit.disabled = true;
       els.askSubmitLabel.textContent = "Searching...";
+      els.askAnswerCard.hidden = true;
 
       try {
         const { embedding: questionVector } = await fetchEmbedding(question);
@@ -3061,14 +3153,50 @@
           .map((entry) => ({ entry, score: cosineSimilarity(questionVector, entry.embedding) }))
           .sort((a, b) => b.score - a.score)
           .slice(0, ASK_MAX_RESULTS);
-        renderAskResults(scored);
+
+        const strongMatches = scored.filter((m) => m.score >= ASK_MATCH_THRESHOLD);
+        const sources = strongMatches.map((m) => ({
+          title: m.entry.title,
+          kind: m.entry.kind,
+          tags: m.entry.tags,
+          body: m.entry.body
+        }));
+
+        renderAskMatches(scored);
+        els.askResultsWrap.hidden = false;
+        els.askSubmitLabel.textContent = "Thinking...";
+
+        const { answer, mode } = await fetchAnswer(question, sources);
+        state.lastAskAnswer = { answer, mode, question };
+        renderAskAnswer({
+          answer,
+          mode,
+          sourceTitles: strongMatches.map((m) => m.entry.title || "Untitled")
+        });
       } catch (error) {
-        console.warn("Ask search failed", error);
-        showToast(error && error.message ? error.message : "Search failed.");
+        console.warn("Ask flow failed", error);
+        showToast(error && error.message ? error.message : "Ask failed.");
       } finally {
         els.askSubmit.disabled = false;
         els.askSubmitLabel.textContent = originalLabel;
       }
+    }
+
+    function saveAnswerAsEntry() {
+      if (!state.lastAskAnswer) {
+        showToast("Nothing to save yet.");
+        return;
+      }
+      const { answer, question } = state.lastAskAnswer;
+      closeAskDialog();
+      openEntryDialog();
+      window.setTimeout(() => {
+        els.entryTitle.value = question.length > 80 ? `${question.slice(0, 77)}...` : question;
+        els.entryKind.value = "note";
+        els.entryBody.value = answer;
+        els.entryTags.value = "";
+        resizeEntryBody();
+      }, 50);
     }
 
     async function copyAiResult() {
@@ -3906,6 +4034,7 @@
       els.askButton.addEventListener("click", openAskDialog);
       els.askForm.addEventListener("submit", runAskSearch);
       els.closeAskDialog.addEventListener("click", closeAskDialog);
+      els.askSaveAsEntry.addEventListener("click", saveAnswerAsEntry);
       els.csvButton.addEventListener("click", openCsvDialog);
       els.exportButton.addEventListener("click", exportAllEntries);
       els.backfillButton.addEventListener("click", backfillEmbeddings);
