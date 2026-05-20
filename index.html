@@ -3776,11 +3776,34 @@
     }
 
     async function signInWithGoogle() {
+      if (!state.auth || !state.provider) {
+        showToast("Firebase is not ready yet. Try again in a moment.", 5000);
+        return;
+      }
       try {
         const authMod = await import("https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js");
-        showToast("Redirecting to Google sign-in...", 4000);
-        await authMod.signInWithRedirect(state.auth, state.provider);
+        try {
+          const result = await authMod.signInWithPopup(state.auth, state.provider);
+          if (result && result.user) {
+            closeAuthDialog();
+            showToast("Signed in.");
+          }
+        } catch (popupError) {
+          const code = popupError && popupError.code;
+          const shouldFallback = code === "auth/popup-blocked"
+            || code === "auth/operation-not-supported-in-this-environment"
+            || code === "auth/cancelled-popup-request";
+          if (shouldFallback) {
+            showToast("Popup blocked. Redirecting to Google sign-in...", 4000);
+            await authMod.signInWithRedirect(state.auth, state.provider);
+            return;
+          }
+          throw popupError;
+        }
       } catch (error) {
+        if (error && error.code === "auth/popup-closed-by-user") {
+          return;
+        }
         console.warn("Google sign in failed", error);
         showToast(authErrorMessage(error), 6500);
       }
