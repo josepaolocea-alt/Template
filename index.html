@@ -603,48 +603,51 @@
     }
 
     .workspace {
-      padding: 14px 0 60px;
+      padding: 28px 0 80px;
     }
 
     .workspace:not([hidden]) {
-      animation: workspaceIn 520ms var(--ease-out) both;
+      animation: workspaceFloatIn 420ms var(--ease-out) both;
     }
 
-    .workspace-grid {
+    .results-stack {
+      width: min(760px, 100%);
+      margin: 0 auto;
       display: grid;
-      grid-template-columns: 280px minmax(0, 1fr);
-      gap: 18px;
-      align-items: start;
+      gap: 14px;
     }
 
-    .workspace.panel-collapsed .side-panel {
-      display: none;
+    .results-meta-line {
+      margin: 0 auto 14px;
+      width: min(760px, 100%);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 0.86rem;
+      font-weight: 500;
     }
 
-    .workspace.panel-collapsed .workspace-grid {
-      grid-template-columns: minmax(0, 1fr);
-    }
-
-    .side-panel,
-    .results-panel {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--panel);
-      backdrop-filter: blur(20px);
-      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.16);
-      transition: transform var(--motion-mid) var(--ease-spring), border-color var(--motion-mid) ease, box-shadow var(--motion-mid) ease, background var(--motion-mid) ease;
+    .results-meta-line strong {
+      color: var(--text);
+      font-weight: 620;
     }
 
     .side-panel {
-      position: sticky;
-      top: 90px;
-      padding: 16px;
+      display: grid;
+      gap: 4px;
+      padding: 4px 2px 6px;
     }
 
-    .side-panel:hover,
-    .results-panel:hover {
-      border-color: color-mix(in srgb, var(--accent) 24%, var(--line));
-      box-shadow: 0 22px 58px rgba(0, 0, 0, 0.2);
+    .library-dialog {
+      width: min(560px, calc(100% - 24px));
+    }
+
+    .library-dialog .modal-body {
+      padding: 18px;
+      display: grid;
+      gap: 16px;
     }
 
     .panel-label {
@@ -804,7 +807,27 @@
     .results-list {
       display: grid;
       gap: 14px;
-      padding: 18px;
+    }
+
+    .results-stack {
+      padding: 0;
+    }
+
+    .library-dialog .filter-stack {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin-top: 0;
+    }
+
+    .library-dialog .select-wrap {
+      display: grid;
+      grid-template-columns: minmax(120px, 1fr) minmax(0, 1fr);
+      align-items: center;
+      gap: 12px;
+      color: var(--text);
+    }
+
+    .library-dialog .source-pill {
+      margin-top: 0;
     }
 
     .result-card {
@@ -1269,14 +1292,16 @@
       }
     }
 
-    @keyframes workspaceIn {
+    @keyframes workspaceFloatIn {
       from {
         opacity: 0;
-        transform: translateY(18px);
+        transform: translateY(18px) scale(0.98);
+        filter: blur(3px);
       }
       to {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
+        filter: blur(0);
       }
     }
 
@@ -1438,11 +1463,7 @@
     .signed-in .eyebrow,
     .signed-in h1,
     .signed-in .hero-copy,
-    .signed-in .search-card,
-    .signed-in .quick-row .chip,
-    .signed-in .workspace:not([hidden]),
-    .signed-in .stats .stat,
-    .signed-in .filter-stack .chip {
+    .signed-in .search-card {
       animation: none !important;
     }
 
@@ -1459,42 +1480,11 @@
       caret-color: var(--accent);
     }
 
-    .workspace-grid {
-      grid-template-columns: 300px minmax(0, 1fr);
-      gap: 16px;
-    }
-
     .result-text {
       color: color-mix(in srgb, var(--text) 76%, var(--muted));
     }
 
-    .stats .stat,
-    .filter-stack .chip {
-      animation: chipIn 520ms var(--ease-out) both;
-    }
-
-    .stats .stat:nth-child(1) { animation-delay: 80ms; }
-    .stats .stat:nth-child(2) { animation-delay: 140ms; }
-    .stats .stat:nth-child(3) { animation-delay: 200ms; }
-    .filter-stack .chip:nth-child(1) { animation-delay: 250ms; }
-    .filter-stack .chip:nth-child(2) { animation-delay: 300ms; }
-    .filter-stack .chip:nth-child(3) { animation-delay: 350ms; }
-    .filter-stack .chip:nth-child(4) { animation-delay: 400ms; }
-    .filter-stack .chip:nth-child(5) { animation-delay: 450ms; }
-
     @media (max-width: 860px) {
-      .workspace-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .side-panel {
-        position: static;
-      }
-
-      .filter-stack {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
       .result-card.has-image {
         grid-template-columns: 1fr;
       }
@@ -1539,22 +1529,6 @@
         grid-template-columns: 1fr;
       }
 
-      .results-toolbar {
-        align-items: stretch;
-        flex-direction: column;
-      }
-
-      .select-wrap {
-        width: 100%;
-      }
-
-      .select-wrap select {
-        flex: 1;
-      }
-
-      .filter-stack {
-        grid-template-columns: 1fr;
-      }
     }
   </style>
 </head>
@@ -1591,15 +1565,19 @@
             <i data-lucide="ellipsis"></i>
           </button>
           <div class="menu-panel" id="menuPanel" hidden>
+            <button class="button ghost" id="libraryButton" type="button">
+              <i data-lucide="library"></i>
+              <span>Library</span>
+            </button>
             <button class="button ghost" id="aiButton" type="button" hidden>
               <i data-lucide="sparkles"></i>
               <span>AI generate</span>
             </button>
-            <button class="button ghost" id="csvButton" type="button">
+            <button class="button ghost" id="csvButton" type="button" hidden>
               <i data-lucide="upload"></i>
               <span>Import CSV</span>
             </button>
-            <button class="button ghost" id="exportButton" type="button">
+            <button class="button ghost" id="exportButton" type="button" hidden>
               <i data-lucide="download"></i>
               <span>Export all</span>
             </button>
@@ -1630,65 +1608,12 @@
       </div>
     </section>
 
-    <section class="workspace app-shell" id="workspace" aria-label="Knowledge results">
-      <div class="workspace-grid">
-        <aside class="side-panel">
-          <p class="panel-label">Library</p>
-          <div class="stats">
-            <div class="stat">
-              <span class="stat-icon"><i data-lucide="database"></i></span>
-              <span><strong id="totalCount">0</strong><span>Saved entries</span></span>
-            </div>
-            <div class="stat">
-              <span class="stat-icon"><i data-lucide="image"></i></span>
-              <span><strong id="imageCount">0</strong><span>Image entries</span></span>
-            </div>
-            <div class="stat">
-              <span class="stat-icon"><i data-lucide="shield-check"></i></span>
-              <span><strong id="adminState">Viewer</strong><span>Current access</span></span>
-            </div>
-          </div>
-
-          <div class="filter-stack" aria-label="Entry filters">
-            <button class="chip active" type="button" data-kind="all"><i data-lucide="layout-grid"></i>All</button>
-            <button class="chip" type="button" data-kind="template"><i data-lucide="copy-check"></i>Templates</button>
-            <button class="chip" type="button" data-kind="note"><i data-lucide="notebook-tabs"></i>Notes</button>
-            <button class="chip" type="button" data-kind="process"><i data-lucide="workflow"></i>Process</button>
-            <button class="chip" type="button" data-kind="image"><i data-lucide="image"></i>Images</button>
-          </div>
-
-          <div class="source-pill">
-            <strong id="sourceName">Local demo</strong><br />
-            <span id="sourceDetail">Add Firebase config when you are ready to sync online.</span>
-          </div>
-
-          <div class="source-pill">
-            <strong id="authStatusTitle">Not signed in</strong><br />
-            <span id="authStatusDetail">Sign in with the admin Google account to add data.</span>
-          </div>
-        </aside>
-
-        <section class="results-panel">
-          <div class="results-toolbar">
-            <button class="icon-button panel-toggle" id="panelToggle" type="button" aria-label="Hide side panel" aria-expanded="true" title="Hide side panel">
-              <i data-lucide="panel-left-close"></i>
-            </button>
-            <div class="results-title">
-              <strong id="resultsHeading">Recent entries</strong>
-              <span id="resultsMeta">Start typing to rank your notes and templates.</span>
-            </div>
-            <label class="select-wrap">
-              <i data-lucide="arrow-down-up"></i>
-              <select id="sortSelect" aria-label="Sort results">
-                <option value="relevance">Relevance</option>
-                <option value="newest">Newest</option>
-                <option value="title">Title</option>
-              </select>
-            </label>
-          </div>
-          <div class="results-list" id="resultsList"></div>
-        </section>
+    <section class="workspace app-shell" id="workspace" aria-label="Knowledge results" hidden>
+      <div class="results-meta-line">
+        <strong id="resultsHeading">Results</strong>
+        <span id="resultsMeta"></span>
       </div>
+      <div class="results-list results-stack" id="resultsList"></div>
     </section>
   </main>
 
@@ -1795,6 +1720,58 @@
         </div>
       </div>
     </form>
+  </dialog>
+
+  <dialog class="modal library-dialog" id="libraryDialog">
+    <div class="modal-head">
+      <h2 class="modal-title">Library</h2>
+      <button class="icon-button" type="button" id="closeLibraryDialog" aria-label="Close library">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="stats">
+        <div class="stat">
+          <span class="stat-icon"><i data-lucide="database"></i></span>
+          <span><strong id="totalCount">0</strong><span>Saved entries</span></span>
+        </div>
+        <div class="stat">
+          <span class="stat-icon"><i data-lucide="image"></i></span>
+          <span><strong id="imageCount">0</strong><span>Image entries</span></span>
+        </div>
+        <div class="stat">
+          <span class="stat-icon"><i data-lucide="shield-check"></i></span>
+          <span><strong id="adminState">Viewer</strong><span>Current access</span></span>
+        </div>
+      </div>
+
+      <div class="filter-stack" aria-label="Entry filters">
+        <button class="chip active" type="button" data-kind="all"><i data-lucide="layout-grid"></i>All</button>
+        <button class="chip" type="button" data-kind="template"><i data-lucide="copy-check"></i>Templates</button>
+        <button class="chip" type="button" data-kind="note"><i data-lucide="notebook-tabs"></i>Notes</button>
+        <button class="chip" type="button" data-kind="process"><i data-lucide="workflow"></i>Process</button>
+        <button class="chip" type="button" data-kind="image"><i data-lucide="image"></i>Images</button>
+      </div>
+
+      <label class="select-wrap">
+        <span>Sort results</span>
+        <select id="sortSelect" aria-label="Sort results">
+          <option value="relevance">Relevance</option>
+          <option value="newest">Newest</option>
+          <option value="title">Title</option>
+        </select>
+      </label>
+
+      <div class="source-pill">
+        <strong id="sourceName">Local demo</strong><br />
+        <span id="sourceDetail">Add Firebase config when you are ready to sync online.</span>
+      </div>
+
+      <div class="source-pill">
+        <strong id="authStatusTitle">Not signed in</strong><br />
+        <span id="authStatusDetail">Sign in with the admin Google account to add data.</span>
+      </div>
+    </div>
   </dialog>
 
   <dialog class="modal" id="csvDialog">
@@ -1921,7 +1898,6 @@
 
     const STORAGE_KEY = "promptvault.entries.v1";
     const THEME_KEY = "promptvault.theme";
-    const PANEL_KEY = "promptvault.panel";
 
     const seedEntries = [
       {
@@ -2004,7 +1980,9 @@
       moreMenu: document.querySelector("#moreMenu"),
       menuButton: document.querySelector("#menuButton"),
       menuPanel: document.querySelector("#menuPanel"),
-      panelToggle: document.querySelector("#panelToggle"),
+      libraryButton: document.querySelector("#libraryButton"),
+      libraryDialog: document.querySelector("#libraryDialog"),
+      closeLibraryDialog: document.querySelector("#closeLibraryDialog"),
       signInButton: document.querySelector("#signInButton"),
       signOutButton: document.querySelector("#signOutButton"),
       addButton: document.querySelector("#addButton"),
@@ -2149,15 +2127,19 @@
       refreshIcons();
     }
 
-    function applyPanelState(collapsed) {
-      els.workspace.classList.toggle("panel-collapsed", collapsed);
-      const label = collapsed ? "Show side panel" : "Hide side panel";
-      els.panelToggle.setAttribute("aria-expanded", String(!collapsed));
-      els.panelToggle.setAttribute("aria-label", label);
-      els.panelToggle.title = label;
-      els.panelToggle.innerHTML = `<i data-lucide="${collapsed ? "panel-left-open" : "panel-left-close"}"></i>`;
-      localStorage.setItem(PANEL_KEY, collapsed ? "1" : "0");
+    function openLibraryDialog() {
+      if (typeof els.libraryDialog.showModal === "function") {
+        els.libraryDialog.showModal();
+      } else {
+        els.libraryDialog.setAttribute("open", "");
+      }
       refreshIcons();
+    }
+
+    function closeLibraryDialog() {
+      if (els.libraryDialog.open) {
+        els.libraryDialog.close();
+      }
     }
 
     function toggleMenu(open) {
@@ -2324,18 +2306,10 @@
 
       if (signature !== tagRowSignature) {
         tagRowSignature = signature;
-        const tagIcon = `<span class="quick-row-icon" aria-hidden="true"><i data-lucide="tag"></i></span>`;
-        els.quickRow.innerHTML = tagIcon + tags
-          .map((tag) => `<button class="chip quick-search" type="button" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`)
-          .join("");
+        els.quickRow.innerHTML = "";
       }
 
-      els.quickRow.hidden = tags.length === 0;
-
-      els.quickRow.querySelectorAll(".quick-search").forEach((button) => {
-        const isActive = Boolean(activeTag) && (button.dataset.tag || "").toLowerCase() === activeTag;
-        button.classList.toggle("active", isActive);
-      });
+      els.quickRow.hidden = true;
     }
 
     function renderResults(animate = false) {
@@ -2346,7 +2320,14 @@
         ? (state.kind === "all" ? "entries" : `${state.kind} entries`)
         : "templates";
 
-      els.resultsHeading.textContent = hasQuery ? `Results for "${state.query.trim()}"` : "Recent entries";
+      els.workspace.hidden = !hasQuery;
+
+      if (!hasQuery) {
+        els.resultsList.innerHTML = "";
+        return;
+      }
+
+      els.resultsHeading.textContent = `Results for "${state.query.trim()}"`;
       els.resultsMeta.textContent = `${rows.length} ${kindLabel} found`;
 
       if (!rows.length) {
@@ -2436,7 +2417,9 @@
       document.documentElement.classList.toggle("signed-in", signedIn);
       els.addButton.hidden = !signedIn;
       els.aiButton.hidden = !state.isAdmin || !APP_CONFIG.aiWorkerUrl;
-      els.moreMenu.hidden = !state.isAdmin;
+      els.csvButton.hidden = !state.isAdmin;
+      els.exportButton.hidden = !state.isAdmin;
+      els.moreMenu.hidden = !signedIn;
       if (els.moreMenu.hidden) toggleMenu(false);
       els.signOutButton.hidden = !signedIn;
       els.signInButton.hidden = signedIn;
@@ -3477,8 +3460,15 @@
       document.addEventListener("pointerdown", addInteractionRipple);
       initPointerField();
 
-      els.panelToggle.addEventListener("click", () => {
-        applyPanelState(!els.workspace.classList.contains("panel-collapsed"));
+      els.libraryButton.addEventListener("click", () => {
+        toggleMenu(false);
+        openLibraryDialog();
+      });
+      els.closeLibraryDialog.addEventListener("click", closeLibraryDialog);
+      els.libraryDialog.addEventListener("click", (event) => {
+        if (event.target === els.libraryDialog) {
+          closeLibraryDialog();
+        }
       });
       els.menuButton.addEventListener("click", (event) => {
         event.stopPropagation();
@@ -3555,32 +3545,10 @@
         }, 140);
       });
 
-      els.quickRow.addEventListener("click", (event) => {
-        const button = event.target.closest(".quick-search");
-        if (!button) return;
-        const tag = button.dataset.tag || "";
-        const isActive = state.tagFilter && state.tagFilter === tag.toLowerCase();
-
-        if (isActive) {
-          els.searchInput.value = "";
-          state.query = "";
-          state.tagFilter = "";
-        } else {
-          els.searchInput.value = tag;
-          state.query = tag;
-          state.tagFilter = tag.toLowerCase();
-        }
-
-        els.searchInput.focus();
-        renderResults();
-      });
-
       els.filterButtons.forEach((button) => {
         button.addEventListener("click", () => {
           state.kind = button.dataset.kind;
-          state.query = "";
           state.tagFilter = "";
-          els.searchInput.value = "";
           syncFilterButtons();
           renderResults();
         });
@@ -3646,7 +3614,6 @@
     function boot() {
       const savedTheme = localStorage.getItem(THEME_KEY) || "dark";
       applyTheme(savedTheme);
-      applyPanelState(localStorage.getItem(PANEL_KEY) === "1");
       state.entries = loadLocalEntries();
       wireEvents();
       render();
