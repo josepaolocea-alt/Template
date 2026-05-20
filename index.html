@@ -2617,6 +2617,24 @@
         state.firebaseReady = true;
         setSource("Firebase", "Reading from Firestore collection: " + APP_CONFIG.collectionName);
 
+        authMod.getRedirectResult(state.auth)
+          .then((result) => {
+            if (result && result.user) {
+              showToast("Signed in.");
+              if (els.authDialog && els.authDialog.open) {
+                els.authDialog.close();
+              }
+            }
+          })
+          .catch((error) => {
+            console.warn("Google redirect sign-in failed", error);
+            showToast(
+              (typeof authErrorMessage === "function" ? authErrorMessage(error) : null)
+                || "Google sign-in did not complete.",
+              6500
+            );
+          });
+
         const snapshotToEntries = (snapshot) => snapshot.docs.map((doc) => {
           const data = doc.data();
           return {
