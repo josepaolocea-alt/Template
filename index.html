@@ -2976,12 +2976,6 @@
       els.askDialog.close();
     }
 
-    function escapeHtml(text) {
-      const div = document.createElement("div");
-      div.textContent = text;
-      return div.innerHTML;
-    }
-
     function renderAskResults(matches) {
       els.askResultsList.innerHTML = "";
       if (matches.length === 0) {
