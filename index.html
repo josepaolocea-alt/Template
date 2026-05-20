@@ -629,9 +629,29 @@
       font-weight: 500;
     }
 
+    .results-meta-text {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      min-width: 0;
+      flex: 1;
+    }
+
     .results-meta-line strong {
       color: var(--text);
       font-weight: 620;
+    }
+
+    .clear-results {
+      flex: 0 0 auto;
+      min-height: 34px;
+      padding: 0 12px;
+      font-size: 0.84rem;
+    }
+
+    .clear-results svg {
+      width: 16px;
+      height: 16px;
     }
 
     .side-panel {
@@ -1590,7 +1610,6 @@
   <main>
     <section class="hero app-shell" aria-labelledby="heroTitle">
       <div class="hero-content">
-        <p class="eyebrow">Notes &amp; Templates Vault</p>
         <h1 id="heroTitle">ChatJPGC</h1>
         <p class="hero-copy">Type a word, phrase, client name, process, screenshot detail, or template idea. The closest saved entries rise to the top as you type.</p>
 
@@ -1610,8 +1629,14 @@
 
     <section class="workspace app-shell" id="workspace" aria-label="Knowledge results" hidden>
       <div class="results-meta-line">
-        <strong id="resultsHeading">Results</strong>
-        <span id="resultsMeta"></span>
+        <div class="results-meta-text">
+          <strong id="resultsHeading">Results</strong>
+          <span id="resultsMeta"></span>
+        </div>
+        <button class="button ghost clear-results" type="button" id="clearResultsButton" aria-label="Clear results and return to home">
+          <i data-lucide="x"></i>
+          <span>Clear</span>
+        </button>
       </div>
       <div class="results-list results-stack" id="resultsList"></div>
     </section>
@@ -1961,6 +1986,7 @@
       query: "",
       tagFilter: "",
       kind: "all",
+      browseMode: false,
       sort: "relevance",
       editingId: null,
       isAdmin: false,
@@ -1997,6 +2023,7 @@
       resultsList: document.querySelector("#resultsList"),
       resultsHeading: document.querySelector("#resultsHeading"),
       resultsMeta: document.querySelector("#resultsMeta"),
+      clearResultsButton: document.querySelector("#clearResultsButton"),
       totalCount: document.querySelector("#totalCount"),
       imageCount: document.querySelector("#imageCount"),
       adminState: document.querySelector("#adminState"),
@@ -2318,7 +2345,7 @@
       const hasQuery = Boolean(state.query.trim());
       const hasKindFilter = state.kind && state.kind !== "all";
       const hasTagFilter = Boolean(state.tagFilter);
-      const shouldShow = hasQuery || hasKindFilter || hasTagFilter;
+      const shouldShow = hasQuery || hasKindFilter || hasTagFilter || state.browseMode;
       const kindLabel = (state.currentUser || state.isAdmin)
         ? (state.kind === "all" ? "entries" : `${state.kind} entries`)
         : "templates";
@@ -2334,8 +2361,10 @@
         els.resultsHeading.textContent = `Results for "${state.query.trim()}"`;
       } else if (hasTagFilter) {
         els.resultsHeading.textContent = `Tagged "${state.tagFilter}"`;
-      } else {
+      } else if (hasKindFilter) {
         els.resultsHeading.textContent = `${state.kind.charAt(0).toUpperCase()}${state.kind.slice(1)}`;
+      } else {
+        els.resultsHeading.textContent = "All entries";
       }
       els.resultsMeta.textContent = `${rows.length} ${kindLabel} found`;
 
@@ -3558,10 +3587,21 @@
         button.addEventListener("click", () => {
           state.kind = button.dataset.kind;
           state.tagFilter = "";
+          state.browseMode = true;
           syncFilterButtons();
           renderResults();
           closeLibraryDialog();
         });
+      });
+
+      els.clearResultsButton.addEventListener("click", () => {
+        state.query = "";
+        state.kind = "all";
+        state.tagFilter = "";
+        state.browseMode = false;
+        els.searchInput.value = "";
+        syncFilterButtons();
+        renderResults();
       });
 
       els.sortSelect.addEventListener("change", () => {
