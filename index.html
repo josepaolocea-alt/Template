@@ -3631,17 +3631,11 @@
     async function signInWithGoogle() {
       try {
         const authMod = await import("https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js");
-        showToast("Opening Google sign-in...", 6500);
-        await authMod.signInWithPopup(state.auth, state.provider);
-        closeAuthDialog();
+        showToast("Redirecting to Google sign-in...", 4000);
+        await authMod.signInWithRedirect(state.auth, state.provider);
       } catch (error) {
         console.warn("Google sign in failed", error);
         showToast(authErrorMessage(error), 6500);
-
-        if (error && error.code === "auth/popup-blocked") {
-          const authMod = await import("https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js");
-          await authMod.signInWithRedirect(state.auth, state.provider);
-        }
       }
     }
 
