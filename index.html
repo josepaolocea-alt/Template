@@ -1554,6 +1554,63 @@
       }
 
     }
+      .ask-results-heading {
+        margin: 1rem 0 0.5rem;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text-strong, #1f2937);
+      }
+      .ask-results {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .ask-result {
+        padding: 0.75rem 0.9rem;
+        border: 1px solid var(--border, #e5e7eb);
+        border-radius: 0.5rem;
+        background: var(--surface, #fff);
+      }
+      .ask-result.is-strong {
+        border-color: #10b981;
+        background: #ecfdf5;
+      }
+      .ask-result-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 0.5rem;
+        margin-bottom: 0.25rem;
+      }
+      .ask-result-title {
+        font-weight: 600;
+        color: var(--text-strong, #1f2937);
+      }
+      .ask-result-score {
+        font-size: 0.8rem;
+        font-variant-numeric: tabular-nums;
+        color: var(--text-muted, #6b7280);
+        white-space: nowrap;
+      }
+      .ask-result-score.is-strong {
+        color: #047857;
+        font-weight: 600;
+      }
+      .ask-result-meta {
+        font-size: 0.8rem;
+        color: var(--text-muted, #6b7280);
+        margin-bottom: 0.35rem;
+      }
+      .ask-result-snippet {
+        font-size: 0.85rem;
+        color: var(--text, #374151);
+        line-height: 1.4;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
   </style>
 </head>
 <body>
@@ -1596,6 +1653,10 @@
             <button class="button ghost" id="aiButton" type="button" hidden>
               <i data-lucide="sparkles"></i>
               <span>AI generate</span>
+            </button>
+            <button class="button ghost" id="askButton" type="button" hidden>
+              <i data-lucide="search"></i>
+              <span>Ask AI</span>
             </button>
             <button class="button ghost" id="csvButton" type="button" hidden>
               <i data-lucide="upload"></i>
@@ -1751,6 +1812,34 @@
             <span id="aiCopyLabel">Copy text</span>
           </button>
         </div>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="modal" id="askDialog">
+    <div class="modal-head">
+      <h2 class="modal-title">Ask your knowledge base</h2>
+      <button class="icon-button" type="button" id="closeAskDialog" aria-label="Close">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <form class="entry-form" id="askForm">
+      <label>
+        Your question
+        <textarea id="askInput" placeholder="e.g. What did I write about onboarding new clients?" required></textarea>
+      </label>
+
+      <div class="ai-row">
+        <button class="button primary" type="submit" id="askSubmit">
+          <i data-lucide="search"></i>
+          <span id="askSubmitLabel">Search my notes</span>
+        </button>
+        <span class="ai-hint">Finds the most relevant entries by meaning, not just keywords.</span>
+      </div>
+
+      <div id="askResultsWrap" hidden>
+        <h3 class="ask-results-heading" id="askResultsHeading">Top matches</h3>
+        <ul id="askResultsList" class="ask-results"></ul>
       </div>
     </form>
   </dialog>
@@ -2059,6 +2148,16 @@
       aiResultWrap: document.querySelector("#aiResultWrap"),
       aiResult: document.querySelector("#aiResult"),
       aiCopy: document.querySelector("#aiCopy"),
+      askButton: document.querySelector("#askButton"),
+      askDialog: document.querySelector("#askDialog"),
+      closeAskDialog: document.querySelector("#closeAskDialog"),
+      askForm: document.querySelector("#askForm"),
+      askInput: document.querySelector("#askInput"),
+      askSubmit: document.querySelector("#askSubmit"),
+      askSubmitLabel: document.querySelector("#askSubmitLabel"),
+      askResultsWrap: document.querySelector("#askResultsWrap"),
+      askResultsHeading: document.querySelector("#askResultsHeading"),
+      askResultsList: document.querySelector("#askResultsList"),
       entryTags: document.querySelector("#entryTags"),
       entryImageUrl: document.querySelector("#entryImageUrl"),
       entryImageFile: document.querySelector("#entryImageFile"),
@@ -2465,6 +2564,7 @@
       document.documentElement.classList.toggle("signed-in", signedIn);
       els.addButton.hidden = !signedIn;
       els.aiButton.hidden = !state.isAdmin || !APP_CONFIG.aiWorkerUrl;
+      els.askButton.hidden = !state.isAdmin || !APP_CONFIG.aiWorkerUrl;
       els.csvButton.hidden = !state.isAdmin;
       els.exportButton.hidden = !state.isAdmin;
       els.backfillButton.hidden = !state.isAdmin || !APP_CONFIG.aiWorkerUrl;
@@ -2745,6 +2845,26 @@
       return parts.join("\n\n");
     }
 
+    function cosineSimilarity(a, b) {
+      if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length || a.length === 0) {
+        return 0;
+      }
+      let dot = 0;
+      let magA = 0;
+      let magB = 0;
+      for (let i = 0; i < a.length; i++) {
+        dot += a[i] * b[i];
+        magA += a[i] * a[i];
+        magB += b[i] * b[i];
+      }
+      const denom = Math.sqrt(magA) * Math.sqrt(magB);
+      return denom === 0 ? 0 : dot / denom;
+    }
+
+    const ASK_MATCH_THRESHOLD = 0.45;
+    const ASK_MAX_RESULTS = 5;
+    const ASK_SNIPPET_LENGTH = 180;
+
     async function fetchEmbedding(text) {
       if (!APP_CONFIG.aiWorkerUrl) {
         throw new Error("AI worker URL is not configured.");
@@ -2829,6 +2949,114 @@
           : `Embedded ${done} entries. ${failed} failed — see console.`,
         6500
       );
+    }
+
+    function openAskDialog() {
+      if (!state.isAdmin) {
+        showToast("Admin access is required to use AI.");
+        return;
+      }
+      if (!APP_CONFIG.aiWorkerUrl) {
+        showToast("AI is not configured (APP_CONFIG.aiWorkerUrl is empty).");
+        return;
+      }
+
+      els.askForm.reset();
+      els.askResultsList.innerHTML = "";
+      els.askResultsWrap.hidden = true;
+      if (typeof els.askDialog.showModal === "function") {
+        els.askDialog.showModal();
+      } else {
+        els.askDialog.setAttribute("open", "");
+      }
+      window.setTimeout(() => els.askInput.focus(), 0);
+    }
+
+    function closeAskDialog() {
+      els.askDialog.close();
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function renderAskResults(matches) {
+      els.askResultsList.innerHTML = "";
+      if (matches.length === 0) {
+        els.askResultsHeading.textContent = "No entries with embeddings yet";
+        els.askResultsWrap.hidden = false;
+        return;
+      }
+
+      const strongCount = matches.filter((m) => m.score >= ASK_MATCH_THRESHOLD).length;
+      els.askResultsHeading.textContent = strongCount > 0
+        ? `Top ${matches.length} matches — ${strongCount} strong (≥${Math.round(ASK_MATCH_THRESHOLD * 100)}%)`
+        : `Top ${matches.length} matches — none strong enough to cite`;
+
+      const html = matches.map((match) => {
+        const { entry, score } = match;
+        const isStrong = score >= ASK_MATCH_THRESHOLD;
+        const snippet = (entry.body || "").slice(0, ASK_SNIPPET_LENGTH);
+        const ellipsis = (entry.body || "").length > ASK_SNIPPET_LENGTH ? "…" : "";
+        const tagsLine = Array.isArray(entry.tags) && entry.tags.length
+          ? ` · ${entry.tags.slice(0, 5).join(", ")}`
+          : "";
+        return `
+          <li class="ask-result${isStrong ? " is-strong" : ""}">
+            <div class="ask-result-head">
+              <span class="ask-result-title">${escapeHtml(entry.title || "Untitled")}</span>
+              <span class="ask-result-score${isStrong ? " is-strong" : ""}">${(score * 100).toFixed(1)}%${isStrong ? " 📚" : ""}</span>
+            </div>
+            <div class="ask-result-meta">${escapeHtml(entry.kind || "note")}${escapeHtml(tagsLine)}</div>
+            <div class="ask-result-snippet">${escapeHtml(snippet)}${ellipsis}</div>
+          </li>
+        `;
+      }).join("");
+      els.askResultsList.innerHTML = html;
+      els.askResultsWrap.hidden = false;
+    }
+
+    async function runAskSearch(event) {
+      event.preventDefault();
+      if (!APP_CONFIG.aiWorkerUrl) {
+        showToast("AI is not configured (APP_CONFIG.aiWorkerUrl is empty).");
+        return;
+      }
+
+      const question = els.askInput.value.trim();
+      if (!question) {
+        showToast("Type a question first.");
+        return;
+      }
+
+      const candidates = state.entries.filter(
+        (entry) => Array.isArray(entry.embedding) && entry.embedding.length > 0
+      );
+      if (candidates.length === 0) {
+        showToast("No entries have embeddings yet. Run Backfill embeddings first.", 6500);
+        return;
+      }
+
+      const originalLabel = els.askSubmitLabel.textContent;
+      els.askSubmit.disabled = true;
+      els.askSubmitLabel.textContent = "Searching...";
+
+      try {
+        const { embedding: questionVector } = await fetchEmbedding(question);
+        const scored = candidates
+          .map((entry) => ({ entry, score: cosineSimilarity(questionVector, entry.embedding) }))
+          .sort((a, b) => b.score - a.score)
+          .slice(0, ASK_MAX_RESULTS);
+        renderAskResults(scored);
+      } catch (error) {
+        console.warn("Ask search failed", error);
+        showToast(error && error.message ? error.message : "Search failed.");
+      } finally {
+        els.askSubmit.disabled = false;
+        els.askSubmitLabel.textContent = originalLabel;
+      }
     }
 
     async function copyAiResult() {
@@ -3669,6 +3897,9 @@
       els.aiForm.addEventListener("submit", runAiGenerate);
       els.closeAiDialog.addEventListener("click", closeAiDialog);
       els.aiCopy.addEventListener("click", copyAiResult);
+      els.askButton.addEventListener("click", openAskDialog);
+      els.askForm.addEventListener("submit", runAskSearch);
+      els.closeAskDialog.addEventListener("click", closeAskDialog);
       els.csvButton.addEventListener("click", openCsvDialog);
       els.exportButton.addEventListener("click", exportAllEntries);
       els.backfillButton.addEventListener("click", backfillEmbeddings);
