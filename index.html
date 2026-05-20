@@ -2745,6 +2745,26 @@
       return parts.join("\n\n");
     }
 
+    async function fetchEmbedding(text) {
+      if (!APP_CONFIG.aiWorkerUrl) {
+        throw new Error("AI worker URL is not configured.");
+      }
+      const workerUrl = APP_CONFIG.aiWorkerUrl.replace(/\/$/, "");
+      const response = await fetch(`${workerUrl}/embed`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !Array.isArray(data.embedding)) {
+        throw new Error(data.error || `HTTP ${response.status}`);
+      }
+      return {
+        embedding: data.embedding,
+        model: data.model || "@cf/baai/bge-base-en-v1.5"
+      };
+    }
+
     async function backfillEmbeddings() {
       if (!state.isAdmin) {
         showToast("Admin access is required.");
@@ -2786,19 +2806,11 @@
           continue;
         }
         try {
-          const response = await fetch(`${workerUrl}/embed`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text })
-          });
-          const data = await response.json().catch(() => ({}));
-          if (!response.ok || !Array.isArray(data.embedding)) {
-            throw new Error(data.error || `HTTP ${response.status}`);
-          }
+          const { embedding, model } = await fetchEmbedding(text);
           const docRef = state.fire.doc(state.db, APP_CONFIG.collectionName, entry.id);
           await state.fire.updateDoc(docRef, {
-            embedding: data.embedding,
-            embeddingModel: data.model || "@cf/baai/bge-base-en-v1.5",
+            embedding,
+            embeddingModel: model,
             embeddedAt: state.fire.serverTimestamp()
           });
           done++;
@@ -3277,6 +3289,22 @@
             updatedBy: state.currentUser ? state.currentUser.email : "local-admin"
           };
 
+          let embeddingFailed = false;
+          if (APP_CONFIG.aiWorkerUrl) {
+            const embedText = buildEmbeddingText({ title, kind, tags, body });
+            if (embedText.trim()) {
+              try {
+                const { embedding, model } = await fetchEmbedding(embedText);
+                payload.embedding = embedding;
+                payload.embeddingModel = model;
+                payload.embeddedAt = state.fire.serverTimestamp();
+              } catch (error) {
+                console.warn("Embedding generation failed during save", error);
+                embeddingFailed = true;
+              }
+            }
+          }
+
           if (state.editingId) {
             await state.fire.updateDoc(docRef, payload);
           } else {
@@ -3285,6 +3313,10 @@
               createdAt: state.fire.serverTimestamp(),
               createdBy: state.currentUser ? state.currentUser.email : "local-admin"
             });
+          }
+
+          if (embeddingFailed) {
+            showToast("Saved, but embedding failed. Run Backfill embeddings later.", 6500);
           }
         } else {
           const localId = state.editingId || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
