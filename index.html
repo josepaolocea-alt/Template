@@ -1558,7 +1558,7 @@
         margin: 1rem 0 0.5rem;
         font-size: 0.95rem;
         font-weight: 600;
-        color: var(--text-strong, #1f2937);
+        color: var(--text);
       }
       .ask-results {
         list-style: none;
@@ -1570,13 +1570,13 @@
       }
       .ask-result {
         padding: 0.75rem 0.9rem;
-        border: 1px solid var(--border, #e5e7eb);
+        border: 1px solid var(--line);
         border-radius: 0.5rem;
-        background: var(--surface, #fff);
+        background: color-mix(in srgb, var(--panel-solid) 70%, transparent);
       }
       .ask-result.is-strong {
-        border-color: #10b981;
-        background: #ecfdf5;
+        border-color: color-mix(in srgb, var(--accent) 48%, var(--line-strong));
+        background: color-mix(in srgb, var(--accent) 10%, var(--panel-solid));
       }
       .ask-result-head {
         display: flex;
@@ -1587,26 +1587,27 @@
       }
       .ask-result-title {
         font-weight: 600;
-        color: var(--text-strong, #1f2937);
+        color: var(--text);
       }
       .ask-result-score {
         font-size: 0.8rem;
         font-variant-numeric: tabular-nums;
-        color: var(--text-muted, #6b7280);
+        color: var(--muted);
         white-space: nowrap;
       }
       .ask-result-score.is-strong {
-        color: #047857;
+        color: var(--accent);
         font-weight: 600;
       }
       .ask-result-meta {
         font-size: 0.8rem;
-        color: var(--text-muted, #6b7280);
+        color: var(--muted);
         margin-bottom: 0.35rem;
       }
       .ask-result-snippet {
         font-size: 0.85rem;
-        color: var(--text, #374151);
+        color: var(--text);
+        opacity: 0.82;
         line-height: 1.4;
         white-space: pre-wrap;
         word-wrap: break-word;
@@ -1615,16 +1616,16 @@
         padding: 0.9rem 1rem;
         border-radius: 0.5rem;
         margin: 1rem 0 0.75rem;
-        border: 1px solid var(--border, #e5e7eb);
-        background: var(--surface, #fff);
+        border: 1px solid var(--line-strong);
+        background: var(--panel-solid);
       }
       .ask-answer-card.from-sources {
-        background: #ecfdf5;
-        border-color: #10b981;
+        background: color-mix(in srgb, var(--accent) 12%, var(--panel-solid));
+        border-color: color-mix(in srgb, var(--accent) 48%, var(--line-strong));
       }
       .ask-answer-card.general {
-        background: #eff6ff;
-        border-color: #3b82f6;
+        background: color-mix(in srgb, var(--accent-blue) 12%, var(--panel-solid));
+        border-color: color-mix(in srgb, var(--accent-blue) 48%, var(--line-strong));
       }
       .ask-answer-head {
         margin-bottom: 0.5rem;
@@ -1632,20 +1633,20 @@
       .ask-answer-badge {
         font-size: 0.85rem;
         font-weight: 600;
-        color: var(--text-strong, #1f2937);
+        color: var(--text);
       }
       .ask-answer-card.from-sources .ask-answer-badge {
-        color: #047857;
+        color: var(--accent);
       }
       .ask-answer-card.general .ask-answer-badge {
-        color: #1d4ed8;
+        color: var(--accent-blue);
       }
       .ask-answer-text {
         font-size: 0.95rem;
         line-height: 1.5;
         white-space: pre-wrap;
         word-wrap: break-word;
-        color: var(--text-strong, #1f2937);
+        color: var(--text);
       }
       .ask-answer-actions {
         margin-top: 0.75rem;
