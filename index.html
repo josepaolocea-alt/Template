@@ -2045,7 +2045,7 @@
     <div class="modal-foot">
       <button class="button ghost" type="button" id="googleSignInButton">
         <i data-lucide="log-in"></i>
-        <span>Continue with Google</span>
+        <span id="googleSignInLabel">Continue with Google</span>
       </button>
     </div>
   </dialog>
@@ -2246,6 +2246,7 @@
       authPassword: document.querySelector("#authPassword"),
       authSubmit: document.querySelector("#authSubmit"),
       googleSignInButton: document.querySelector("#googleSignInButton"),
+      googleSignInLabel: document.querySelector("#googleSignInLabel"),
       toast: document.querySelector("#toast")
     };
 
@@ -2707,6 +2708,8 @@
           })
           .catch((error) => {
             console.warn("Google redirect sign-in failed", error);
+            els.authStatusTitle.textContent = "Google sign-in failed";
+            els.authStatusDetail.textContent = authErrorMessage(error);
             showToast(
               (typeof authErrorMessage === "function" ? authErrorMessage(error) : null)
                 || "Google sign-in did not complete.",
@@ -3763,6 +3766,8 @@
 
       els.authForm.reset();
       els.authSubmit.disabled = false;
+      els.googleSignInButton.disabled = false;
+      els.googleSignInLabel.textContent = "Continue with Google";
       if (typeof els.authDialog.showModal === "function") {
         els.authDialog.showModal();
       } else {
@@ -3803,32 +3808,19 @@
         showToast("Firebase is not ready yet. Try again in a moment.", 5000);
         return;
       }
+
+      els.googleSignInButton.disabled = true;
+      els.googleSignInLabel.textContent = "Opening Google...";
       try {
         const authMod = await import("https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js");
-        try {
-          const result = await authMod.signInWithPopup(state.auth, state.provider);
-          if (result && result.user) {
-            closeAuthDialog();
-            showToast("Signed in.");
-          }
-        } catch (popupError) {
-          const code = popupError && popupError.code;
-          const shouldFallback = code === "auth/popup-blocked"
-            || code === "auth/operation-not-supported-in-this-environment"
-            || code === "auth/cancelled-popup-request";
-          if (shouldFallback) {
-            showToast("Popup blocked. Redirecting to Google sign-in...", 4000);
-            await authMod.signInWithRedirect(state.auth, state.provider);
-            return;
-          }
-          throw popupError;
-        }
+        state.provider.setCustomParameters({ prompt: "select_account" });
+        showToast("Redirecting to Google sign-in...", 4000);
+        await authMod.signInWithRedirect(state.auth, state.provider);
       } catch (error) {
-        if (error && error.code === "auth/popup-closed-by-user") {
-          return;
-        }
         console.warn("Google sign in failed", error);
         showToast(authErrorMessage(error), 6500);
+        els.googleSignInButton.disabled = false;
+        els.googleSignInLabel.textContent = "Continue with Google";
       }
     }
 
