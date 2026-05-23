@@ -2065,7 +2065,7 @@
       },
       collectionName: "knowledge",
       adminEmails: ["paxifox06@gmail.com", "jpgc06.2023@gmail.com"],
-      googleAllowedEmails: ["paxifox06@gmail.com"],
+      googleAllowedEmails: ["paxifox06@gmail.com", "jpgc06.2023@gmail.com"],
       // URL of the PromptVault AI Worker. Leave empty to hide AI features.
       aiWorkerUrl: "https://promptvault-ai.josepaolo-cea.workers.dev"
     };
@@ -2786,12 +2786,6 @@
           updateAuthUI();
         });
 
-        authMod.getRedirectResult(state.auth).catch((error) => {
-          console.warn("Redirect sign in failed", error);
-          els.authStatusTitle.textContent = "Redirect sign-in failed";
-          els.authStatusDetail.textContent = authErrorMessage(error);
-          showToast(authErrorMessage(error), 6500);
-        });
       } catch (error) {
         console.warn("Firebase init failed", error);
         setSource("Local fallback", "Firebase setup failed, so local demo data is showing.");
