@@ -2065,7 +2065,6 @@
       },
       collectionName: "knowledge",
       adminEmails: ["paxifox06@gmail.com", "jpgc06.2023@gmail.com"],
-      googleAllowedEmails: ["paxifox06@gmail.com", "jpgc06.2023@gmail.com"],
       // URL of the PromptVault AI Worker. Leave empty to hide AI features.
       aiWorkerUrl: "https://promptvault-ai.josepaolo-cea.workers.dev"
     };
@@ -2692,6 +2691,8 @@
         const app = appMod.initializeApp(APP_CONFIG.firebase);
         state.auth = authMod.getAuth(app);
         state.provider = new authMod.GoogleAuthProvider();
+        state.provider.setCustomParameters({ prompt: "select_account" });
+        await authMod.setPersistence(state.auth, authMod.browserLocalPersistence);
         state.db = fireMod.getFirestore(app);
         state.fire = fireMod;
         state.firebaseReady = true;
@@ -2770,12 +2771,14 @@
         subscribeEntries();
 
         authMod.onAuthStateChanged(state.auth, (user) => {
+          const adminEmails = APP_CONFIG.adminEmails.map((email) => email.toLowerCase());
           if (user) {
             const email = (user.email || "").toLowerCase();
             const usedGoogle = (user.providerData || []).some((p) => p && p.providerId === "google.com");
-            const googleAllowed = (APP_CONFIG.googleAllowedEmails || []).map((e) => e.toLowerCase());
-            if (usedGoogle && !googleAllowed.includes(email)) {
-              showToast("This Google account is not allowed. Use the email and password form instead.", 7000);
+            if (usedGoogle && !adminEmails.includes(email)) {
+              els.authStatusTitle.textContent = "Google account not allowed";
+              els.authStatusDetail.textContent = `${email || "This account"} is not listed in adminEmails.`;
+              showToast("This Google account is not listed as an admin. Use email/password instead.", 8000);
               authMod.signOut(state.auth);
               return;
             }
@@ -2783,7 +2786,6 @@
 
           state.currentUser = user;
           const userEmail = user && user.email ? user.email.toLowerCase() : "";
-          const adminEmails = APP_CONFIG.adminEmails.map((email) => email.toLowerCase());
           state.isAdmin = Boolean(userEmail && adminEmails.includes(userEmail));
           subscribeEntries();
           updateAuthUI();
@@ -3813,12 +3815,38 @@
       els.googleSignInLabel.textContent = "Opening Google...";
       try {
         const authMod = await import("https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js");
-        state.provider.setCustomParameters({ prompt: "select_account" });
-        showToast("Redirecting to Google sign-in...", 4000);
-        await authMod.signInWithRedirect(state.auth, state.provider);
+        els.authStatusTitle.textContent = "Opening Google sign-in";
+        els.authStatusDetail.textContent = "Choose your admin Google account in the popup.";
+        const result = await authMod.signInWithPopup(state.auth, state.provider);
+        if (result && result.user) {
+          closeAuthDialog();
+          showToast("Signed in.");
+        }
       } catch (error) {
-        console.warn("Google sign in failed", error);
-        showToast(authErrorMessage(error), 6500);
+        const code = error && error.code;
+        const shouldRedirect = code === "auth/popup-blocked"
+          || code === "auth/operation-not-supported-in-this-environment"
+          || code === "auth/cancelled-popup-request";
+        if (shouldRedirect) {
+          try {
+            const authMod = await import("https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js");
+            els.authStatusTitle.textContent = "Redirecting to Google";
+            els.authStatusDetail.textContent = "The popup was blocked, so Google sign-in will continue on a full page.";
+            showToast("Popup blocked. Redirecting to Google sign-in...", 5000);
+            await authMod.signInWithRedirect(state.auth, state.provider);
+            return;
+          } catch (redirectError) {
+            console.warn("Google redirect sign in failed", redirectError);
+            showToast(authErrorMessage(redirectError), 6500);
+          }
+        } else if (code === "auth/popup-closed-by-user") {
+          showToast("Google sign-in was closed before finishing.", 5000);
+        } else {
+          console.warn("Google sign in failed", error);
+          els.authStatusTitle.textContent = "Google sign-in failed";
+          els.authStatusDetail.textContent = authErrorMessage(error);
+          showToast(authErrorMessage(error), 6500);
+        }
         els.googleSignInButton.disabled = false;
         els.googleSignInLabel.textContent = "Continue with Google";
       }
