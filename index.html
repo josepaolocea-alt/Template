@@ -2072,6 +2072,7 @@
 
     const STORAGE_KEY = "promptvault.entries.v1";
     const THEME_KEY = "promptvault.theme";
+    const SAMPLE_TAGS = ["voip", "sms", "sms & voip"];
 
     const seedEntries = [
       {
@@ -2481,6 +2482,7 @@
 
     function collectAllTags() {
       const seen = new Map();
+      SAMPLE_TAGS.forEach((tag) => seen.set(tag.toLowerCase(), tag));
       state.entries.forEach((entry) => {
         normalizeTags(entry.tags).forEach((tag) => {
           const key = tag.toLowerCase();
@@ -2499,10 +2501,30 @@
 
       if (signature !== tagRowSignature) {
         tagRowSignature = signature;
-        els.quickRow.innerHTML = "";
+        els.quickRow.innerHTML = tags.map((tag) => `
+          <button class="chip quick-search" type="button" data-tag="${escapeHtml(tag)}">
+            <i data-lucide="hash"></i>${escapeHtml(tag)}
+          </button>
+        `).join("");
+        refreshIcons();
       }
 
-      els.quickRow.hidden = true;
+      els.quickRow.querySelectorAll("[data-tag]").forEach((button) => {
+        button.classList.toggle("active", (button.dataset.tag || "").toLowerCase() === activeTag);
+      });
+      els.quickRow.hidden = false;
+    }
+
+    function applyTagFilter(tag) {
+      const cleanTag = String(tag || "").trim();
+      if (!cleanTag) return;
+      els.searchInput.value = cleanTag;
+      state.query = cleanTag;
+      state.tagFilter = cleanTag.toLowerCase();
+      state.kind = "all";
+      state.browseMode = false;
+      syncFilterButtons();
+      renderResults();
     }
 
     function renderResults(animate = false) {
@@ -3398,7 +3420,14 @@
         imageurl: "imageUrl",
         imageuri: "imageUrl",
         url: "imageUrl",
-        link: "imageUrl"
+        link: "imageUrl",
+        attachment: "attachmentUrl",
+        attachmenturl: "attachmentUrl",
+        attachmentlink: "attachmentUrl",
+        file: "attachmentUrl",
+        fileurl: "attachmentUrl",
+        attachmentname: "attachmentName",
+        filename: "attachmentName"
       };
 
       return aliases[key] || key;
@@ -4103,11 +4132,19 @@
         }, 140);
       });
 
+      els.quickRow.addEventListener("click", (event) => {
+        const target = event.target.closest("[data-tag]");
+        if (!target) return;
+        applyTagFilter(target.dataset.tag || "");
+      });
+
       els.filterButtons.forEach((button) => {
         button.addEventListener("click", () => {
           state.kind = button.dataset.kind;
+          state.query = "";
           state.tagFilter = "";
           state.browseMode = true;
+          els.searchInput.value = "";
           syncFilterButtons();
           renderResults();
           closeLibraryDialog();
@@ -4172,10 +4209,7 @@
         }
 
         if (target.dataset.action === "tag") {
-          els.searchInput.value = target.dataset.tag || "";
-          state.query = els.searchInput.value;
-          state.tagFilter = state.query.toLowerCase();
-          renderResults();
+          applyTagFilter(target.dataset.tag || "");
           window.scrollTo({ top: 0, behavior: "smooth" });
         }
       });
