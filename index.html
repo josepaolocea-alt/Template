@@ -765,6 +765,12 @@
       font-weight: 630;
     }
 
+    .source-pill .button {
+      margin-top: 10px;
+      width: 100%;
+      justify-content: flex-start;
+    }
+
     .results-panel {
       overflow: hidden;
     }
@@ -2331,6 +2337,10 @@
       <div class="source-pill">
         <strong>CSV columns</strong><br />
         <span>title, kind, body, tags, imageUrl, attachmentUrl, attachmentName</span>
+        <a class="button ghost" href="sample-import.csv" download="sample-import.csv">
+          <i data-lucide="download"></i>
+          <span>Download sample CSV</span>
+        </a>
       </div>
 
       <div class="source-pill">
