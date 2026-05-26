@@ -1844,15 +1844,22 @@
       }
 
       .icon-button,
-      .topbar-actions .button {
+      .topbar-actions > .button {
         width: 38px;
         min-height: 38px;
         padding: 0;
         justify-content: center;
       }
 
-      .topbar-actions .button.primary {
+      .topbar-actions > .button.primary {
         padding: 0 10px;
+      }
+
+      .menu-panel .button {
+        width: 100%;
+        min-height: 38px;
+        padding: 8px 12px;
+        justify-content: flex-start;
       }
 
       h1 {
