@@ -3265,6 +3265,19 @@
       els.aiResult.style.height = `${els.aiResult.scrollHeight}px`;
     }
 
+    async function authHeader() {
+      const headers = { "Content-Type": "application/json" };
+      const user = state.currentUser;
+      if (user && typeof user.getIdToken === "function") {
+        try {
+          headers.Authorization = `Bearer ${await user.getIdToken()}`;
+        } catch (error) {
+          console.warn("Could not attach auth token to AI request", error);
+        }
+      }
+      return headers;
+    }
+
     async function runAiGenerate(event) {
       event.preventDefault();
       if (!APP_CONFIG.aiWorkerUrl) {
@@ -3285,7 +3298,7 @@
       try {
         const response = await fetch(`${APP_CONFIG.aiWorkerUrl.replace(/\/$/, "")}/generate`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: await authHeader(),
           body: JSON.stringify({
             instructions: prompt
           })
@@ -3346,7 +3359,7 @@
       const workerUrl = APP_CONFIG.aiWorkerUrl.replace(/\/$/, "");
       const response = await fetch(`${workerUrl}/ask`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await authHeader(),
         body: JSON.stringify({ question, sources })
       });
       const data = await response.json().catch(() => ({}));
@@ -3366,7 +3379,7 @@
       const workerUrl = APP_CONFIG.aiWorkerUrl.replace(/\/$/, "");
       const response = await fetch(`${workerUrl}/embed`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await authHeader(),
         body: JSON.stringify({ text })
       });
       const data = await response.json().catch(() => ({}));
