@@ -548,13 +548,35 @@
       transform: translateY(-2px);
     }
 
+    .quick-tags {
+      display: grid;
+      justify-items: center;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .tag-toggle {
+      min-height: 34px;
+      padding: 0 13px;
+    }
+
+    .tag-toggle svg:last-child {
+      width: 15px;
+      height: 15px;
+      transition: transform 180ms var(--ease-out);
+    }
+
+    .tag-toggle[aria-expanded="true"] svg:last-child {
+      transform: rotate(180deg);
+    }
+
     .quick-row {
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
       align-items: center;
       justify-content: center;
-      margin-top: 16px;
+      margin-top: 0;
     }
 
     .quick-row-icon {
@@ -2123,7 +2145,14 @@
           </form>
         </div>
 
-        <div class="quick-row" id="quickRow" aria-label="Tags"></div>
+        <div class="quick-tags" aria-label="Quick tags">
+          <button class="chip tag-toggle" id="quickTagToggle" type="button" aria-expanded="false" aria-controls="quickRow">
+            <i data-lucide="tags"></i>
+            <span id="quickTagToggleLabel">Show tags</span>
+            <i data-lucide="chevron-down"></i>
+          </button>
+          <div class="quick-row" id="quickRow" aria-label="Tags" hidden></div>
+        </div>
       </div>
     </section>
 
@@ -2544,6 +2573,7 @@
       entries: [],
       query: "",
       tagFilter: "",
+      quickTagsOpen: false,
       kind: "all",
       browseMode: false,
       sort: "relevance",
@@ -2577,6 +2607,8 @@
       backfillLabel: document.querySelector("#backfillLabel"),
       searchForm: document.querySelector("#searchForm"),
       searchInput: document.querySelector("#searchInput"),
+      quickTagToggle: document.querySelector("#quickTagToggle"),
+      quickTagToggleLabel: document.querySelector("#quickTagToggleLabel"),
       quickRow: document.querySelector("#quickRow"),
       filterButtons: document.querySelectorAll("[data-kind]"),
       sortSelect: document.querySelector("#sortSelect"),
@@ -2913,23 +2945,29 @@
 
     function renderTagRow() {
       const tags = collectAllTags();
-      const signature = tags.join("|").toLowerCase();
-      const activeTag = state.tagFilter.trim().toLowerCase();
+      const signature = `${state.quickTagsOpen ? "open" : "closed"}:${state.tagFilter}:${tags.join("|")}`;
+      els.quickTagToggle.setAttribute("aria-expanded", String(state.quickTagsOpen));
+      els.quickTagToggleLabel.textContent = state.quickTagsOpen ? "Hide tags" : "Show tags";
 
-      if (signature !== tagRowSignature) {
+      if (!state.quickTagsOpen) {
+        els.quickRow.hidden = true;
+        els.quickRow.innerHTML = "";
         tagRowSignature = signature;
-        els.quickRow.innerHTML = tags.map((tag) => `
-          <button class="chip quick-search" type="button" data-tag="${escapeHtml(tag)}">
-            <i data-lucide="hash"></i>${escapeHtml(tag)}
-          </button>
-        `).join("");
-        refreshIcons();
+        return;
       }
 
-      els.quickRow.querySelectorAll("[data-tag]").forEach((button) => {
-        button.classList.toggle("active", (button.dataset.tag || "").toLowerCase() === activeTag);
-      });
+      if (tagRowSignature === signature) {
+        els.quickRow.hidden = false;
+        return;
+      }
+
       els.quickRow.hidden = false;
+      els.quickRow.innerHTML = tags.map((tag) => {
+        const active = state.tagFilter === tag.toLowerCase();
+        return `<button class="chip${active ? " active" : ""}" type="button" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`;
+      }).join("");
+      tagRowSignature = signature;
+      refreshIcons();
     }
 
     function applyTagFilter(tag) {
@@ -4646,6 +4684,11 @@
         const target = event.target.closest("[data-tag]");
         if (!target) return;
         applyTagFilter(target.dataset.tag || "");
+      });
+
+      els.quickTagToggle.addEventListener("click", () => {
+        state.quickTagsOpen = !state.quickTagsOpen;
+        renderTagRow();
       });
 
       els.filterButtons.forEach((button) => {
