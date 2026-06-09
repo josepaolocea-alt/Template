@@ -1947,10 +1947,17 @@
         border: 1px solid var(--line);
         border-radius: 0.5rem;
         background: color-mix(in srgb, var(--panel-solid) 70%, transparent);
+        cursor: pointer;
+        transition: transform var(--motion-mid) var(--ease-spring), border-color var(--motion-mid) ease, background var(--motion-mid) ease;
       }
       .ask-result.is-strong {
         border-color: color-mix(in srgb, var(--accent) 48%, var(--line-strong));
         background: color-mix(in srgb, var(--accent) 10%, var(--panel-solid));
+      }
+      .ask-result:hover,
+      .ask-result:focus-visible {
+        transform: translateY(-1px);
+        border-color: color-mix(in srgb, var(--accent) 48%, var(--line-strong));
       }
       .ask-result-head {
         display: flex;
@@ -2024,6 +2031,16 @@
       }
       .ask-answer-actions {
         margin-top: 0.75rem;
+      }
+      .entry-detail-body {
+        max-height: min(56vh, 520px);
+        overflow: auto;
+        padding-right: 4px;
+      }
+      .entry-detail-text {
+        white-space: pre-wrap;
+        line-height: 1.55;
+        color: var(--text);
       }
   </style>
 </head>
@@ -2162,7 +2179,7 @@
       <div class="field-grid">
         <label>
           Image URL
-          <input id="entryImageUrl" name="imageUrl" type="url" placeholder="https://..." />
+          <input id="entryImageUrl" name="imageUrl" type="text" inputmode="url" placeholder="https://... or saved image data" />
         </label>
         <label>
           Image file
@@ -2319,6 +2336,21 @@
         <strong id="authStatusTitle">Not signed in</strong><br />
         <span id="authStatusDetail">Sign in with the admin Google account to add data.</span>
       </div>
+    </div>
+  </dialog>
+
+  <dialog class="modal" id="entryDetailDialog">
+    <div class="modal-head">
+      <h2 class="modal-title" id="entryDetailTitle">Entry details</h2>
+      <button class="icon-button" type="button" id="closeEntryDetailDialog" aria-label="Close entry details">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <div class="entry-form entry-detail-body">
+      <div class="tag-row" id="entryDetailMeta"></div>
+      <div class="image-preview" id="entryDetailImage" hidden></div>
+      <div class="entry-detail-text" id="entryDetailText"></div>
+      <div class="modal-foot" id="entryDetailActions" hidden></div>
     </div>
   </dialog>
 
@@ -2593,6 +2625,13 @@
       askAnswerText: document.querySelector("#askAnswerText"),
       askAnswerActions: document.querySelector("#askAnswerActions"),
       askSaveAsEntry: document.querySelector("#askSaveAsEntry"),
+      entryDetailDialog: document.querySelector("#entryDetailDialog"),
+      closeEntryDetailDialog: document.querySelector("#closeEntryDetailDialog"),
+      entryDetailTitle: document.querySelector("#entryDetailTitle"),
+      entryDetailMeta: document.querySelector("#entryDetailMeta"),
+      entryDetailImage: document.querySelector("#entryDetailImage"),
+      entryDetailText: document.querySelector("#entryDetailText"),
+      entryDetailActions: document.querySelector("#entryDetailActions"),
       entryTags: document.querySelector("#entryTags"),
       entryImageUrl: document.querySelector("#entryImageUrl"),
       entryImageFile: document.querySelector("#entryImageFile"),
@@ -3216,7 +3255,11 @@
         els.entryDialog.setAttribute("open", "");
       }
       window.setTimeout(() => {
-        els.entryTitle.focus();
+        if (entry && entry.imageUrl && !entry.body) {
+          els.entryBody.focus();
+        } else {
+          els.entryTitle.focus();
+        }
         resizeEntryBody();
       }, 0);
     }
@@ -3486,6 +3529,55 @@
       els.askDialog.close();
     }
 
+    function openEntryDetailDialog(entryId) {
+      const entry = state.entries.find((item) => item.id === entryId);
+      if (!entry) {
+        showToast("That entry could not be found.");
+        return;
+      }
+
+      const tags = normalizeTags(entry.tags);
+      els.entryDetailTitle.textContent = entry.title || "Untitled";
+      els.entryDetailMeta.innerHTML = `
+        <span class="tag kind kind-${escapeHtml(String(entry.kind || "note").toLowerCase().replace(/[^a-z0-9-]/g, ""))}">${escapeHtml(entry.kind || "note")}</span>
+        <span class="tag">${escapeHtml(formatDate(entry.createdAt))}</span>
+        ${tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}
+      `;
+      els.entryDetailText.textContent = entry.body || "No text saved for this entry.";
+
+      if (entry.imageUrl) {
+        els.entryDetailImage.hidden = false;
+        els.entryDetailImage.innerHTML = `<img src="${escapeHtml(entry.imageUrl)}" alt="${escapeHtml(entry.title || "Entry image")}" />`;
+      } else {
+        els.entryDetailImage.hidden = true;
+        els.entryDetailImage.innerHTML = "";
+      }
+
+      if (entry.attachmentUrl) {
+        els.entryDetailActions.hidden = false;
+        els.entryDetailActions.innerHTML = `
+          <button class="button ghost" type="button" data-detail-action="download" data-id="${escapeHtml(entry.id)}">
+            <i data-lucide="download"></i>
+            <span>Download attachment</span>
+          </button>
+        `;
+      } else {
+        els.entryDetailActions.hidden = true;
+        els.entryDetailActions.innerHTML = "";
+      }
+
+      refreshIcons();
+      if (typeof els.entryDetailDialog.showModal === "function") {
+        els.entryDetailDialog.showModal();
+      } else {
+        els.entryDetailDialog.setAttribute("open", "");
+      }
+    }
+
+    function closeEntryDetailDialog() {
+      els.entryDetailDialog.close();
+    }
+
     function renderAskMatches(matches) {
       els.askResultsList.innerHTML = "";
       if (matches.length === 0) {
@@ -3507,7 +3599,7 @@
           ? ` · ${entry.tags.slice(0, 5).join(", ")}`
           : "";
         return `
-          <li class="ask-result${isStrong ? " is-strong" : ""}">
+          <li class="ask-result${isStrong ? " is-strong" : ""}" tabindex="0" role="button" data-entry-id="${escapeHtml(entry.id)}" aria-label="Open ${escapeHtml(entry.title || "entry")}">
             <div class="ask-result-head">
               <span class="ask-result-title">${escapeHtml(entry.title || "Untitled")}</span>
               <span class="ask-result-score${isStrong ? " is-strong" : ""}">${(score * 100).toFixed(1)}%${isStrong ? " 📚" : ""}</span>
@@ -4493,6 +4585,19 @@
       els.askForm.addEventListener("submit", runAskSearch);
       els.closeAskDialog.addEventListener("click", closeAskDialog);
       els.askSaveAsEntry.addEventListener("click", saveAnswerAsEntry);
+      els.closeEntryDetailDialog.addEventListener("click", closeEntryDetailDialog);
+      els.entryDetailDialog.addEventListener("click", (event) => {
+        if (event.target === els.entryDetailDialog) {
+          closeEntryDetailDialog();
+        }
+      });
+      els.entryDetailActions.addEventListener("click", (event) => {
+        const target = event.target.closest("[data-detail-action]");
+        if (!target) return;
+        if (target.dataset.detailAction === "download") {
+          downloadAttachment(target.dataset.id);
+        }
+      });
       els.csvButton.addEventListener("click", openCsvDialog);
       els.exportButton.addEventListener("click", exportAllEntries);
       els.backfillButton.addEventListener("click", backfillEmbeddings);
@@ -4587,6 +4692,20 @@
       els.entryAttachmentUrl.addEventListener("input", () => {
         const url = els.entryAttachmentUrl.value.trim();
         renderAttachmentPreview(url ? { attachmentUrl: url, attachmentName: externalAttachmentName(url) } : null);
+      });
+
+      els.askResultsList.addEventListener("click", (event) => {
+        const target = event.target.closest("[data-entry-id]");
+        if (!target) return;
+        openEntryDetailDialog(target.dataset.entryId);
+      });
+
+      els.askResultsList.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        const target = event.target.closest("[data-entry-id]");
+        if (!target) return;
+        event.preventDefault();
+        openEntryDetailDialog(target.dataset.entryId);
       });
 
       els.resultsList.addEventListener("click", (event) => {
