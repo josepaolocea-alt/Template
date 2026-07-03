@@ -1,3 +1,4 @@
+
 # PromptVault
 
 A static HTML app for searching personal notes, templates, and image references from one AI-style search box.
