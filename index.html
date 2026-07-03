@@ -1179,6 +1179,45 @@
       line-height: 1.5;
     }
 
+    .format-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .format-button {
+      min-height: 34px;
+      padding: 0 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid var(--line-strong);
+      border-radius: 9px;
+      background: color-mix(in srgb, var(--bg) 64%, transparent);
+      color: var(--text);
+      font-size: 0.82rem;
+      font-weight: 640;
+      transition: transform var(--motion-mid) var(--ease-spring), border-color var(--motion-mid) ease, background var(--motion-mid) ease;
+    }
+
+    .format-button:hover {
+      border-color: color-mix(in srgb, var(--accent) 30%, var(--line-strong));
+      transform: translateY(-1px);
+    }
+
+    .format-button svg {
+      width: 15px;
+      height: 15px;
+      stroke-width: 2.4;
+    }
+
+    .format-hint {
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 500;
+    }
+
     .ai-row {
       display: flex;
       align-items: center;
@@ -2181,6 +2220,13 @@
 
       <label>
         Text
+        <div class="format-toolbar">
+          <button type="button" id="entryBoldButton" class="format-button" title="Bold (Ctrl+B)" aria-label="Bold selected text">
+            <i data-lucide="bold"></i>
+            <span>Bold</span>
+          </button>
+          <span class="format-hint">Select text, then Bold or Ctrl+B, to wrap it in **asterisks**.</span>
+        </div>
         <textarea id="entryBody" name="body" placeholder="Paste the note, template, caption, or searchable details here."></textarea>
       </label>
 
@@ -2616,6 +2662,7 @@
       entryTitle: document.querySelector("#entryTitle"),
       entryKind: document.querySelector("#entryKind"),
       entryBody: document.querySelector("#entryBody"),
+      entryBoldButton: document.querySelector("#entryBoldButton"),
       aiButton: document.querySelector("#aiButton"),
       aiDialog: document.querySelector("#aiDialog"),
       closeAiDialog: document.querySelector("#closeAiDialog"),
@@ -2707,6 +2754,11 @@
         .replaceAll(">", "&gt;")
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
+    }
+
+    // Escapes HTML, then renders **double asterisks** as bold text.
+    function renderBodyHtml(value = "") {
+      return escapeHtml(value).replace(/\*\*([\s\S]+?)\*\*/g, "<strong>$1</strong>");
     }
 
     function normalizeTags(tags) {
@@ -3036,7 +3088,7 @@
           </button>
         ` : "";
 
-        const body = entry.body ? `<p class="result-text">${escapeHtml(entry.body)}</p>` : `<p class="result-text">Image reference saved without text.</p>`;
+        const body = entry.body ? `<p class="result-text">${renderBodyHtml(entry.body)}</p>` : `<p class="result-text">Image reference saved without text.</p>`;
 
         return `
           <article class="result-card ${entry.imageUrl ? "has-image" : ""}" data-kind="${escapeHtml(entry.kind || "note")}" style="--i:${Math.min(index, 10)}">
@@ -3297,6 +3349,46 @@
       els.entryBody.style.height = "auto";
       els.entryBody.style.height = `${els.entryBody.scrollHeight}px`;
       els.entryBody.style.overflowY = els.entryBody.scrollHeight > els.entryBody.clientHeight ? "auto" : "hidden";
+    }
+
+    // Toggle **bold** markers around the current textarea selection.
+    function toggleEntryBodyBold() {
+      const ta = els.entryBody;
+      const marker = "**";
+      const value = ta.value;
+      const start = ta.selectionStart;
+      const end = ta.selectionEnd;
+      const selected = value.slice(start, end);
+
+      if (start === end) {
+        // No selection: drop in an empty pair and place the cursor inside.
+        ta.value = value.slice(0, start) + marker + marker + value.slice(end);
+        const caret = start + marker.length;
+        ta.setSelectionRange(caret, caret);
+      } else if (
+        value.slice(start - marker.length, start) === marker &&
+        value.slice(end, end + marker.length) === marker
+      ) {
+        // Markers hug the selection already: remove them (unbold).
+        ta.value = value.slice(0, start - marker.length) + selected + value.slice(end + marker.length);
+        ta.setSelectionRange(start - marker.length, end - marker.length);
+      } else if (
+        selected.startsWith(marker) &&
+        selected.endsWith(marker) &&
+        selected.length >= marker.length * 2
+      ) {
+        // Selection includes the markers: strip them (unbold).
+        const inner = selected.slice(marker.length, selected.length - marker.length);
+        ta.value = value.slice(0, start) + inner + value.slice(end);
+        ta.setSelectionRange(start, start + inner.length);
+      } else {
+        // Wrap the selection in bold markers.
+        ta.value = value.slice(0, start) + marker + selected + marker + value.slice(end);
+        ta.setSelectionRange(start + marker.length, end + marker.length);
+      }
+
+      ta.focus();
+      resizeEntryBody();
     }
 
     function openAiDialog() {
@@ -3565,7 +3657,7 @@
         <span class="tag">${escapeHtml(formatDate(entry.createdAt))}</span>
         ${tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}
       `;
-      els.entryDetailText.textContent = entry.body || "No text saved for this entry.";
+      els.entryDetailText.innerHTML = entry.body ? renderBodyHtml(entry.body) : "No text saved for this entry.";
 
       if (entry.imageUrl) {
         els.entryDetailImage.hidden = false;
@@ -4627,6 +4719,15 @@
       els.cancelEntry.addEventListener("click", closeEntryDialog);
       els.entryForm.addEventListener("submit", saveEntry);
       els.entryBody.addEventListener("input", resizeEntryBody);
+      // Keep the textarea selection when the Bold button is pressed.
+      els.entryBoldButton.addEventListener("mousedown", (event) => event.preventDefault());
+      els.entryBoldButton.addEventListener("click", toggleEntryBodyBold);
+      els.entryBody.addEventListener("keydown", (event) => {
+        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "b") {
+          event.preventDefault();
+          toggleEntryBodyBold();
+        }
+      });
       els.closeCsvDialog.addEventListener("click", closeCsvDialog);
       els.cancelCsvImport.addEventListener("click", closeCsvDialog);
       els.csvForm.addEventListener("submit", importCsvEntries);
