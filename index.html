@@ -531,6 +531,12 @@
       outline: none;
     }
 
+    .promptbar input:focus,
+    .promptbar input:focus-visible {
+      box-shadow: none;
+      border-color: transparent;
+    }
+
     .promptbar input::placeholder {
       color: color-mix(in srgb, var(--muted) 74%, transparent);
     }
