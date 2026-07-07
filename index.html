@@ -331,7 +331,7 @@
     .icon-button:hover,
     .chip:hover {
       transform: translateY(-1px);
-      border-color: color-mix(in srgb, var(--accent) 44%, var(--line-strong));
+      border-color: var(--line-strong);
       box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
     }
 
@@ -349,8 +349,8 @@
     textarea:focus-visible,
     select:focus-visible {
       outline: none;
-      box-shadow: var(--focus);
-      border-color: var(--accent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--text) 14%, transparent);
+      border-color: var(--line-strong);
     }
 
     .button {
@@ -839,7 +839,7 @@
 
     .select-wrap select:hover {
       transform: translateY(-1px);
-      border-color: color-mix(in srgb, var(--accent) 34%, var(--line-strong));
+      border-color: var(--line-strong);
     }
 
     .results-list {
@@ -1154,7 +1154,7 @@
     input:hover,
     textarea:hover,
     select:hover {
-      border-color: color-mix(in srgb, var(--accent) 26%, var(--line-strong));
+      border-color: var(--line-strong);
     }
 
     input:focus,
@@ -1202,7 +1202,7 @@
     }
 
     .format-button:hover {
-      border-color: color-mix(in srgb, var(--accent) 30%, var(--line-strong));
+      border-color: var(--line-strong);
       transform: translateY(-1px);
     }
 
