@@ -2146,6 +2146,10 @@
               <i data-lucide="library"></i>
               <span>Library</span>
             </button>
+            <button class="button ghost" id="favoritesButton" type="button">
+              <i data-lucide="star"></i>
+              <span>Favorites</span>
+            </button>
             <button class="button ghost" id="aiButton" type="button" hidden>
               <i data-lucide="sparkles"></i>
               <span>AI generate</span>
@@ -2649,6 +2653,7 @@
       menuButton: document.querySelector("#menuButton"),
       menuPanel: document.querySelector("#menuPanel"),
       libraryButton: document.querySelector("#libraryButton"),
+      favoritesButton: document.querySelector("#favoritesButton"),
       libraryDialog: document.querySelector("#libraryDialog"),
       closeLibraryDialog: document.querySelector("#closeLibraryDialog"),
       signInButton: document.querySelector("#signInButton"),
@@ -4738,6 +4743,17 @@
       els.libraryButton.addEventListener("click", () => {
         toggleMenu(false);
         openLibraryDialog();
+      });
+      els.favoritesButton.addEventListener("click", () => {
+        toggleMenu(false);
+        state.kind = "favorite";
+        state.query = "";
+        state.tagFilter = "";
+        state.browseMode = true;
+        els.searchInput.value = "";
+        syncFilterButtons();
+        renderResults();
+        window.scrollTo({ top: 0, behavior: "smooth" });
       });
       els.closeLibraryDialog.addEventListener("click", closeLibraryDialog);
       els.libraryDialog.addEventListener("click", (event) => {
