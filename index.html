@@ -965,6 +965,20 @@
       height: 36px;
     }
 
+    .favorite-button.is-favorite {
+      border-color: color-mix(in srgb, var(--accent-warm) 55%, var(--line-strong));
+      color: var(--accent-warm);
+      background: color-mix(in srgb, var(--accent-warm) 16%, transparent);
+    }
+
+    .favorite-button.is-favorite svg {
+      fill: var(--accent-warm);
+    }
+
+    .favorite-button:hover svg {
+      transform: translateY(-1px) scale(1.06);
+    }
+
     .result-text {
       margin: 0;
       color: var(--muted);
@@ -2377,6 +2391,7 @@
 
       <div class="filter-stack" aria-label="Entry filters">
         <button class="chip active" type="button" data-kind="all"><i data-lucide="layout-grid"></i>All</button>
+        <button class="chip" type="button" data-kind="favorite"><i data-lucide="star"></i>Favorites</button>
         <button class="chip" type="button" data-kind="template"><i data-lucide="copy-check"></i>Templates</button>
         <button class="chip" type="button" data-kind="note"><i data-lucide="notebook-tabs"></i>Notes</button>
         <button class="chip" type="button" data-kind="process"><i data-lucide="workflow"></i>Process</button>
@@ -2546,6 +2561,7 @@
 
     const STORAGE_KEY = "promptvault.entries.v1";
     const THEME_KEY = "promptvault.theme";
+    const FAVORITES_KEY = "promptvault.favorites.v1";
     const SAMPLE_TAGS = ["voip", "sms", "sms & voip"];
 
     const seedEntries = [
@@ -2607,6 +2623,7 @@
 
     const state = {
       entries: [],
+      favorites: new Set(),
       query: "",
       tagFilter: "",
       quickTagsOpen: false,
@@ -2804,6 +2821,50 @@
       }
     }
 
+    // Favorites are a personal, per-browser preference (entries are shared),
+    // so they live in localStorage as a list of entry ids rather than on the
+    // shared entry documents.
+    function loadFavorites() {
+      try {
+        const stored = JSON.parse(localStorage.getItem(FAVORITES_KEY) || "null");
+        return new Set(Array.isArray(stored) ? stored.map(String) : []);
+      } catch (error) {
+        console.warn("Could not load favorites", error);
+        return new Set();
+      }
+    }
+
+    function persistFavorites() {
+      try {
+        localStorage.setItem(FAVORITES_KEY, JSON.stringify([...state.favorites]));
+      } catch (error) {
+        showToast("This browser could not save your favorites.");
+        console.warn("Could not save favorites", error);
+      }
+    }
+
+    function isFavorite(id) {
+      return state.favorites.has(String(id));
+    }
+
+    function toggleFavorite(id) {
+      const entry = state.entries.find((item) => item.id === id);
+      if (!entry) {
+        showToast("That entry could not be found.");
+        return;
+      }
+      const key = String(id);
+      if (state.favorites.has(key)) {
+        state.favorites.delete(key);
+        showToast("Removed from favorites.");
+      } else {
+        state.favorites.add(key);
+        showToast("Added to favorites.");
+      }
+      persistFavorites();
+      renderResults();
+    }
+
     function applyTheme(theme) {
       document.documentElement.dataset.theme = theme;
       localStorage.setItem(THEME_KEY, theme);
@@ -2922,6 +2983,7 @@
         .filter((entry) => state.isAdmin || state.currentUser || entry.kind === "template")
         .filter((entry) => {
           if (state.kind === "all") return true;
+          if (state.kind === "favorite") return state.favorites.has(String(entry.id));
           if (state.kind === "image") return entry.kind === "image" || Boolean(entry.imageUrl);
           return entry.kind === state.kind;
         })
@@ -2960,7 +3022,7 @@
 
     function syncFilterButtons() {
       const canSeeAll = Boolean(state.currentUser || state.isAdmin);
-      if (!canSeeAll && state.kind !== "all" && state.kind !== "template") {
+      if (!canSeeAll && state.kind !== "all" && state.kind !== "template" && state.kind !== "favorite") {
         state.kind = "all";
       }
 
@@ -3031,9 +3093,11 @@
       const hasKindFilter = state.kind && state.kind !== "all";
       const hasTagFilter = Boolean(state.tagFilter);
       const shouldShow = hasQuery || hasKindFilter || hasTagFilter || state.browseMode;
-      const kindLabel = (state.currentUser || state.isAdmin)
-        ? (state.kind === "all" ? "entries" : `${state.kind} entries`)
-        : "templates";
+      const kindLabel = state.kind === "favorite"
+        ? "favorites"
+        : ((state.currentUser || state.isAdmin)
+          ? (state.kind === "all" ? "entries" : `${state.kind} entries`)
+          : "templates");
 
       els.workspace.hidden = !shouldShow;
 
@@ -3047,19 +3111,24 @@
       } else if (hasTagFilter) {
         els.resultsHeading.textContent = `Tagged "${state.tagFilter}"`;
       } else if (hasKindFilter) {
-        els.resultsHeading.textContent = `${state.kind.charAt(0).toUpperCase()}${state.kind.slice(1)}`;
+        els.resultsHeading.textContent = state.kind === "favorite"
+          ? "Favorites"
+          : `${state.kind.charAt(0).toUpperCase()}${state.kind.slice(1)}`;
       } else {
         els.resultsHeading.textContent = "All entries";
       }
       els.resultsMeta.textContent = `${rows.length} ${kindLabel} found`;
 
       if (!rows.length) {
+        const noFavorites = state.kind === "favorite";
         els.resultsList.innerHTML = `
           <div class="empty-state">
             <div>
-              <i data-lucide="search-x"></i>
-              <strong>No matches yet</strong>
-              <span>${(state.currentUser || state.isAdmin) ? "Try another phrase or add a new entry." : "Try another phrase to search public templates."}</span>
+              <i data-lucide="${noFavorites ? "star" : "search-x"}"></i>
+              <strong>${noFavorites ? "No favorites yet" : "No matches yet"}</strong>
+              <span>${noFavorites
+                ? "Tap the star on any entry to save it here."
+                : ((state.currentUser || state.isAdmin) ? "Try another phrase or add a new entry." : "Try another phrase to search public templates.")}</span>
             </div>
           </div>
         `;
@@ -3072,6 +3141,12 @@
       els.resultsList.innerHTML = rows.map(({ entry }, index) => {
         const tags = normalizeTags(entry.tags);
         const kindClass = String(entry.kind || "note").toLowerCase().replace(/[^a-z0-9-]/g, "");
+        const favorited = isFavorite(entry.id);
+        const favoriteButton = `
+          <button class="icon-button tiny-button favorite-button${favorited ? " is-favorite" : ""}" type="button" data-action="favorite" data-id="${escapeHtml(entry.id)}" aria-pressed="${favorited}" aria-label="${favorited ? "Remove from favorites" : "Add to favorites"}" title="${favorited ? "Remove from favorites" : "Add to favorites"}">
+            <i data-lucide="star"></i>
+          </button>
+        `;
         const adminActions = canManageEntry(entry) ? `
           <button class="icon-button tiny-button" type="button" data-action="edit" data-id="${escapeHtml(entry.id)}" aria-label="Edit entry">
             <i data-lucide="pencil"></i>
@@ -3110,6 +3185,7 @@
                   </div>
                 </div>
                 <div class="result-actions">
+                  ${favoriteButton}
                   ${adminActions}
                   ${attachmentActions}
                   <button class="icon-button tiny-button" type="button" data-action="copy" data-id="${escapeHtml(entry.id)}" aria-label="Copy text">
@@ -4858,6 +4934,10 @@
           copyEntry(target.dataset.id);
         }
 
+        if (target.dataset.action === "favorite") {
+          toggleFavorite(target.dataset.id);
+        }
+
         if (target.dataset.action === "download-file") {
           downloadAttachment(target.dataset.id);
         }
@@ -4876,6 +4956,7 @@
     function boot() {
       const savedTheme = localStorage.getItem(THEME_KEY) || "dark";
       applyTheme(savedTheme);
+      state.favorites = loadFavorites();
       state.entries = loadLocalEntries();
       wireEvents();
       render();
