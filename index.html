@@ -4023,6 +4023,10 @@
             reject(new Error("Canvas is not supported in this browser"));
             return;
           }
+          // JPEG has no transparency; fill white so transparent PNGs don't
+          // come out with a black background.
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, width, height);
           ctx.drawImage(img, 0, 0, width, height);
 
           let quality = 0.72;
@@ -4416,6 +4420,10 @@
 
         const fileDataUrl = imageFile ? await readImageFile(imageFile) : "";
         const imageUrl = fileDataUrl || els.entryImageUrl.value.trim();
+        if (imageUrl.length > MAX_IMAGE_DATA_URL) {
+          showToast("That image is too large or in a format this browser can't shrink (e.g. HEIC). Save it as PNG or JPG and try again.", 7500);
+          return;
+        }
         const now = new Date().toISOString();
 
         if (state.firebaseReady && state.fire && state.db) {
