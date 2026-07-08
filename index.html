@@ -1102,6 +1102,10 @@
       background: #000;
     }
 
+    .image-dialog-text {
+      margin-top: 16px;
+    }
+
     .modal[open] {
       animation: modalIn 280ms var(--ease-out) both;
     }
@@ -2484,6 +2488,7 @@
     </div>
     <div class="image-dialog-body">
       <img id="imageDialogImg" src="" alt="" />
+      <div class="entry-detail-text image-dialog-text" id="imageDialogText" hidden></div>
     </div>
   </dialog>
 
@@ -2740,6 +2745,7 @@
       imageDialog: document.querySelector("#imageDialog"),
       imageDialogTitle: document.querySelector("#imageDialogTitle"),
       imageDialogImg: document.querySelector("#imageDialogImg"),
+      imageDialogText: document.querySelector("#imageDialogText"),
       closeImageDialog: document.querySelector("#closeImageDialog"),
       deleteDialog: document.querySelector("#deleteDialog"),
       closeDeleteDialog: document.querySelector("#closeDeleteDialog"),
@@ -4315,6 +4321,14 @@
       els.imageDialogImg.src = entry.imageUrl;
       els.imageDialogImg.alt = entry.title || "Image preview";
 
+      if (entry.body) {
+        els.imageDialogText.hidden = false;
+        els.imageDialogText.innerHTML = renderBodyHtml(entry.body);
+      } else {
+        els.imageDialogText.hidden = true;
+        els.imageDialogText.innerHTML = "";
+      }
+
       if (typeof els.imageDialog.showModal === "function") {
         els.imageDialog.showModal();
       } else {
@@ -4326,6 +4340,8 @@
       els.imageDialog.close();
       els.imageDialogImg.src = "";
       els.imageDialogImg.alt = "";
+      els.imageDialogText.hidden = true;
+      els.imageDialogText.innerHTML = "";
     }
 
     async function importCsvEntries(event) {
