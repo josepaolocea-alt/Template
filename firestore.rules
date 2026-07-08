@@ -14,10 +14,50 @@ service cloud.firestore {
       return isSignedIn() && request.auth.token.email == resource.data.createdBy;
     }
 
+    // A knowledge document may only contain these fields, with sane types and
+    // size caps. Optional fields are allowed to be absent. This stops a
+    // signed-in user from writing arbitrary or oversized data.
+    function isValidEntry(data) {
+      return data.keys().hasOnly([
+               'title', 'kind', 'body', 'tags', 'imageUrl',
+               'attachmentUrl', 'attachmentPath', 'attachmentName',
+               'attachmentType', 'attachmentSize',
+               'embedding', 'embeddingModel', 'embeddedAt',
+               'createdAt', 'createdBy', 'updatedAt', 'updatedBy', 'importedAt'
+             ])
+             && data.title is string && data.title.size() > 0 && data.title.size() <= 200
+             && data.kind in ['template', 'note', 'process', 'image']
+             && data.body is string && data.body.size() <= 20000
+             && data.tags is list && data.tags.size() <= 50
+             && data.createdBy is string
+             && (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 950000))
+             && (!('attachmentUrl' in data) || (data.attachmentUrl is string && data.attachmentUrl.size() <= 2000))
+             && (!('attachmentName' in data) || (data.attachmentName is string && data.attachmentName.size() <= 300))
+             && (!('embedding' in data) || (data.embedding is list && data.embedding.size() <= 2000));
+    }
+
     match /knowledge/{entryId} {
       allow read: if isSignedIn() || resource.data.kind == "template";
-      allow create: if isAdmin() || (isSignedIn() && request.resource.data.createdBy == request.auth.token.email);
-      allow update, delete: if isAdmin() || isOwner();
+
+      // Admins may create any valid entry. Members may only create entries they
+      // own, and may NOT publish public ("template") entries.
+      allow create: if isValidEntry(request.resource.data) && (
+                      isAdmin() ||
+                      (isSignedIn()
+                        && request.resource.data.createdBy == request.auth.token.email
+                        && request.resource.data.kind != 'template')
+                    );
+
+      // Ownership can never change on update. Members may not turn their entry
+      // into a public template.
+      allow update: if isValidEntry(request.resource.data)
+                    && request.resource.data.createdBy == resource.data.createdBy
+                    && (
+                      isAdmin() ||
+                      (isOwner() && request.resource.data.kind != 'template')
+                    );
+
+      allow delete: if isAdmin() || isOwner();
     }
   }
 }
