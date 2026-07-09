@@ -2962,7 +2962,7 @@
     }
 
     function scoreEntry(entry, terms, rawQuery) {
-      if (!rawQuery) return 1;
+      if (!rawQuery) return { score: 1, matchedTerms: 0 };
 
       const title = String(entry.title || "").toLowerCase();
       const body = String(entry.body || "").toLowerCase();
@@ -2970,6 +2970,7 @@
       const kind = String(entry.kind || "").toLowerCase();
       const exact = rawQuery.toLowerCase();
       let score = 0;
+      let matchedTerms = 0;
 
       if (title.includes(exact)) score += 80;
       if (tags.includes(exact)) score += 60;
@@ -2977,13 +2978,15 @@
       if (kind.includes(exact)) score += 15;
 
       for (const term of terms) {
-        if (title.includes(term)) score += 18;
-        if (tags.includes(term)) score += 14;
-        if (body.includes(term)) score += 8;
-        if (kind.includes(term)) score += 5;
+        let hit = false;
+        if (title.includes(term)) { score += 18; hit = true; }
+        if (tags.includes(term)) { score += 14; hit = true; }
+        if (body.includes(term)) { score += 8; hit = true; }
+        if (kind.includes(term)) { score += 5; hit = true; }
+        if (hit) matchedTerms += 1;
       }
 
-      return score;
+      return { score, matchedTerms };
     }
 
     function getVisibleEntries() {
@@ -2999,11 +3002,14 @@
           return entry.kind === state.kind;
         })
         .filter((entry) => !activeTag || normalizeTags(entry.tags).some((tag) => tag.toLowerCase() === activeTag))
-        .map((entry) => ({
-          entry,
-          score: scoreEntry(entry, terms, rawQuery)
-        }))
-        .filter((row) => !rawQuery || row.score > 0);
+        .map((entry) => {
+          const { score, matchedTerms } = scoreEntry(entry, terms, rawQuery);
+          return { entry, score, matchedTerms };
+        })
+        // AND matching: when the user types several words, an entry must contain
+        // every one of them (in any field) before it shows. A single weak hit is
+        // no longer enough — searching "silver goose" needs both "silver" and "goose".
+        .filter((row) => !rawQuery || row.matchedTerms === terms.length);
 
       if (state.sort === "relevance") {
         rows.sort((a, b) => {
