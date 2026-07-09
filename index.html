@@ -2964,19 +2964,31 @@
     function scoreEntry(entry, terms, rawQuery) {
       if (!rawQuery) return { score: 1, matchedTerms: 0 };
 
-      const title = String(entry.title || "").toLowerCase();
+      const title = String(entry.title || "").toLowerCase().trim();
       const body = String(entry.body || "").toLowerCase();
       const tags = normalizeTags(entry.tags).join(" ").toLowerCase();
       const kind = String(entry.kind || "").toLowerCase();
-      const exact = rawQuery.toLowerCase();
+      const exact = rawQuery.toLowerCase().trim();
       let score = 0;
       let matchedTerms = 0;
 
-      if (title.includes(exact)) score += 80;
-      if (tags.includes(exact)) score += 60;
-      if (body.includes(exact)) score += 35;
-      if (kind.includes(exact)) score += 15;
+      // Whole-field exact equality is the strongest possible signal — a title
+      // that IS the query should always sit at the very top.
+      if (title === exact) score += 1000;
+      else if (title.startsWith(exact)) score += 400;
 
+      // Contiguous phrase matches (the words appear together, in order) are
+      // weighted far above scattered single-term hits below. This is what makes
+      // "checking with our team" outrank "checking with our internal team":
+      // the first contains the exact phrase, the second only the same words
+      // spread apart. The phrase bonus even in the body beats a scattered title.
+      if (title.includes(exact)) score += 300;
+      if (tags.includes(exact)) score += 160;
+      if (body.includes(exact)) score += 120;
+      if (kind.includes(exact)) score += 40;
+
+      // Per-term hits are the weak, tie-breaking signal — they let partial
+      // matches still surface, but can never overpower a true phrase match.
       for (const term of terms) {
         let hit = false;
         if (title.includes(term)) { score += 18; hit = true; }
