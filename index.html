@@ -395,6 +395,18 @@
       flex: 0 0 auto;
     }
 
+    .button span.optional {
+      display: none;
+    }
+
+    .topbar-actions > .button {
+      width: 42px;
+      height: 42px;
+      min-height: 42px;
+      padding: 0;
+      flex: 0 0 auto;
+    }
+
     .button svg,
     .icon-button svg,
     .chip svg {
@@ -1038,6 +1050,18 @@
       border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
     }
 
+    /* Timestamp tags: "Created …" stays neutral; "Edited …" is tinted so a
+       changed entry is easy to spot at a glance. */
+    .tag.time {
+      font-weight: 500;
+    }
+
+    .tag.edited {
+      color: var(--accent);
+      border-color: color-mix(in srgb, var(--accent) 34%, var(--line));
+      background: color-mix(in srgb, var(--accent) 8%, var(--bg-2));
+    }
+
     .interaction-ripple {
       position: absolute;
       left: var(--x);
@@ -1104,6 +1128,89 @@
 
     .image-dialog-text {
       margin-top: 16px;
+    }
+
+    .doc-dialog {
+      width: min(1040px, calc(100% - 24px));
+    }
+
+    .doc-dialog-body {
+      padding: 12px;
+      background: var(--bg);
+    }
+
+    .doc-frame {
+      width: 100%;
+      height: min(76vh, 900px);
+      display: block;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-solid);
+    }
+
+    .doc-dialog-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.4;
+    }
+
+    .doc-dialog-foot .button {
+      flex: 0 0 auto;
+    }
+
+    /* Admin-only "hide from other users" toggle in the entry form. */
+    .hidden-field {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 1px solid var(--line-strong);
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--bg) 60%, transparent);
+      cursor: pointer;
+    }
+
+    .hidden-field input {
+      width: 18px;
+      height: 18px;
+      min-height: 0;
+      margin: 2px 0 0;
+      padding: 0;
+      border: 0;
+      flex: 0 0 auto;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .hidden-field-copy {
+      display: grid;
+      gap: 3px;
+    }
+
+    .hidden-field strong {
+      color: var(--text);
+      font-size: 0.9rem;
+      font-weight: 620;
+    }
+
+    .hidden-field .hidden-field-copy span {
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 430;
+      line-height: 1.42;
+    }
+
+    /* Badge shown to admins on entries hidden from everyone else. */
+    .tag.hidden-tag {
+      color: var(--danger);
+      border-color: color-mix(in srgb, var(--danger) 42%, var(--line));
+      background: color-mix(in srgb, var(--danger) 12%, var(--bg-2));
     }
 
     .modal[open] {
@@ -1645,13 +1752,11 @@
         display: none;
       }
 
-      .button:has(span.optional) {
-        padding: 0 10px;
-      }
-
-      .icon-button {
+      .icon-button,
+      .topbar-actions > .button {
         width: 40px;
         height: 40px;
+        min-height: 40px;
       }
 
       .hero {
@@ -1928,7 +2033,7 @@
       }
 
       .topbar-actions > .button.primary {
-        padding: 0 10px;
+        padding: 0;
       }
 
       .menu-panel .button {
@@ -2129,15 +2234,15 @@
         <button class="icon-button" id="themeToggle" type="button" aria-label="Toggle color theme">
           <i data-lucide="sun"></i>
         </button>
-        <button class="button ghost" id="signInButton" type="button">
+        <button class="button ghost" id="signInButton" type="button" aria-label="Sign in">
           <i data-lucide="log-in"></i>
           <span class="optional">Sign in</span>
         </button>
-        <button class="button ghost" id="signOutButton" type="button" hidden>
+        <button class="button ghost" id="signOutButton" type="button" aria-label="Sign out" hidden>
           <i data-lucide="log-out"></i>
           <span class="optional">Sign out</span>
         </button>
-        <button class="button primary" id="addButton" type="button" hidden>
+        <button class="button primary" id="addButton" type="button" aria-label="Add data" hidden>
           <i data-lucide="plus"></i>
           <span class="optional">Add data</span>
         </button>
@@ -2285,8 +2390,16 @@
 
       <div class="source-pill" id="attachmentPreview">
         <strong>No attachment</strong><br />
-        <span>Paste a PDF or document link to show a download button on this entry.</span>
+        <span>Paste a PDF or document link to show a preview and download button on this entry.</span>
       </div>
+
+      <label class="hidden-field" id="entryHiddenField" hidden>
+        <input id="entryHidden" name="hidden" type="checkbox" />
+        <span class="hidden-field-copy">
+          <strong>Hide from other users (admin only)</strong>
+          <span>Only admin accounts can see this entry. Members and signed-out visitors won't find it in search or lists.</span>
+        </span>
+      </label>
 
       <div class="modal-foot">
         <button class="button ghost" type="button" id="cancelEntry">Cancel</button>
@@ -2492,6 +2605,25 @@
     </div>
   </dialog>
 
+  <dialog class="modal doc-dialog" id="docPreviewDialog">
+    <div class="modal-head">
+      <h2 class="modal-title" id="docPreviewTitle">Document preview</h2>
+      <button class="icon-button" type="button" id="closeDocPreviewDialog" aria-label="Close document preview">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <div class="doc-dialog-body">
+      <iframe id="docPreviewFrame" class="doc-frame" title="Document preview" src="about:blank" referrerpolicy="no-referrer" allow="autoplay"></iframe>
+      <div class="doc-dialog-foot">
+        <span>If the file asks you to sign in, set its Google Drive sharing to "Anyone with the link".</span>
+        <a class="button ghost" id="docPreviewOpen" href="#" target="_blank" rel="noopener">
+          <i data-lucide="external-link"></i>
+          <span>Open in new tab</span>
+        </a>
+      </div>
+    </div>
+  </dialog>
+
   <dialog class="modal" id="deleteDialog">
     <div class="modal-head">
       <h2 class="modal-title">Delete entry</h2>
@@ -2649,7 +2781,8 @@
       provider: null,
       pendingDeleteId: "",
       entriesUnsubscribe: null,
-      entriesMode: ""
+      entriesMode: "",
+      hiddenBackfillDone: false
     };
 
     const els = {
@@ -2734,6 +2867,8 @@
       imagePreview: document.querySelector("#imagePreview"),
       entryAttachmentUrl: document.querySelector("#entryAttachmentUrl"),
       attachmentPreview: document.querySelector("#attachmentPreview"),
+      entryHidden: document.querySelector("#entryHidden"),
+      entryHiddenField: document.querySelector("#entryHiddenField"),
       saveEntry: document.querySelector("#saveEntry"),
       saveEntryLabel: document.querySelector("#saveEntryLabel"),
       csvDialog: document.querySelector("#csvDialog"),
@@ -2747,6 +2882,11 @@
       imageDialogImg: document.querySelector("#imageDialogImg"),
       imageDialogText: document.querySelector("#imageDialogText"),
       closeImageDialog: document.querySelector("#closeImageDialog"),
+      docPreviewDialog: document.querySelector("#docPreviewDialog"),
+      docPreviewFrame: document.querySelector("#docPreviewFrame"),
+      docPreviewTitle: document.querySelector("#docPreviewTitle"),
+      docPreviewOpen: document.querySelector("#docPreviewOpen"),
+      closeDocPreviewDialog: document.querySelector("#closeDocPreviewDialog"),
       deleteDialog: document.querySelector("#deleteDialog"),
       closeDeleteDialog: document.querySelector("#closeDeleteDialog"),
       cancelDelete: document.querySelector("#cancelDelete"),
@@ -2769,6 +2909,34 @@
       if (!state.currentUser) return false;
       const owner = String(entry.createdBy || "").toLowerCase();
       return Boolean(owner) && owner === String(state.currentUser.email || "").toLowerCase();
+    }
+
+    // One-time migration for older data. Entries saved before the "hidden" field
+    // existed have no flag at all, and members/visitors query on hidden == false,
+    // so those entries would be invisible to everyone but the admin. When an admin
+    // is signed in (the only account allowed to write every entry) we quietly set
+    // the missing flag to false so the entries reappear for other users.
+    async function normalizeHiddenFlags(snapshot) {
+      if (!state.isAdmin || state.hiddenBackfillDone) return;
+      if (!state.fire || !state.db) return;
+
+      const missing = snapshot.docs.filter((doc) => doc.data().hidden === undefined);
+      state.hiddenBackfillDone = true;
+      if (missing.length === 0) return;
+
+      try {
+        const batch = state.fire.writeBatch(state.db);
+        missing.forEach((doc) => {
+          batch.update(
+            state.fire.doc(state.db, APP_CONFIG.collectionName, doc.id),
+            { hidden: false }
+          );
+        });
+        await batch.commit();
+      } catch (error) {
+        console.warn("Could not backfill hidden flags", error);
+        state.hiddenBackfillDone = false;
+      }
     }
 
     function refreshIcons() {
@@ -2953,6 +3121,46 @@
       }).format(new Date(timestamp));
     }
 
+    // Same as formatDate, but includes the clock time (hour + minute). Used for
+    // the "Created" and "Edited" metadata so entries show exactly when they were
+    // added or last changed, not just the day.
+    function formatDateTime(value) {
+      const timestamp = getTimestamp(value);
+      if (!timestamp) return "";
+      return new Intl.DateTimeFormat(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit"
+      }).format(new Date(timestamp));
+    }
+
+    // Builds the "Created …" and optional "Edited …" metadata tags shown on
+    // result cards and in the entry detail dialog. Created always carries the
+    // full date + time; an Edited tag only appears when the entry was changed
+    // after it was created, and it names who made the last edit.
+    function entryTimeTags(entry) {
+      const createdText = formatDateTime(entry.createdAt) || formatDate(entry.createdAt);
+      const createdBy = String(entry.createdBy || "").trim();
+      const createdTitle = createdBy ? `Created by ${createdBy}` : "Created";
+      let html = `<span class="tag time" title="${escapeHtml(createdTitle)}">Created ${escapeHtml(createdText)}</span>`;
+
+      const createdStamp = getTimestamp(entry.createdAt);
+      const updatedStamp = getTimestamp(entry.updatedAt);
+      // A new entry writes createdAt and updatedAt in the same save, so their
+      // server timestamps land together. Only treat the entry as edited when the
+      // update is clearly later (more than a couple of seconds after creation).
+      if (updatedStamp && updatedStamp - createdStamp > 2000) {
+        const editedBy = String(entry.updatedBy || "").trim();
+        const editedText = formatDateTime(entry.updatedAt);
+        const editedTitle = editedBy ? `Last edited by ${editedBy}` : "Last edited";
+        const who = editedBy ? ` · ${editedBy}` : "";
+        html += `<span class="tag time edited" title="${escapeHtml(editedTitle)}">Edited ${escapeHtml(editedText)}${escapeHtml(who)}</span>`;
+      }
+      return html;
+    }
+
     function tokenize(input) {
       return String(input || "")
         .toLowerCase()
@@ -3006,6 +3214,7 @@
       const terms = tokenize(rawQuery);
       const activeTag = state.tagFilter.trim().toLowerCase();
       let rows = state.entries
+        .filter((entry) => state.isAdmin || !entry.hidden)
         .filter((entry) => state.isAdmin || state.currentUser || entry.kind === "template")
         .filter((entry) => {
           if (state.kind === "all") return true;
@@ -3184,7 +3393,13 @@
             <i data-lucide="trash-2"></i>
           </button>
         ` : "";
+        const previewButton = getDocEmbedUrl(entry.attachmentUrl) ? `
+          <button class="icon-button tiny-button" type="button" data-action="preview-doc" data-id="${escapeHtml(entry.id)}" aria-label="Preview attachment for ${escapeHtml(entry.title)}">
+            <i data-lucide="eye"></i>
+          </button>
+        ` : "";
         const attachmentActions = entry.attachmentUrl ? `
+          ${previewButton}
           <button class="icon-button tiny-button" type="button" data-action="download-file" data-id="${escapeHtml(entry.id)}" aria-label="Download attachment for ${escapeHtml(entry.title)}">
             <i data-lucide="download"></i>
           </button>
@@ -3209,8 +3424,9 @@
                   <h2>${escapeHtml(entry.title)}</h2>
                   <div class="tag-row" aria-label="Entry metadata">
                     <span class="tag kind kind-${escapeHtml(kindClass)}">${escapeHtml(entry.kind || "note")}</span>
-                    <span class="tag">${escapeHtml(formatDate(entry.createdAt))}</span>
+                    ${entryTimeTags(entry)}
                     ${attachmentTag}
+                    ${entry.hidden ? `<span class="tag hidden-tag">Hidden</span>` : ""}
                   </div>
                 </div>
                 <div class="result-actions">
@@ -3334,14 +3550,21 @@
             attachmentName: data.attachmentName || "",
             attachmentType: data.attachmentType || "",
             attachmentSize: Number(data.attachmentSize || 0),
+            hidden: Boolean(data.hidden),
             createdAt: data.createdAt || "",
             createdBy: data.createdBy || "",
+            updatedAt: data.updatedAt || "",
+            updatedBy: data.updatedBy || "",
+            importedAt: data.importedAt || "",
             embedding: Array.isArray(data.embedding) ? data.embedding : null
           };
         });
 
         const subscribeEntries = () => {
-          const mode = state.currentUser ? "all" : "templates";
+          // Admins read everything (including hidden entries). Members and
+          // signed-out visitors only ever query entries with hidden == false, so
+          // the security rules never have to reject a hidden document mid-query.
+          const mode = state.isAdmin ? "admin" : (state.currentUser ? "member" : "templates");
           if (state.entriesUnsubscribe && state.entriesMode === mode) {
             return;
           }
@@ -3351,14 +3574,27 @@
           }
 
           state.entriesMode = mode;
+          state.hiddenBackfillDone = false;
           const knowledgeRef = fireMod.collection(state.db, APP_CONFIG.collectionName);
-          const knowledgeQuery = state.currentUser
-            ? fireMod.query(knowledgeRef, fireMod.orderBy("createdAt", "desc"))
-            : fireMod.query(knowledgeRef, fireMod.where("kind", "==", "template"));
+          let knowledgeQuery;
+          if (mode === "admin") {
+            knowledgeQuery = fireMod.query(knowledgeRef, fireMod.orderBy("createdAt", "desc"));
+          } else if (mode === "member") {
+            knowledgeQuery = fireMod.query(knowledgeRef, fireMod.where("hidden", "==", false));
+          } else {
+            knowledgeQuery = fireMod.query(
+              knowledgeRef,
+              fireMod.where("kind", "==", "template"),
+              fireMod.where("hidden", "==", false)
+            );
+          }
 
           state.entriesUnsubscribe = fireMod.onSnapshot(knowledgeQuery, (snapshot) => {
             state.entries = snapshotToEntries(snapshot);
             render();
+            if (mode === "admin") {
+              normalizeHiddenFlags(snapshot);
+            }
           }, (error) => {
             console.warn("Firestore read failed", error);
             state.entries = [];
@@ -3430,6 +3666,10 @@
         els.entryImageUrl.value = entry.imageUrl || "";
         els.entryAttachmentUrl.value = entry.attachmentUrl || "";
       }
+
+      // The "hide from other users" toggle is an admin-only control.
+      els.entryHiddenField.hidden = !state.isAdmin;
+      els.entryHidden.checked = Boolean(entry && entry.hidden);
 
       renderImagePreview(entry ? entry.imageUrl : "");
       renderAttachmentPreview(entry);
@@ -3765,7 +4005,8 @@
       els.entryDetailTitle.textContent = entry.title || "Untitled";
       els.entryDetailMeta.innerHTML = `
         <span class="tag kind kind-${escapeHtml(String(entry.kind || "note").toLowerCase().replace(/[^a-z0-9-]/g, ""))}">${escapeHtml(entry.kind || "note")}</span>
-        <span class="tag">${escapeHtml(formatDate(entry.createdAt))}</span>
+        ${entryTimeTags(entry)}
+        ${entry.hidden ? `<span class="tag hidden-tag">Hidden</span>` : ""}
         ${tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}
       `;
       els.entryDetailText.innerHTML = entry.body ? renderBodyHtml(entry.body) : "No text saved for this entry.";
@@ -3780,7 +4021,14 @@
 
       if (entry.attachmentUrl) {
         els.entryDetailActions.hidden = false;
+        const detailPreview = getDocEmbedUrl(entry.attachmentUrl) ? `
+          <button class="button ghost" type="button" data-detail-action="preview-doc" data-id="${escapeHtml(entry.id)}">
+            <i data-lucide="eye"></i>
+            <span>Preview attachment</span>
+          </button>
+        ` : "";
         els.entryDetailActions.innerHTML = `
+          ${detailPreview}
           <button class="button ghost" type="button" data-detail-action="download" data-id="${escapeHtml(entry.id)}">
             <i data-lucide="download"></i>
             <span>Download attachment</span>
@@ -3981,6 +4229,49 @@
 
     function attachmentDisplayName(entry = {}) {
       return entry.attachmentName || externalAttachmentName(entry.attachmentUrl || "") || "Attachment";
+    }
+
+    // Turn a Google Drive / Docs / Sheets / Slides share link (or a direct PDF
+    // URL) into something that renders inside an <iframe>, so the file can be
+    // read in the app without downloading it. Returns "" when the link is not
+    // something we can safely embed. The file's Drive sharing must be set to
+    // "Anyone with the link" for other users to see it.
+    function getDocEmbedUrl(rawUrl = "") {
+      const url = String(rawUrl || "").trim();
+      if (!url) return "";
+
+      let parsed;
+      try {
+        parsed = new URL(url);
+      } catch (error) {
+        return "";
+      }
+
+      const host = parsed.hostname.toLowerCase();
+
+      // Google Docs / Sheets / Slides: .../document/d/<id>/edit -> .../preview
+      if (host === "docs.google.com") {
+        const match = parsed.pathname.match(/\/(document|spreadsheets|presentation)\/d\/([^/]+)/);
+        if (match) {
+          return `https://docs.google.com/${match[1]}/d/${match[2]}/preview`;
+        }
+      }
+
+      // Google Drive files in any of the common link shapes.
+      if (host === "drive.google.com") {
+        const fileMatch = parsed.pathname.match(/\/file\/d\/([^/]+)/);
+        const id = fileMatch ? fileMatch[1] : parsed.searchParams.get("id");
+        if (id) {
+          return `https://drive.google.com/file/d/${id}/preview`;
+        }
+      }
+
+      // A direct link to a PDF renders natively inside an iframe.
+      if (/\.pdf$/i.test(parsed.pathname)) {
+        return url;
+      }
+
+      return "";
     }
 
     function renderAttachmentPreview(entryOrFile) {
@@ -4446,6 +4737,11 @@
         const body = els.entryBody.value.trim();
         const tags = normalizeTags(els.entryTags.value);
         const imageFile = els.entryImageFile.files[0];
+        // Only admins may hide an entry. For anyone else, keep the existing flag,
+        // which is always false for member-owned entries.
+        const hidden = state.isAdmin
+          ? els.entryHidden.checked
+          : Boolean(existingEntry && existingEntry.hidden);
 
         if (!title) {
           showToast("Title is required.");
@@ -4474,6 +4770,7 @@
             body,
             tags,
             imageUrl,
+            hidden,
             ...attachmentFields,
             updatedAt: state.fire.serverTimestamp(),
             updatedBy: state.currentUser ? state.currentUser.email : "local-admin"
@@ -4514,6 +4811,7 @@
             existingEntry,
             els.entryAttachmentUrl.value
           );
+          const editorEmail = state.currentUser ? state.currentUser.email : "local-admin";
           const entry = {
             id: localId,
             title,
@@ -4521,8 +4819,10 @@
             body,
             tags,
             imageUrl,
+            hidden,
             ...attachmentFields,
-            createdAt: existingEntry ? existingEntry.createdAt : now
+            createdAt: existingEntry ? existingEntry.createdAt : now,
+            createdBy: existingEntry ? (existingEntry.createdBy || editorEmail) : editorEmail
           };
 
           if (state.editingId) {
@@ -4531,7 +4831,8 @@
               return {
                 ...item,
                 ...entry,
-                updatedAt: now
+                updatedAt: now,
+                updatedBy: editorEmail
               };
             });
           } else {
@@ -4735,6 +5036,35 @@
       }
     }
 
+    function openDocPreview(id) {
+      const entry = state.entries.find((item) => item.id === id);
+      if (!entry) {
+        showToast("Attachment could not be found.");
+        return;
+      }
+
+      const embedUrl = getDocEmbedUrl(entry.attachmentUrl);
+      if (!embedUrl) {
+        showToast("This attachment can't be previewed here. Use download instead.");
+        return;
+      }
+
+      els.docPreviewTitle.textContent = entry.title || "Document preview";
+      els.docPreviewFrame.src = embedUrl;
+      els.docPreviewOpen.href = entry.attachmentUrl;
+      if (typeof els.docPreviewDialog.showModal === "function") {
+        els.docPreviewDialog.showModal();
+      } else {
+        els.docPreviewDialog.setAttribute("open", "");
+      }
+    }
+
+    function closeDocPreview() {
+      els.docPreviewDialog.close();
+      // Stop the embedded file loading/playing once the dialog is closed.
+      els.docPreviewFrame.src = "about:blank";
+    }
+
     async function downloadAttachment(id) {
       const entry = state.entries.find((item) => item.id === id);
       if (!entry) {
@@ -4918,6 +5248,9 @@
         if (target.dataset.detailAction === "download") {
           downloadAttachment(target.dataset.id);
         }
+        if (target.dataset.detailAction === "preview-doc") {
+          openDocPreview(target.dataset.id);
+        }
       });
       els.csvButton.addEventListener("click", openCsvDialog);
       els.exportButton.addEventListener("click", exportAllEntries);
@@ -4943,6 +5276,15 @@
         if (event.target === els.imageDialog) {
           closeImageDialog();
         }
+      });
+      els.closeDocPreviewDialog.addEventListener("click", closeDocPreview);
+      els.docPreviewDialog.addEventListener("click", (event) => {
+        if (event.target === els.docPreviewDialog) {
+          closeDocPreview();
+        }
+      });
+      els.docPreviewDialog.addEventListener("close", () => {
+        els.docPreviewFrame.src = "about:blank";
       });
       els.closeDeleteDialog.addEventListener("click", closeDeleteDialog);
       els.cancelDelete.addEventListener("click", closeDeleteDialog);
@@ -5065,6 +5407,10 @@
 
         if (target.dataset.action === "download-file") {
           downloadAttachment(target.dataset.id);
+        }
+
+        if (target.dataset.action === "preview-doc") {
+          openDocPreview(target.dataset.id);
         }
 
         if (target.dataset.action === "preview-image") {

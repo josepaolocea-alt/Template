@@ -19,7 +19,7 @@ service cloud.firestore {
     // signed-in user from writing arbitrary or oversized data.
     function isValidEntry(data) {
       return data.keys().hasOnly([
-               'title', 'kind', 'body', 'tags', 'imageUrl',
+               'title', 'kind', 'body', 'tags', 'imageUrl', 'hidden',
                'attachmentUrl', 'attachmentPath', 'attachmentName',
                'attachmentType', 'attachmentSize',
                'embedding', 'embeddingModel', 'embeddedAt',
@@ -30,31 +30,46 @@ service cloud.firestore {
              && data.body is string && data.body.size() <= 20000
              && data.tags is list && data.tags.size() <= 50
              && data.createdBy is string
+             && (!('hidden' in data) || data.hidden is bool)
              && (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 950000))
              && (!('attachmentUrl' in data) || (data.attachmentUrl is string && data.attachmentUrl.size() <= 2000))
              && (!('attachmentName' in data) || (data.attachmentName is string && data.attachmentName.size() <= 300))
              && (!('embedding' in data) || (data.embedding is list && data.embedding.size() <= 2000));
     }
 
+    // Only admins may mark an entry as hidden. Everyone else must keep it
+    // visible (hidden absent or false).
+    function isNotHidden(data) {
+      return data.get('hidden', false) == false;
+    }
+
     match /knowledge/{entryId} {
-      allow read: if isSignedIn() || resource.data.kind == "template";
+      // Hidden entries are only readable by admins. Everyone else follows the
+      // usual rule: signed-in users see all visible entries, and signed-out
+      // visitors see only visible templates.
+      allow read: if isAdmin()
+                  || (resource.data.get('hidden', false) != true
+                      && (isSignedIn() || resource.data.kind == "template"));
 
       // Admins may create any valid entry. Members may only create entries they
-      // own, and may NOT publish public ("template") entries.
+      // own, may NOT publish public ("template") entries, and may NOT hide them.
       allow create: if isValidEntry(request.resource.data) && (
                       isAdmin() ||
                       (isSignedIn()
                         && request.resource.data.createdBy == request.auth.token.email
-                        && request.resource.data.kind != 'template')
+                        && request.resource.data.kind != 'template'
+                        && isNotHidden(request.resource.data))
                     );
 
       // Ownership can never change on update. Members may not turn their entry
-      // into a public template.
+      // into a public template, and may not hide it.
       allow update: if isValidEntry(request.resource.data)
                     && request.resource.data.createdBy == resource.data.createdBy
                     && (
                       isAdmin() ||
-                      (isOwner() && request.resource.data.kind != 'template')
+                      (isOwner()
+                        && request.resource.data.kind != 'template'
+                        && isNotHidden(request.resource.data))
                     );
 
       allow delete: if isAdmin() || isOwner();
