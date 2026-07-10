@@ -991,6 +991,14 @@
       transform: translateY(-1px) scale(1.06);
     }
 
+    /* Admin-only hide/unhide toggle on each card. Turns red when the entry is
+       hidden from other users, matching the "Hidden" badge and red card edge. */
+    .hide-button.is-hidden-on {
+      border-color: color-mix(in srgb, var(--danger) 55%, var(--line-strong));
+      color: var(--danger);
+      background: color-mix(in srgb, var(--danger) 16%, transparent);
+    }
+
     .result-text {
       margin: 0;
       color: var(--muted);
@@ -3062,6 +3070,44 @@
       renderResults();
     }
 
+    // Admin-only: flip an entry's "hidden from other users" flag straight from
+    // the card, no need to open the edit form. The Firestore onSnapshot listener
+    // re-renders the card (badge + red edge) once the write lands.
+    async function toggleHidden(id) {
+      const entry = state.entries.find((item) => item.id === id);
+      if (!entry) {
+        showToast("That entry could not be found.");
+        return;
+      }
+      if (!state.isAdmin) {
+        showToast("Only an admin can hide entries.");
+        return;
+      }
+
+      const nextHidden = !entry.hidden;
+      try {
+        if (state.firebaseReady && state.fire && state.db) {
+          await state.fire.updateDoc(
+            state.fire.doc(state.db, APP_CONFIG.collectionName, id),
+            {
+              hidden: nextHidden,
+              updatedAt: state.fire.serverTimestamp(),
+              updatedBy: state.currentUser ? state.currentUser.email : "local-admin"
+            }
+          );
+        } else {
+          entry.hidden = nextHidden;
+          persistLocalEntries();
+          render();
+        }
+        showToast(nextHidden ? "Entry hidden from other users." : "Entry is now visible to everyone.");
+      } catch (error) {
+        console.warn("Could not change hidden state", error);
+        const code = error && error.code ? ` (${error.code})` : "";
+        showToast(`Could not change this entry's visibility${code}.`, 6500);
+      }
+    }
+
     function applyTheme(theme) {
       document.documentElement.dataset.theme = theme;
       localStorage.setItem(THEME_KEY, theme);
@@ -3430,6 +3476,11 @@
             <i data-lucide="star"></i>
           </button>
         `;
+        const hideToggle = state.isAdmin ? `
+          <button class="icon-button tiny-button hide-button${entry.hidden ? " is-hidden-on" : ""}" type="button" data-action="toggle-hidden" data-id="${escapeHtml(entry.id)}" aria-pressed="${entry.hidden ? "true" : "false"}" aria-label="${entry.hidden ? "Make visible to everyone" : "Hide from other users"}" title="${entry.hidden ? "Hidden from others — click to make visible" : "Visible to everyone — click to hide"}">
+            <i data-lucide="${entry.hidden ? "eye-off" : "eye"}"></i>
+          </button>
+        ` : "";
         const adminActions = canManageEntry(entry) ? `
           <button class="icon-button tiny-button" type="button" data-action="edit" data-id="${escapeHtml(entry.id)}" aria-label="Edit entry">
             <i data-lucide="pencil"></i>
@@ -3476,6 +3527,7 @@
                 </div>
                 <div class="result-actions">
                   ${favoriteButton}
+                  ${hideToggle}
                   ${adminActions}
                   ${attachmentActions}
                   <button class="icon-button tiny-button" type="button" data-action="copy" data-id="${escapeHtml(entry.id)}" aria-label="Copy text">
@@ -5448,6 +5500,10 @@
 
         if (target.dataset.action === "favorite") {
           toggleFavorite(target.dataset.id);
+        }
+
+        if (target.dataset.action === "toggle-hidden") {
+          toggleHidden(target.dataset.id);
         }
 
         if (target.dataset.action === "download-file") {
