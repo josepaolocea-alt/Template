@@ -1208,9 +1208,29 @@
 
     /* Badge shown to admins on entries hidden from everyone else. */
     .tag.hidden-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
       color: var(--danger);
       border-color: color-mix(in srgb, var(--danger) 42%, var(--line));
       background: color-mix(in srgb, var(--danger) 12%, var(--bg-2));
+    }
+
+    .tag.hidden-tag svg {
+      width: 13px;
+      height: 13px;
+      stroke-width: 2.2;
+    }
+
+    /* Hidden entries also get a red left edge so an admin can spot them while
+       scanning the list, without opening each card. */
+    .result-card.is-hidden {
+      border-color: color-mix(in srgb, var(--danger) 30%, var(--line));
+      box-shadow: inset 3px 0 0 0 var(--danger);
+    }
+
+    .result-card.is-hidden:hover {
+      box-shadow: inset 3px 0 0 0 var(--danger), 0 10px 28px rgba(0, 0, 0, 0.12);
     }
 
     .modal[open] {
@@ -3443,7 +3463,7 @@
         const body = entry.body ? `<p class="result-text">${renderBodyHtml(entry.body)}</p>` : `<p class="result-text">Image reference saved without text.</p>`;
 
         return `
-          <article class="result-card ${entry.imageUrl ? "has-image" : ""}" data-kind="${escapeHtml(entry.kind || "note")}" style="--i:${Math.min(index, 10)}">
+          <article class="result-card ${entry.imageUrl ? "has-image" : ""}${entry.hidden ? " is-hidden" : ""}" data-kind="${escapeHtml(entry.kind || "note")}" style="--i:${Math.min(index, 10)}">
             ${image}
             <div class="result-body">
               <div class="result-head">
@@ -3453,7 +3473,7 @@
                     <span class="tag kind kind-${escapeHtml(kindClass)}">${escapeHtml(entry.kind || "note")}</span>
                     ${entryTimeTags(entry)}
                     ${attachmentTag}
-                    ${entry.hidden ? `<span class="tag hidden-tag">Hidden</span>` : ""}
+                    ${entry.hidden ? `<span class="tag hidden-tag"><i data-lucide="eye-off"></i>Hidden</span>` : ""}
                   </div>
                 </div>
                 <div class="result-actions">
