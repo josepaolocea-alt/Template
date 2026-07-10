@@ -3324,6 +3324,8 @@
       renderResults();
     }
 
+    let resultsSignature = null;
+
     function renderResults(animate = false) {
       renderTagRow();
       const rows = getVisibleEntries();
@@ -3340,7 +3342,10 @@
       els.workspace.hidden = !shouldShow;
 
       if (!shouldShow) {
-        els.resultsList.innerHTML = "";
+        if (resultsSignature !== "hidden") {
+          els.resultsList.innerHTML = "";
+          resultsSignature = "hidden";
+        }
         return;
       }
 
@@ -3357,24 +3362,46 @@
       }
       els.resultsMeta.textContent = `${rows.length} ${kindLabel} found`;
 
+      // Signature of everything that affects the rendered cards. Firestore's
+      // onSnapshot fires more than once (cache snapshot, server snapshot, and
+      // the admin hidden-flag backfill writes), and each render() rebuilds the
+      // whole list, which replays the card entrance animation — the visible
+      // "blink". If nothing that shows on a card changed, skip the rebuild.
+      const rowsSignature = rows
+        .map(({ entry }) => `${entry.id}~${getTimestamp(entry.updatedAt)}~${isFavorite(entry.id) ? 1 : 0}~${entry.hidden ? 1 : 0}`)
+        .join("|");
+      const viewer = state.isAdmin ? "a" : (state.currentUser ? "m" : "t");
+      const signature = `${state.kind}::${state.query.trim()}::${state.tagFilter}::${state.sort}::${viewer}::${rowsSignature}`;
+
       if (!rows.length) {
-        const noFavorites = state.kind === "favorite";
-        els.resultsList.innerHTML = `
-          <div class="empty-state">
-            <div>
-              <i data-lucide="${noFavorites ? "star" : "search-x"}"></i>
-              <strong>${noFavorites ? "No favorites yet" : "No matches yet"}</strong>
-              <span>${noFavorites
-                ? "Tap the star on any entry to save it here."
-                : ((state.currentUser || state.isAdmin) ? "Try another phrase or add a new entry." : "Try another phrase to search public templates.")}</span>
+        const emptySignature = `empty::${state.kind}::${viewer}`;
+        if (resultsSignature !== emptySignature) {
+          const noFavorites = state.kind === "favorite";
+          els.resultsList.innerHTML = `
+            <div class="empty-state">
+              <div>
+                <i data-lucide="${noFavorites ? "star" : "search-x"}"></i>
+                <strong>${noFavorites ? "No favorites yet" : "No matches yet"}</strong>
+                <span>${noFavorites
+                  ? "Tap the star on any entry to save it here."
+                  : ((state.currentUser || state.isAdmin) ? "Try another phrase or add a new entry." : "Try another phrase to search public templates.")}</span>
+              </div>
             </div>
-          </div>
-        `;
-        refreshIcons();
+          `;
+          resultsSignature = emptySignature;
+          refreshIcons();
+        }
+        return;
+      }
+
+      // Same cards already on screen — leave the DOM untouched so the entrance
+      // animation does not replay on a redundant refresh.
+      if (resultsSignature === signature) {
         return;
       }
 
       els.resultsList.classList.toggle("static-cards", !animate);
+      resultsSignature = signature;
 
       els.resultsList.innerHTML = rows.map(({ entry }, index) => {
         const tags = normalizeTags(entry.tags);
