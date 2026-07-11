@@ -263,6 +263,23 @@
       box-shadow: inset 0 0 22px color-mix(in srgb, var(--accent) 24%, transparent), 0 10px 26px color-mix(in srgb, var(--accent) 14%, transparent);
     }
 
+    .brand-mark-initial {
+      display: none;
+      font-weight: 800;
+      font-size: 1.05rem;
+      line-height: 1;
+      color: var(--text);
+      text-transform: uppercase;
+    }
+
+    .signed-in .brand-mark-icon {
+      display: none;
+    }
+
+    .signed-in .brand-mark-initial {
+      display: block;
+    }
+
     .brand span:last-child {
       overflow: hidden;
       text-overflow: ellipsis;
@@ -2253,7 +2270,7 @@
   <header class="topbar">
     <div class="app-shell topbar-inner">
       <a class="brand" href="#" aria-label="PromptVault home">
-        <span class="brand-mark"><i data-lucide="sparkles"></i></span>
+        <span class="brand-mark" id="brandMark"><i data-lucide="sparkles" class="brand-mark-icon"></i><span class="brand-mark-initial" id="brandInitial" aria-hidden="true"></span></span>
         <span>PromptVault</span>
       </a>
       <div class="topbar-actions">
@@ -2816,6 +2833,7 @@
     };
 
     const els = {
+      brandInitial: document.querySelector("#brandInitial"),
       themeToggle: document.querySelector("#themeToggle"),
       moreMenu: document.querySelector("#moreMenu"),
       menuButton: document.querySelector("#menuButton"),
@@ -3608,6 +3626,11 @@
       if (els.moreMenu.hidden) toggleMenu(false);
       els.signOutButton.hidden = !signedIn;
       els.signInButton.hidden = signedIn;
+
+      if (signedIn && els.brandInitial) {
+        const source = String(state.currentUser.email || state.currentUser.displayName || "").trim();
+        els.brandInitial.textContent = source ? source.charAt(0).toUpperCase() : "?";
+      }
 
       if (signedIn) {
         els.authStatusTitle.textContent = state.isAdmin ? "Signed in as admin" : "Signed in";
