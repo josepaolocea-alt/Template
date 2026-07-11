@@ -2285,6 +2285,10 @@
               <i data-lucide="star"></i>
               <span>Favorites</span>
             </button>
+            <button class="button ghost" id="hiddenButton" type="button" hidden>
+              <i data-lucide="eye-off"></i>
+              <span>Hidden entries</span>
+            </button>
             <button class="button ghost" id="aiButton" type="button" hidden>
               <i data-lucide="sparkles"></i>
               <span>AI generate</span>
@@ -2818,6 +2822,7 @@
       menuPanel: document.querySelector("#menuPanel"),
       libraryButton: document.querySelector("#libraryButton"),
       favoritesButton: document.querySelector("#favoritesButton"),
+      hiddenButton: document.querySelector("#hiddenButton"),
       libraryDialog: document.querySelector("#libraryDialog"),
       closeLibraryDialog: document.querySelector("#closeLibraryDialog"),
       signInButton: document.querySelector("#signInButton"),
@@ -3282,6 +3287,10 @@
         .filter((entry) => state.isAdmin || state.currentUser || entry.kind === "template")
         .filter((entry) => {
           if (state.kind === "all") return true;
+          // Admin-only view of every entry flagged hidden-from-others. The
+          // isAdmin guard is belt-and-braces: the first filter above already
+          // strips hidden entries for non-admins, so this view is empty for them.
+          if (state.kind === "hidden") return state.isAdmin && Boolean(entry.hidden);
           if (state.kind === "favorite") return state.favorites.has(String(entry.id));
           if (state.kind === "image") return entry.kind === "image" || Boolean(entry.imageUrl);
           return entry.kind === state.kind;
@@ -3325,6 +3334,10 @@
     function syncFilterButtons() {
       const canSeeAll = Boolean(state.currentUser || state.isAdmin);
       if (!canSeeAll && state.kind !== "all" && state.kind !== "template" && state.kind !== "favorite") {
+        state.kind = "all";
+      }
+      // "Hidden entries" is an admin-only view — never leave a non-admin stuck on it.
+      if (!state.isAdmin && state.kind === "hidden") {
         state.kind = "all";
       }
 
@@ -3403,9 +3416,11 @@
       const shouldShow = hasQuery || hasKindFilter || hasTagFilter || state.browseMode;
       const kindLabel = state.kind === "favorite"
         ? "favorites"
-        : ((state.currentUser || state.isAdmin)
-          ? (state.kind === "all" ? "entries" : `${state.kind} entries`)
-          : "templates");
+        : state.kind === "hidden"
+          ? "hidden entries"
+          : ((state.currentUser || state.isAdmin)
+            ? (state.kind === "all" ? "entries" : `${state.kind} entries`)
+            : "templates");
 
       els.workspace.hidden = !shouldShow;
 
@@ -3425,7 +3440,9 @@
       } else if (hasKindFilter) {
         els.resultsHeading.textContent = state.kind === "favorite"
           ? "Favorites"
-          : `${state.kind.charAt(0).toUpperCase()}${state.kind.slice(1)}`;
+          : state.kind === "hidden"
+            ? "Hidden entries"
+            : `${state.kind.charAt(0).toUpperCase()}${state.kind.slice(1)}`;
       } else {
         els.resultsHeading.textContent = "All entries";
       }
@@ -3452,14 +3469,20 @@
         const emptySignature = `empty::${state.kind}::${viewer}`;
         if (resultsSignature !== emptySignature) {
           const noFavorites = state.kind === "favorite";
+          const noHidden = state.kind === "hidden";
+          const emptyIcon = noFavorites ? "star" : noHidden ? "eye-off" : "search-x";
+          const emptyTitle = noFavorites ? "No favorites yet" : noHidden ? "No hidden entries" : "No matches yet";
+          const emptyHint = noFavorites
+            ? "Tap the star on any entry to save it here."
+            : noHidden
+              ? "Use the eye toggle on an entry to hide it from other users."
+              : ((state.currentUser || state.isAdmin) ? "Try another phrase or add a new entry." : "Try another phrase to search public templates.");
           els.resultsList.innerHTML = `
             <div class="empty-state">
               <div>
-                <i data-lucide="${noFavorites ? "star" : "search-x"}"></i>
-                <strong>${noFavorites ? "No favorites yet" : "No matches yet"}</strong>
-                <span>${noFavorites
-                  ? "Tap the star on any entry to save it here."
-                  : ((state.currentUser || state.isAdmin) ? "Try another phrase or add a new entry." : "Try another phrase to search public templates.")}</span>
+                <i data-lucide="${emptyIcon}"></i>
+                <strong>${emptyTitle}</strong>
+                <span>${emptyHint}</span>
               </div>
             </div>
           `;
@@ -3577,6 +3600,7 @@
       els.addButton.hidden = !signedIn;
       els.aiButton.hidden = !signedIn || !APP_CONFIG.aiWorkerUrl;
       els.askButton.hidden = !signedIn || !APP_CONFIG.aiWorkerUrl;
+      els.hiddenButton.hidden = !state.isAdmin;
       els.csvButton.hidden = !state.isAdmin;
       els.exportButton.hidden = !state.isAdmin;
       els.backfillButton.hidden = !state.isAdmin || !APP_CONFIG.aiWorkerUrl;
@@ -5301,6 +5325,18 @@
       els.favoritesButton.addEventListener("click", () => {
         toggleMenu(false);
         state.kind = "favorite";
+        state.query = "";
+        state.tagFilter = "";
+        state.browseMode = true;
+        els.searchInput.value = "";
+        syncFilterButtons();
+        renderResults();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+      els.hiddenButton.addEventListener("click", () => {
+        toggleMenu(false);
+        if (!state.isAdmin) return; // admin-only view
+        state.kind = "hidden";
         state.query = "";
         state.tagFilter = "";
         state.browseMode = true;
