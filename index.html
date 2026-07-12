@@ -5746,9 +5746,45 @@
         return null;
       }
 
+      // Ask the browser for a precise, GPS/Wi‑Fi based location (same source the
+      // Windows Weather app uses). Resolves { lat, lon } or null if the visitor
+      // declines the permission prompt, or it times out / isn't available.
+      function getBrowserLocation() {
+        return new Promise(resolve => {
+          if (!navigator.geolocation) return resolve(null);
+          navigator.geolocation.getCurrentPosition(
+            pos => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+            () => resolve(null),
+            { enableHighAccuracy: false, timeout: 8000, maximumAge: 600000 }
+          );
+        });
+      }
+
+      // Turn precise coordinates into a place name (browser geolocation gives
+      // coordinates only). No key required.
+      async function reverseGeocode(lat, lon) {
+        try {
+          const res = await fetch(
+            "https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=" +
+            lat + "&longitude=" + lon + "&localityLanguage=en"
+          );
+          if (!res.ok) return "";
+          const j = await res.json();
+          return j.city || j.locality || j.principalSubdivision || "";
+        } catch (err) {
+          return "";
+        }
+      }
+
       async function initWeather() {
-        // Resolve the visitor's location by IP (no permission prompt), then
-        // ask Open-Meteo for the current conditions there.
+        // 1) Try the browser's precise location (asks permission once).
+        const precise = await getBrowserLocation();
+        if (precise) {
+          const place = await reverseGeocode(precise.lat, precise.lon);
+          loadWeatherFor(precise.lat, precise.lon, place);
+          return;
+        }
+        // 2) Fall back to approximate IP location (no prompt) if declined.
         const loc = await resolveLocation();
         if (!loc) return;
         loadWeatherFor(Number(loc.lat), Number(loc.lon), loc.place || "");
