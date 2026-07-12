@@ -3051,9 +3051,18 @@
         .replaceAll("'", "&#039;");
     }
 
-    // Escapes HTML, then renders **double asterisks** as bold text.
-    function renderBodyHtml(value = "") {
-      return escapeHtml(value).replace(/\*\*([\s\S]+?)\*\*/g, "<strong>$1</strong>");
+    // Escapes HTML, renders **double asterisks** as bold text, and highlights
+    // any words that matched the search bar. The text is split on the bold
+    // markers so highlighting and bolding compose cleanly — a matched word that
+    // sits inside **bold** gets both. highlightMatches escapes each segment on
+    // its own, so the HTML escaping always stays intact.
+    function renderBodyHtml(value = "", query = state.query) {
+      return String(value || "")
+        .split(/\*\*([\s\S]+?)\*\*/g)
+        .map((segment, i) => (i % 2
+          ? `<strong>${highlightMatches(segment, query)}</strong>`
+          : highlightMatches(segment, query)))
+        .join("");
     }
 
     // Wraps every occurrence of the active search terms in an orange highlight so
