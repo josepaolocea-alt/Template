@@ -1006,6 +1006,21 @@
       font-weight: 660;
     }
 
+    /* Orange highlight for the text on a result card that matched the search
+       bar. Uses the app's warm accent so it reads as part of the theme. The
+       translucent tint sits on top of whatever card background is behind it, so
+       it stays legible in both light and dark mode. box-decoration-break keeps
+       the padding and rounded corners intact when a match wraps across lines. */
+    .search-highlight {
+      border-radius: 4px;
+      padding: 0 3px;
+      background: color-mix(in srgb, var(--accent-warm) 32%, transparent);
+      color: inherit;
+      font-weight: 700;
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
+    }
+
     .result-actions {
       display: flex;
       gap: 6px;
@@ -3041,6 +3056,32 @@
       return escapeHtml(value).replace(/\*\*([\s\S]+?)\*\*/g, "<strong>$1</strong>");
     }
 
+    // Wraps every occurrence of the active search terms in an orange highlight so
+    // the text that matched the search bar stands out on each result card. The
+    // raw text is split into matched / unmatched segments and each segment is
+    // escaped on its own, so highlighting can never break HTML escaping. Terms
+    // are matched longest-first and case-insensitively, mirroring how search
+    // itself tokenizes the query.
+    function highlightMatches(value = "", query = state.query) {
+      const raw = String(value || "");
+      const terms = tokenize(query);
+      if (!terms.length) return escapeHtml(raw);
+
+      const pattern = terms
+        .slice()
+        .sort((a, b) => b.length - a.length)
+        .map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+        .join("|");
+      const regex = new RegExp(`(${pattern})`, "gi");
+
+      return raw
+        .split(regex)
+        .map((segment, i) => (i % 2
+          ? `<mark class="search-highlight">${escapeHtml(segment)}</mark>`
+          : escapeHtml(segment)))
+        .join("");
+    }
+
     function normalizeTags(tags) {
       if (Array.isArray(tags)) {
         return tags.map((tag) => String(tag).trim()).filter(Boolean);
@@ -3607,7 +3648,7 @@
             <div class="result-body">
               <div class="result-head">
                 <div>
-                  <h2>${escapeHtml(entry.title)}</h2>
+                  <h2>${highlightMatches(entry.title)}</h2>
                   <div class="tag-row" aria-label="Entry metadata">
                     <span class="tag kind kind-${escapeHtml(kindClass)}">${escapeHtml(entry.kind || "note")}</span>
                     ${entryTimeTags(entry)}
