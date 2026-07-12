@@ -2380,9 +2380,8 @@
         </div>
 
         <div class="quick-tags" aria-label="Quick tags">
-          <button class="chip tag-toggle" id="quickTagToggle" type="button" aria-expanded="false" aria-controls="quickRow">
+          <button class="chip tag-toggle" id="quickTagToggle" type="button" aria-expanded="false" aria-controls="quickRow" aria-label="Show tags" title="Show tags">
             <i data-lucide="tags"></i>
-            <span id="quickTagToggleLabel">Show tags</span>
             <i data-lucide="chevron-down"></i>
           </button>
           <div class="quick-row" id="quickRow" aria-label="Tags" hidden></div>
@@ -2884,7 +2883,6 @@
       searchForm: document.querySelector("#searchForm"),
       searchInput: document.querySelector("#searchInput"),
       quickTagToggle: document.querySelector("#quickTagToggle"),
-      quickTagToggleLabel: document.querySelector("#quickTagToggleLabel"),
       quickRow: document.querySelector("#quickRow"),
       filterButtons: document.querySelectorAll("[data-kind]"),
       sortSelect: document.querySelector("#sortSelect"),
@@ -3415,7 +3413,9 @@
       const tags = collectAllTags();
       const signature = `${state.quickTagsOpen ? "open" : "closed"}:${state.tagFilter}:${tags.join("|")}`;
       els.quickTagToggle.setAttribute("aria-expanded", String(state.quickTagsOpen));
-      els.quickTagToggleLabel.textContent = state.quickTagsOpen ? "Hide tags" : "Show tags";
+      const tagToggleLabel = state.quickTagsOpen ? "Hide tags" : "Show tags";
+      els.quickTagToggle.setAttribute("aria-label", tagToggleLabel);
+      els.quickTagToggle.setAttribute("title", tagToggleLabel);
 
       if (!state.quickTagsOpen) {
         els.quickRow.hidden = true;
