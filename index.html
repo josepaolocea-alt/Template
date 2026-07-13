@@ -5826,18 +5826,34 @@
         }
       }
 
+      // How often to re-fetch the weather once the location is known.
+      // Open-Meteo refreshes roughly every 15 min, so 10 min keeps it current
+      // without hammering the API. This only re-calls Open-Meteo — never Firestore.
+      const WEATHER_REFRESH_MS = 10 * 60 * 1000;
+
       async function initWeather() {
+        // Resolve the visitor's location ONCE, remember it, then keep the
+        // weather current on an interval using those saved coordinates (so we
+        // never re-prompt for location or re-run the IP lookup).
+        let coords = null;
+
         // 1) Try the browser's precise location (asks permission once).
         const precise = await getBrowserLocation();
         if (precise) {
           const place = await reverseGeocode(precise.lat, precise.lon);
-          loadWeatherFor(precise.lat, precise.lon, place);
-          return;
+          coords = { lat: precise.lat, lon: precise.lon, place: place };
+        } else {
+          // 2) Fall back to approximate IP location (no prompt) if declined.
+          const loc = await resolveLocation();
+          if (!loc) return;
+          coords = { lat: Number(loc.lat), lon: Number(loc.lon), place: loc.place || "" };
         }
-        // 2) Fall back to approximate IP location (no prompt) if declined.
-        const loc = await resolveLocation();
-        if (!loc) return;
-        loadWeatherFor(Number(loc.lat), Number(loc.lon), loc.place || "");
+
+        // Show it now, then refresh periodically using the saved location.
+        loadWeatherFor(coords.lat, coords.lon, coords.place);
+        setInterval(function () {
+          loadWeatherFor(coords.lat, coords.lon, coords.place);
+        }, WEATHER_REFRESH_MS);
       }
 
       initWeather();
