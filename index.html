@@ -2414,6 +2414,18 @@
       outline: none;
     }
 
+    /* Kill the app-wide input focus treatment (grey fill, lift, glow) inside
+       the pill — the pill itself signals focus via :focus-within instead. */
+    .tabmode-side-search input:hover,
+    .tabmode-side-search input:focus,
+    .tabmode-side-search input:focus-visible {
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+      transform: none;
+      outline: none;
+    }
+
     .tabmode-side-filters {
       display: flex;
       flex-wrap: wrap;
@@ -2541,15 +2553,41 @@
       flex: 1;
       min-width: 0;
       overflow-x: auto;
+    }
+
+    /* Slim, quiet scrollbars for the tab strip and sidebar list: invisible
+       until the pointer is over the area, then a thin rounded thumb with no
+       track. Modern browsers use the standard properties; the -webkit rules
+       cover older Safari (Chromium ignores them once scrollbar-color is set). */
+    .tabmode-tabs,
+    .tabmode-side-list {
       scrollbar-width: thin;
+      scrollbar-color: transparent transparent;
+    }
+
+    .tabmode-tabs:hover,
+    .tabmode-side-list:hover {
+      scrollbar-color: color-mix(in srgb, var(--soft) 46%, transparent) transparent;
     }
 
     .tabmode-tabs::-webkit-scrollbar {
-      height: 6px;
+      height: 4px;
     }
-    .tabmode-tabs::-webkit-scrollbar-thumb {
-      background: var(--line-strong);
+    .tabmode-side-list::-webkit-scrollbar {
+      width: 4px;
+    }
+    .tabmode-tabs::-webkit-scrollbar-track,
+    .tabmode-side-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .tabmode-tabs::-webkit-scrollbar-thumb,
+    .tabmode-side-list::-webkit-scrollbar-thumb {
+      background: transparent;
       border-radius: 999px;
+    }
+    .tabmode-tabs:hover::-webkit-scrollbar-thumb,
+    .tabmode-side-list:hover::-webkit-scrollbar-thumb {
+      background: color-mix(in srgb, var(--soft) 46%, transparent);
     }
 
     .tabmode-tab {
@@ -2746,38 +2784,6 @@
       font-size: 0.94rem;
     }
 
-    .tabmode-open-search {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      max-width: 460px;
-      width: 100%;
-      margin: 0 auto;
-      padding: 0 14px;
-      border: 1px solid var(--line-strong);
-      border-radius: 12px;
-      background: color-mix(in srgb, var(--bg-2) 55%, transparent);
-      transition: border-color var(--motion-fast) ease, box-shadow var(--motion-fast) ease;
-    }
-
-    .tabmode-open-search:focus-within {
-      border-color: color-mix(in srgb, var(--accent) 44%, var(--line-strong));
-      box-shadow: var(--focus);
-    }
-
-    .tabmode-open-search svg { width: 16px; height: 16px; color: var(--soft); flex: 0 0 auto; }
-
-    .tabmode-open-search input {
-      flex: 1;
-      min-width: 0;
-      border: 0;
-      background: transparent;
-      color: var(--text);
-      font: inherit;
-      padding: 12px 0;
-      outline: none;
-    }
-
     .tabmode-landing-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
@@ -2787,6 +2793,8 @@
     .tabmode-open-card {
       display: grid;
       gap: 7px;
+      min-width: 0;
+      overflow: hidden;
       text-align: left;
       padding: 13px 14px;
       border: 1px solid var(--line);
@@ -2806,12 +2814,18 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      min-width: 0;
       font-size: 0.92rem;
       font-weight: 620;
       color: var(--text);
     }
 
-    .tabmode-open-card-title span {
+    /* flex items default to min-width auto, which stops a long nowrap title
+       from shrinking — it would run out of its card and over the neighbour.
+       min-width: 0 lets the span shrink so the ellipsis can kick in. */
+    .tabmode-open-card-title span:last-child {
+      flex: 1;
+      min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -3475,8 +3489,7 @@
       activeTabId: "",
       tabSideQuery: "",
       tabSideKind: "all",
-      tabSidebarCollapsed: false,
-      tabOpenQuery: ""
+      tabSidebarCollapsed: false
     };
 
     const els = {
@@ -6442,7 +6455,6 @@
           state.activeTabId = tab.id;
         }
       }
-      state.tabOpenQuery = "";
       persistTabsState();
       renderTabMode();
     }
@@ -6471,7 +6483,6 @@
       const tab = { id: newTabId(), entryId: null };
       state.tabs.push(tab);
       state.activeTabId = tab.id;
-      state.tabOpenQuery = "";
       persistTabsState();
       renderTabMode();
     }
@@ -6587,20 +6598,14 @@
     }
 
     function renderLandingCards() {
-      const query = state.tabOpenQuery.trim().toLowerCase();
       const rows = tabViewableEntries()
-        .filter((entry) => {
-          if (!query) return true;
-          const hay = `${entry.title || ""} ${normalizeTags(entry.tags).join(" ")} ${entry.body || ""}`.toLowerCase();
-          return hay.includes(query);
-        })
         .sort((a, b) => getTimestamp(b.createdAt) - getTimestamp(a.createdAt));
 
       if (!rows.length) {
-        return `<div class="tabmode-side-empty">${query ? `No notes match "${escapeHtml(state.tabOpenQuery.trim())}".` : "No notes yet."}</div>`;
+        return `<div class="tabmode-side-empty">No notes yet.</div>`;
       }
 
-      return rows.slice(0, 60).map((entry) => {
+      return rows.slice(0, 24).map((entry) => {
         const snippet = String(entry.body || (entry.imageUrl ? "Image reference" : "")).replace(/\s+/g, " ").trim().slice(0, 120);
         return `
           <button class="tabmode-open-card" type="button" data-open-entry="${escapeHtml(entry.id)}">
@@ -6617,12 +6622,8 @@
           <div class="tabmode-landing-head">
             <span class="landing-icon"><i data-lucide="square-pen"></i></span>
             <h2>Open a note</h2>
-            <p>Pick a note, template, process, or image to open it in this tab.</p>
+            <p>Pick a recent note below, or find one with the sidebar filter.</p>
           </div>
-          <label class="tabmode-open-search">
-            <i data-lucide="search"></i>
-            <input id="tabOpenSearch" type="search" autocomplete="off" placeholder="Search your notes..." value="${escapeHtml(state.tabOpenQuery)}" />
-          </label>
           <div class="tabmode-landing-grid" id="tabLandingGrid">${renderLandingCards()}</div>
         </div>
       `;
@@ -6803,17 +6804,6 @@
         }
       });
 
-      // The new-tab landing has its own search box; filter the grid in place so
-      // the input keeps focus while typing.
-      els.tabContent.addEventListener("input", (event) => {
-        if (!event.target || event.target.id !== "tabOpenSearch") return;
-        state.tabOpenQuery = event.target.value;
-        const grid = els.tabContent.querySelector("#tabLandingGrid");
-        if (grid) {
-          grid.innerHTML = renderLandingCards();
-          refreshIcons();
-        }
-      });
     }
 
     function restoreTabMode() {
