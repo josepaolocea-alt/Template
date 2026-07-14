@@ -2297,6 +2297,568 @@
         line-height: 1.55;
         color: var(--text);
       }
+
+    /* ===================================================================
+       Tab mode — an Obsidian-style workspace where notes/templates open
+       as tabs. Toggled from the topbar; reuses the app's theme tokens so
+       it tracks light/dark automatically.
+       =================================================================== */
+    #modeToggle.is-active {
+      border-color: color-mix(in srgb, var(--accent) 54%, var(--line-strong));
+      color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 14%, transparent);
+    }
+
+    /* When the tab workspace is on, the search hero + results step aside. */
+    .tab-mode-active .hero,
+    .tab-mode-active #workspace {
+      display: none !important;
+    }
+
+    .tabmode {
+      display: grid;
+      grid-template-columns: 264px minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+      padding: 20px 0 48px;
+      animation: heroIn 460ms var(--ease-out) both;
+    }
+
+    .signed-in .tabmode {
+      animation: none;
+    }
+
+    .tabmode-sidebar {
+      position: sticky;
+      top: 88px;
+      align-self: start;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: calc(100vh - 108px);
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: color-mix(in srgb, var(--panel-solid) 76%, transparent);
+    }
+
+    .tabmode.sidebar-collapsed {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .tabmode.sidebar-collapsed .tabmode-sidebar {
+      display: none;
+    }
+
+    /* The "show sidebar" toggle only makes sense while the sidebar is hidden. */
+    .tabmode:not(.sidebar-collapsed) .tabmode-side-toggle {
+      display: none;
+    }
+
+    .tabmode-side-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .tabmode-side-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.82rem;
+      font-weight: 680;
+      letter-spacing: 0.02em;
+      color: var(--text);
+      font-family: var(--font-mono);
+    }
+
+    .tabmode-side-title svg {
+      width: 16px;
+      height: 16px;
+      color: var(--accent);
+    }
+
+    .tabmode-side-search {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 10px;
+      border: 1px solid var(--line-strong);
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--bg-2) 60%, transparent);
+      transition: border-color var(--motion-fast) ease, box-shadow var(--motion-fast) ease;
+    }
+
+    .tabmode-side-search:focus-within {
+      border-color: color-mix(in srgb, var(--accent) 44%, var(--line-strong));
+      box-shadow: var(--focus);
+    }
+
+    .tabmode-side-search svg {
+      width: 15px;
+      height: 15px;
+      color: var(--soft);
+      flex: 0 0 auto;
+    }
+
+    .tabmode-side-search input {
+      flex: 1;
+      min-width: 0;
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      font: inherit;
+      font-size: 0.88rem;
+      padding: 9px 0;
+      outline: none;
+    }
+
+    .tabmode-side-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tabmode-side-filters .chip {
+      min-height: 30px;
+      padding: 0 10px;
+      font-size: 0.78rem;
+      font-weight: 580;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+    }
+
+    .tabmode-side-filters .chip svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .tabmode-side-filters .chip.active {
+      border-color: color-mix(in srgb, var(--accent) 50%, var(--line-strong));
+      color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 12%, transparent);
+    }
+
+    .tabmode-side-list {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      overflow-y: auto;
+      margin: 0 -4px;
+      padding: 2px 4px;
+    }
+
+    .tabmode-side-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      width: 100%;
+      text-align: left;
+      padding: 8px 10px;
+      border: 1px solid transparent;
+      border-radius: 9px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: background var(--motion-fast) ease, color var(--motion-fast) ease, border-color var(--motion-fast) ease;
+    }
+
+    .tabmode-side-item:hover {
+      background: color-mix(in srgb, var(--accent) 8%, var(--bg-2));
+      color: var(--text);
+      border-color: color-mix(in srgb, var(--accent) 22%, var(--line));
+    }
+
+    .tabmode-side-item.is-open {
+      color: var(--text);
+      background: color-mix(in srgb, var(--panel-solid) 92%, transparent);
+      border-color: var(--line);
+    }
+
+    .tabmode-side-item.is-active {
+      color: var(--text);
+      border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+      background: color-mix(in srgb, var(--accent) 12%, transparent);
+    }
+
+    .tabmode-side-item-title {
+      flex: 1;
+      min-width: 0;
+      font-size: 0.87rem;
+      font-weight: 560;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .kind-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex: 0 0 auto;
+      background: var(--accent-blue);
+    }
+    .kind-dot.kind-template { background: var(--accent-warm); }
+    .kind-dot.kind-note { background: var(--accent-blue); }
+    .kind-dot.kind-process { background: var(--accent); }
+    .kind-dot.kind-image { background: var(--accent-strong); }
+
+    .tabmode-side-empty {
+      padding: 18px 8px;
+      text-align: center;
+      color: var(--soft);
+      font-size: 0.85rem;
+    }
+
+    .tabmode-main {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .tabmode-tabstrip {
+      position: sticky;
+      top: 76px;
+      z-index: 6;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--bg) 82%, transparent);
+      backdrop-filter: blur(14px);
+    }
+
+    .tabmode-tabs {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex: 1;
+      min-width: 0;
+      overflow-x: auto;
+      scrollbar-width: thin;
+    }
+
+    .tabmode-tabs::-webkit-scrollbar {
+      height: 6px;
+    }
+    .tabmode-tabs::-webkit-scrollbar-thumb {
+      background: var(--line-strong);
+      border-radius: 999px;
+    }
+
+    .tabmode-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      flex: 0 0 auto;
+      max-width: 220px;
+      padding: 7px 8px 7px 11px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: color-mix(in srgb, var(--panel-solid) 55%, transparent);
+      color: var(--muted);
+      cursor: pointer;
+      transition: background var(--motion-fast) ease, color var(--motion-fast) ease, border-color var(--motion-fast) ease;
+    }
+
+    .tabmode-tab:hover {
+      color: var(--text);
+      background: color-mix(in srgb, var(--panel-solid) 80%, transparent);
+    }
+
+    .tabmode-tab.is-active {
+      color: var(--text);
+      border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
+      background: color-mix(in srgb, var(--accent) 12%, var(--panel-solid));
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    }
+
+    .tabmode-tab-label {
+      max-width: 160px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 0.86rem;
+      font-weight: 560;
+    }
+
+    .tabmode-tab-close {
+      display: inline-grid;
+      place-items: center;
+      width: 20px;
+      height: 20px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--soft);
+      cursor: pointer;
+      flex: 0 0 auto;
+      transition: background var(--motion-fast) ease, color var(--motion-fast) ease;
+    }
+
+    .tabmode-tab-close:hover {
+      background: color-mix(in srgb, var(--danger) 20%, transparent);
+      color: var(--danger);
+    }
+
+    .tabmode-tab-close svg {
+      width: 13px;
+      height: 13px;
+    }
+
+    .tabmode-tab > svg {
+      width: 14px;
+      height: 14px;
+      color: var(--soft);
+      flex: 0 0 auto;
+    }
+
+    .tabmode-landing-head .landing-icon svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .tabmode-newtab,
+    .tabmode-side-toggle {
+      flex: 0 0 auto;
+    }
+
+    .tabmode-content {
+      min-height: calc(100vh - 200px);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: color-mix(in srgb, var(--panel-solid) 76%, transparent);
+      padding: 26px clamp(18px, 3vw, 34px);
+    }
+
+    /* --- Rendered note inside a tab --- */
+    .tabmode-doc {
+      max-width: 780px;
+      margin: 0 auto;
+      display: grid;
+      gap: 16px;
+      animation: textRise 360ms var(--ease-out) both;
+    }
+
+    .tabmode-doc-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .tabmode-doc-head h2 {
+      margin: 0;
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      line-height: 1.2;
+      font-weight: 660;
+      letter-spacing: -0.01em;
+      color: var(--text);
+    }
+
+    .tabmode-doc-actions {
+      display: flex;
+      gap: 6px;
+      flex: 0 0 auto;
+    }
+
+    .tabmode-doc-image {
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--bg-2);
+      cursor: zoom-in;
+      padding: 0;
+      max-width: 100%;
+    }
+
+    .tabmode-doc-image img {
+      display: block;
+      width: 100%;
+      max-height: 460px;
+      object-fit: contain;
+      background: var(--bg-2);
+    }
+
+    .tabmode-doc-body {
+      margin: 0;
+      color: color-mix(in srgb, var(--text) 82%, var(--muted));
+      font-size: 1.02rem;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .tabmode-doc-body strong { color: var(--text); }
+
+    .tabmode-doc-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding-top: 6px;
+      border-top: 1px solid var(--line);
+    }
+
+    /* --- New-tab landing / quick open --- */
+    .tabmode-landing {
+      max-width: 860px;
+      margin: 0 auto;
+      display: grid;
+      gap: 18px;
+      animation: textRise 360ms var(--ease-out) both;
+    }
+
+    .tabmode-landing-head {
+      text-align: center;
+      display: grid;
+      gap: 8px;
+      padding-top: 8px;
+    }
+
+    .tabmode-landing-head .landing-icon {
+      width: 46px;
+      height: 46px;
+      margin: 0 auto;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      border: 1px solid var(--line-strong);
+      background: color-mix(in srgb, var(--accent) 10%, var(--panel-solid));
+      color: var(--accent);
+    }
+
+    .tabmode-landing-head h2 {
+      margin: 0;
+      font-size: 1.3rem;
+      font-weight: 640;
+      color: var(--text);
+    }
+
+    .tabmode-landing-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.94rem;
+    }
+
+    .tabmode-open-search {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      max-width: 460px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0 14px;
+      border: 1px solid var(--line-strong);
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--bg-2) 55%, transparent);
+      transition: border-color var(--motion-fast) ease, box-shadow var(--motion-fast) ease;
+    }
+
+    .tabmode-open-search:focus-within {
+      border-color: color-mix(in srgb, var(--accent) 44%, var(--line-strong));
+      box-shadow: var(--focus);
+    }
+
+    .tabmode-open-search svg { width: 16px; height: 16px; color: var(--soft); flex: 0 0 auto; }
+
+    .tabmode-open-search input {
+      flex: 1;
+      min-width: 0;
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      font: inherit;
+      padding: 12px 0;
+      outline: none;
+    }
+
+    .tabmode-landing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 10px;
+    }
+
+    .tabmode-open-card {
+      display: grid;
+      gap: 7px;
+      text-align: left;
+      padding: 13px 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--panel-solid) 55%, transparent);
+      cursor: pointer;
+      transition: transform var(--motion-fast) var(--ease-spring), border-color var(--motion-fast) ease, background var(--motion-fast) ease;
+    }
+
+    .tabmode-open-card:hover {
+      transform: translateY(-2px);
+      border-color: color-mix(in srgb, var(--accent) 28%, var(--line));
+      background: color-mix(in srgb, var(--panel-solid) 82%, transparent);
+    }
+
+    .tabmode-open-card-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.92rem;
+      font-weight: 620;
+      color: var(--text);
+    }
+
+    .tabmode-open-card-title span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .tabmode-open-card-snippet {
+      margin: 0;
+      color: var(--soft);
+      font-size: 0.8rem;
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .tabmode-blank {
+      display: grid;
+      gap: 10px;
+      place-items: center;
+      text-align: center;
+      color: var(--soft);
+      padding: 60px 12px;
+    }
+
+    .tabmode-blank svg { width: 34px; height: 34px; color: var(--soft); }
+    .tabmode-blank strong { color: var(--text); font-size: 1.05rem; font-weight: 620; }
+    .tabmode-blank span { font-size: 0.9rem; max-width: 340px; }
+
+    @media (max-width: 860px) {
+      .tabmode {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .tabmode-sidebar {
+        position: static;
+        max-height: 320px;
+      }
+      .tabmode-tabstrip {
+        top: 58px;
+      }
+      /* On small screens the sidebar stacks as a panel above the tabs when
+         opened; it starts collapsed so the note fills the screen. */
+      .tabmode-content {
+        min-height: 50vh;
+        padding: 20px 16px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -2322,6 +2884,9 @@
         <button class="button ghost" id="signOutButton" type="button" aria-label="Sign out" hidden>
           <i data-lucide="log-out"></i>
           <span class="optional">Sign out</span>
+        </button>
+        <button class="icon-button" id="modeToggle" type="button" aria-label="Open tab workspace" title="Open tab workspace" aria-pressed="false">
+          <i data-lucide="panels-top-left"></i>
         </button>
         <button class="button primary" id="addButton" type="button" aria-label="Add data" hidden>
           <i data-lucide="plus"></i>
@@ -2416,6 +2981,35 @@
         </button>
       </div>
       <div class="results-list results-stack" id="resultsList"></div>
+    </section>
+
+    <section class="tabmode app-shell" id="tabMode" aria-label="Tab workspace" hidden>
+      <aside class="tabmode-sidebar" id="tabSidebar">
+        <div class="tabmode-side-head">
+          <span class="tabmode-side-title"><i data-lucide="library"></i> Notes</span>
+          <button class="icon-button tiny-button" id="tabSidebarClose" type="button" aria-label="Hide sidebar" title="Hide sidebar">
+            <i data-lucide="panel-left-close"></i>
+          </button>
+        </div>
+        <div class="tabmode-side-search">
+          <i data-lucide="search"></i>
+          <input id="tabSideSearch" type="search" autocomplete="off" placeholder="Filter notes..." />
+        </div>
+        <div class="tabmode-side-filters" id="tabSideFilters" aria-label="Filter by type"></div>
+        <div class="tabmode-side-list" id="tabSideList"></div>
+      </aside>
+      <div class="tabmode-main">
+        <div class="tabmode-tabstrip" id="tabStrip">
+          <button class="icon-button tiny-button tabmode-side-toggle" id="tabSidebarOpen" type="button" aria-label="Show sidebar" title="Show sidebar">
+            <i data-lucide="panel-left-open"></i>
+          </button>
+          <div class="tabmode-tabs" id="tabTabs" role="tablist"></div>
+          <button class="icon-button tiny-button tabmode-newtab" id="tabNewButton" type="button" aria-label="New tab" title="New tab">
+            <i data-lucide="plus"></i>
+          </button>
+        </div>
+        <div class="tabmode-content" id="tabContent"></div>
+      </div>
     </section>
   </main>
 
@@ -2795,6 +3389,7 @@
     const STORAGE_KEY = "promptvault.entries.v1";
     const THEME_KEY = "promptvault.theme";
     const FAVORITES_KEY = "promptvault.favorites.v1";
+    const TABS_KEY = "promptvault.tabs.v1";
     const SAMPLE_TAGS = ["voip", "sms", "sms & voip"];
 
     const seedEntries = [
@@ -2874,7 +3469,14 @@
       pendingDeleteId: "",
       entriesUnsubscribe: null,
       entriesMode: "",
-      hiddenBackfillDone: false
+      hiddenBackfillDone: false,
+      tabMode: false,
+      tabs: [],
+      activeTabId: "",
+      tabSideQuery: "",
+      tabSideKind: "all",
+      tabSidebarCollapsed: false,
+      tabOpenQuery: ""
     };
 
     const els = {
@@ -2993,7 +3595,19 @@
       authSubmit: document.querySelector("#authSubmit"),
       googleSignInButton: document.querySelector("#googleSignInButton"),
       googleSignInLabel: document.querySelector("#googleSignInLabel"),
-      toast: document.querySelector("#toast")
+      toast: document.querySelector("#toast"),
+      modeToggle: document.querySelector("#modeToggle"),
+      tabMode: document.querySelector("#tabMode"),
+      tabSidebar: document.querySelector("#tabSidebar"),
+      tabSidebarClose: document.querySelector("#tabSidebarClose"),
+      tabSidebarOpen: document.querySelector("#tabSidebarOpen"),
+      tabSideSearch: document.querySelector("#tabSideSearch"),
+      tabSideFilters: document.querySelector("#tabSideFilters"),
+      tabSideList: document.querySelector("#tabSideList"),
+      tabStrip: document.querySelector("#tabStrip"),
+      tabTabs: document.querySelector("#tabTabs"),
+      tabNewButton: document.querySelector("#tabNewButton"),
+      tabContent: document.querySelector("#tabContent")
     };
 
     function canManageEntry(entry) {
@@ -3691,6 +4305,7 @@
       renderStats();
       syncFilterButtons();
       renderResults(true);
+      if (state.tabMode) renderTabMode();
     }
 
     function updateAuthUI() {
@@ -3728,6 +4343,7 @@
 
       renderStats();
       renderResults(true);
+      if (state.tabMode) renderTabMode();
     }
 
     function setSource(name, detail) {
@@ -5681,6 +6297,534 @@
           window.scrollTo({ top: 0, behavior: "smooth" });
         }
       });
+
+      wireTabMode();
+    }
+
+    /* ===================================================================
+       Tab mode — an Obsidian-style workspace. Notes, templates, processes,
+       and images open as tabs beside a searchable note list. Toggled from
+       the topbar; it reuses the app's existing entry helpers and dialogs.
+       =================================================================== */
+    let tabStripSig = null;
+    let tabSideSig = null;
+    let tabContentSig = null;
+
+    function newTabId() {
+      return `tab-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    }
+
+    function tabFindEntry(id) {
+      return state.entries.find((item) => item.id === id) || null;
+    }
+
+    function kindClassOf(entry) {
+      return String((entry && entry.kind) || "note").toLowerCase().replace(/[^a-z0-9-]/g, "");
+    }
+
+    // Entries the current viewer is allowed to see — mirrors the base
+    // visibility rules used by search (hidden entries are admin-only; signed-out
+    // visitors only see templates).
+    function tabViewableEntries() {
+      return state.entries
+        .filter((entry) => state.isAdmin || !entry.hidden)
+        .filter((entry) => state.isAdmin || state.currentUser || entry.kind === "template");
+    }
+
+    function tabEntryVisible(entryId) {
+      const entry = tabFindEntry(entryId);
+      if (!entry) return false;
+      if (!state.isAdmin && entry.hidden) return false;
+      if (!state.isAdmin && !state.currentUser && entry.kind !== "template") return false;
+      return true;
+    }
+
+    function getActiveTab() {
+      return state.tabs.find((tab) => tab.id === state.activeTabId) || null;
+    }
+
+    function loadTabsState() {
+      try {
+        const raw = JSON.parse(localStorage.getItem(TABS_KEY) || "null");
+        if (raw && typeof raw === "object") {
+          state.tabs = Array.isArray(raw.tabs)
+            ? raw.tabs
+                .filter((tab) => tab && typeof tab.id === "string")
+                .map((tab) => ({ id: tab.id, entryId: tab.entryId ? String(tab.entryId) : null }))
+            : [];
+          state.activeTabId = typeof raw.activeId === "string" ? raw.activeId : (state.tabs[0] ? state.tabs[0].id : "");
+          state.tabMode = Boolean(raw.open);
+        }
+      } catch (error) {
+        console.warn("Could not load tabs", error);
+      }
+    }
+
+    function persistTabsState() {
+      try {
+        localStorage.setItem(TABS_KEY, JSON.stringify({
+          tabs: state.tabs.map((tab) => ({ id: tab.id, entryId: tab.entryId })),
+          activeId: state.activeTabId,
+          open: state.tabMode
+        }));
+      } catch (error) {
+        console.warn("Could not save tabs", error);
+      }
+    }
+
+    // Invalidate cached signatures so the next render fully rebuilds the panels.
+    function resetTabSignatures() {
+      tabStripSig = null;
+      tabSideSig = null;
+      tabContentSig = null;
+    }
+
+    function enterTabMode() {
+      state.tabMode = true;
+      if (!state.tabs.length) {
+        state.tabs = [{ id: newTabId(), entryId: null }];
+        state.activeTabId = state.tabs[0].id;
+      }
+      if (!getActiveTab()) {
+        state.activeTabId = state.tabs[0] ? state.tabs[0].id : "";
+      }
+      // Give the note the full width on small screens; the sidebar opens on demand.
+      state.tabSidebarCollapsed = window.matchMedia("(max-width: 860px)").matches;
+      document.documentElement.classList.add("tab-mode-active");
+      els.tabMode.hidden = false;
+      els.modeToggle.classList.add("is-active");
+      els.modeToggle.setAttribute("aria-pressed", "true");
+      els.modeToggle.setAttribute("aria-label", "Back to search");
+      els.modeToggle.setAttribute("title", "Back to search");
+      els.modeToggle.innerHTML = '<i data-lucide="search"></i>';
+      resetTabSignatures();
+      persistTabsState();
+      renderTabMode();
+      window.scrollTo({ top: 0 });
+    }
+
+    function exitTabMode() {
+      state.tabMode = false;
+      document.documentElement.classList.remove("tab-mode-active");
+      els.tabMode.hidden = true;
+      els.modeToggle.classList.remove("is-active");
+      els.modeToggle.setAttribute("aria-pressed", "false");
+      els.modeToggle.setAttribute("aria-label", "Open tab workspace");
+      els.modeToggle.setAttribute("title", "Open tab workspace");
+      els.modeToggle.innerHTML = '<i data-lucide="panels-top-left"></i>';
+      persistTabsState();
+      refreshIcons();
+      render();
+    }
+
+    function toggleTabMode() {
+      if (state.tabMode) exitTabMode();
+      else enterTabMode();
+    }
+
+    function openEntryInTab(entryId) {
+      const entry = tabFindEntry(entryId);
+      if (!entry) {
+        showToast("That entry could not be found.");
+        return;
+      }
+      const existing = state.tabs.find((tab) => tab.entryId === entryId);
+      if (existing) {
+        state.activeTabId = existing.id;
+      } else {
+        const active = getActiveTab();
+        if (active && !active.entryId) {
+          // Reuse the current blank tab, matching Obsidian's behaviour.
+          active.entryId = entryId;
+        } else {
+          const tab = { id: newTabId(), entryId };
+          state.tabs.push(tab);
+          state.activeTabId = tab.id;
+        }
+      }
+      state.tabOpenQuery = "";
+      persistTabsState();
+      renderTabMode();
+    }
+
+    function focusTab(id) {
+      if (state.activeTabId === id) return;
+      state.activeTabId = id;
+      persistTabsState();
+      renderTabMode();
+    }
+
+    function closeTab(id) {
+      const index = state.tabs.findIndex((tab) => tab.id === id);
+      if (index === -1) return;
+      const wasActive = state.activeTabId === id;
+      state.tabs.splice(index, 1);
+      if (wasActive) {
+        const next = state.tabs[index] || state.tabs[index - 1] || null;
+        state.activeTabId = next ? next.id : "";
+      }
+      persistTabsState();
+      renderTabMode();
+    }
+
+    function newHomeTab() {
+      const tab = { id: newTabId(), entryId: null };
+      state.tabs.push(tab);
+      state.activeTabId = tab.id;
+      state.tabOpenQuery = "";
+      persistTabsState();
+      renderTabMode();
+    }
+
+    function applyTabTagFilter(tag) {
+      state.tabSideQuery = tag;
+      state.tabSideKind = "all";
+      if (els.tabSideSearch) els.tabSideSearch.value = tag;
+      state.tabSidebarCollapsed = false;
+      renderTabMode();
+    }
+
+    function renderTabMode() {
+      if (!state.tabMode) return;
+      els.tabMode.classList.toggle("sidebar-collapsed", state.tabSidebarCollapsed);
+      renderTabStrip();
+      renderTabSidebar();
+      renderTabContent();
+    }
+
+    function renderTabStrip() {
+      const sig = state.tabs.map((tab) => {
+        const entry = tab.entryId ? tabFindEntry(tab.entryId) : null;
+        const title = entry ? (entry.title || "Untitled") : (tab.entryId ? "Unavailable" : "New tab");
+        return `${tab.id}~${tab.entryId || ""}~${title}`;
+      }).join("|") + "::" + state.activeTabId;
+      if (sig === tabStripSig) return;
+      tabStripSig = sig;
+
+      els.tabTabs.innerHTML = state.tabs.map((tab) => {
+        const entry = tab.entryId ? tabFindEntry(tab.entryId) : null;
+        const title = entry ? (entry.title || "Untitled") : (tab.entryId ? "Unavailable note" : "New tab");
+        const isActive = tab.id === state.activeTabId;
+        const lead = tab.entryId
+          ? `<span class="kind-dot kind-${escapeHtml(kindClassOf(entry))}"></span>`
+          : `<i data-lucide="file-plus"></i>`;
+        return `
+          <div class="tabmode-tab${isActive ? " is-active" : ""}" role="tab" tabindex="0" data-tab-action="focus" data-tab-id="${escapeHtml(tab.id)}" aria-selected="${isActive}" title="${escapeHtml(title)}">
+            ${lead}
+            <span class="tabmode-tab-label">${escapeHtml(title)}</span>
+            <button class="tabmode-tab-close" type="button" data-tab-action="close" data-tab-id="${escapeHtml(tab.id)}" aria-label="Close ${escapeHtml(title)}">
+              <i data-lucide="x"></i>
+            </button>
+          </div>
+        `;
+      }).join("");
+      refreshIcons();
+    }
+
+    function tabSidebarRows() {
+      const query = state.tabSideQuery.trim().toLowerCase();
+      return tabViewableEntries()
+        .filter((entry) => {
+          if (state.tabSideKind === "favorite") return isFavorite(entry.id);
+          if (state.tabSideKind === "image") return entry.kind === "image" || Boolean(entry.imageUrl);
+          if (state.tabSideKind !== "all") return entry.kind === state.tabSideKind;
+          return true;
+        })
+        .filter((entry) => {
+          if (!query) return true;
+          const hay = `${entry.title || ""} ${normalizeTags(entry.tags).join(" ")} ${entry.body || ""}`.toLowerCase();
+          return hay.includes(query);
+        })
+        .sort((a, b) => String(a.title || "").localeCompare(String(b.title || "")));
+    }
+
+    function renderTabSidebar() {
+      const canSeeAll = Boolean(state.currentUser || state.isAdmin);
+      const kinds = canSeeAll
+        ? [["all", "All", "layout-grid"], ["template", "Templates", "copy-check"], ["note", "Notes", "notebook-tabs"], ["process", "Process", "workflow"], ["image", "Images", "image"], ["favorite", "Favorites", "star"]]
+        : [["all", "All", "layout-grid"], ["template", "Templates", "copy-check"], ["favorite", "Favorites", "star"]];
+      if (!kinds.some((entry) => entry[0] === state.tabSideKind)) state.tabSideKind = "all";
+
+      const rows = tabSidebarRows();
+      const openIds = new Set(state.tabs.map((tab) => tab.entryId).filter(Boolean));
+      const activeTab = getActiveTab();
+      const activeEntry = activeTab && activeTab.entryId ? activeTab.entryId : "";
+      const sig = `${canSeeAll ? 1 : 0}::${state.tabSideKind}::${state.tabSideQuery.trim().toLowerCase()}::${rows.map((entry) => `${entry.id}~${entry.title}~${entry.kind}`).join(",")}::${[...openIds].join(",")}::${activeEntry}`;
+      if (sig === tabSideSig) return;
+      tabSideSig = sig;
+
+      els.tabSideFilters.innerHTML = kinds.map(([kind, label, icon]) =>
+        `<button class="chip${state.tabSideKind === kind ? " active" : ""}" type="button" data-tabkind="${kind}"><i data-lucide="${icon}"></i>${label}</button>`
+      ).join("");
+
+      if (!rows.length) {
+        els.tabSideList.innerHTML = `<div class="tabmode-side-empty">${state.tabSideQuery.trim() ? "No notes match your filter." : "No notes here yet."}</div>`;
+      } else {
+        els.tabSideList.innerHTML = rows.map((entry) => {
+          const isActive = activeEntry === entry.id;
+          const stateClass = isActive ? " is-active" : (openIds.has(entry.id) ? " is-open" : "");
+          return `
+            <button class="tabmode-side-item${stateClass}" type="button" data-entry-id="${escapeHtml(entry.id)}" title="${escapeHtml(entry.title || "Untitled")}">
+              <span class="kind-dot kind-${escapeHtml(kindClassOf(entry))}"></span>
+              <span class="tabmode-side-item-title">${escapeHtml(entry.title || "Untitled")}</span>
+            </button>
+          `;
+        }).join("");
+      }
+      refreshIcons();
+    }
+
+    function tabContentSignature() {
+      const viewer = state.isAdmin ? "a" : (state.currentUser ? "m" : "t");
+      const active = getActiveTab();
+      if (!active) return `none::${viewer}`;
+      if (!active.entryId) {
+        return `home::${active.id}::${viewer}::${tabViewableEntries().map((entry) => entry.id).join(",")}`;
+      }
+      const entry = tabFindEntry(active.entryId);
+      if (!entry || !tabEntryVisible(active.entryId)) return `missing::${active.id}::${active.entryId}::${viewer}`;
+      return `doc::${active.id}::${entry.id}::${getTimestamp(entry.updatedAt)}::${isFavorite(entry.id) ? 1 : 0}::${canManageEntry(entry) ? 1 : 0}::${viewer}`;
+    }
+
+    function renderLandingCards() {
+      const query = state.tabOpenQuery.trim().toLowerCase();
+      const rows = tabViewableEntries()
+        .filter((entry) => {
+          if (!query) return true;
+          const hay = `${entry.title || ""} ${normalizeTags(entry.tags).join(" ")} ${entry.body || ""}`.toLowerCase();
+          return hay.includes(query);
+        })
+        .sort((a, b) => getTimestamp(b.createdAt) - getTimestamp(a.createdAt));
+
+      if (!rows.length) {
+        return `<div class="tabmode-side-empty">${query ? `No notes match "${escapeHtml(state.tabOpenQuery.trim())}".` : "No notes yet."}</div>`;
+      }
+
+      return rows.slice(0, 60).map((entry) => {
+        const snippet = String(entry.body || (entry.imageUrl ? "Image reference" : "")).replace(/\s+/g, " ").trim().slice(0, 120);
+        return `
+          <button class="tabmode-open-card" type="button" data-open-entry="${escapeHtml(entry.id)}">
+            <span class="tabmode-open-card-title"><span class="kind-dot kind-${escapeHtml(kindClassOf(entry))}"></span><span>${escapeHtml(entry.title || "Untitled")}</span></span>
+            <p class="tabmode-open-card-snippet">${escapeHtml(snippet || "No preview text.")}</p>
+          </button>
+        `;
+      }).join("");
+    }
+
+    function renderTabLanding() {
+      return `
+        <div class="tabmode-landing">
+          <div class="tabmode-landing-head">
+            <span class="landing-icon"><i data-lucide="square-pen"></i></span>
+            <h2>Open a note</h2>
+            <p>Pick a note, template, process, or image to open it in this tab.</p>
+          </div>
+          <label class="tabmode-open-search">
+            <i data-lucide="search"></i>
+            <input id="tabOpenSearch" type="search" autocomplete="off" placeholder="Search your notes..." value="${escapeHtml(state.tabOpenQuery)}" />
+          </label>
+          <div class="tabmode-landing-grid" id="tabLandingGrid">${renderLandingCards()}</div>
+        </div>
+      `;
+    }
+
+    function renderTabDoc(entry) {
+      const id = escapeHtml(entry.id);
+      const kindClass = kindClassOf(entry);
+      const favorited = isFavorite(entry.id);
+      const canManage = canManageEntry(entry);
+      const tags = normalizeTags(entry.tags);
+
+      const attachmentActions = entry.attachmentUrl ? `
+        ${getDocEmbedUrl(entry.attachmentUrl) ? `
+          <button class="icon-button tiny-button" type="button" data-action="preview-doc" data-id="${id}" aria-label="Preview attachment" title="Preview attachment">
+            <i data-lucide="file-search"></i>
+          </button>` : ""}
+        <button class="icon-button tiny-button" type="button" data-action="download-file" data-id="${id}" aria-label="Download attachment" title="Download attachment">
+          <i data-lucide="download"></i>
+        </button>
+      ` : "";
+
+      const manageActions = canManage ? `
+        <button class="icon-button tiny-button" type="button" data-action="edit" data-id="${id}" aria-label="Edit entry" title="Edit entry">
+          <i data-lucide="pencil"></i>
+        </button>
+        <button class="icon-button tiny-button" type="button" data-action="delete" data-id="${id}" aria-label="Delete entry" title="Delete entry">
+          <i data-lucide="trash-2"></i>
+        </button>
+      ` : "";
+
+      const image = entry.imageUrl ? `
+        <button class="tabmode-doc-image" type="button" data-action="preview-image" data-id="${id}" aria-label="Preview image">
+          <img src="${escapeHtml(entry.imageUrl)}" alt="${escapeHtml(entry.title || "Entry image")}" loading="lazy" />
+        </button>
+      ` : "";
+
+      const attachmentTag = entry.attachmentUrl
+        ? `<span class="tag">${escapeHtml(attachmentDisplayName(entry))}</span>`
+        : "";
+
+      const body = entry.body
+        ? `<p class="tabmode-doc-body">${renderBodyHtml(entry.body, "")}</p>`
+        : `<p class="tabmode-doc-body">Image reference saved without text.</p>`;
+
+      return `
+        <article class="tabmode-doc">
+          <div class="tabmode-doc-head">
+            <h2>${escapeHtml(entry.title || "Untitled")}</h2>
+            <div class="tabmode-doc-actions">
+              <button class="icon-button tiny-button favorite-button${favorited ? " is-favorite" : ""}" type="button" data-action="favorite" data-id="${id}" aria-pressed="${favorited}" aria-label="${favorited ? "Remove from favorites" : "Add to favorites"}" title="${favorited ? "Remove from favorites" : "Add to favorites"}">
+                <i data-lucide="star"></i>
+              </button>
+              <button class="icon-button tiny-button" type="button" data-action="copy" data-id="${id}" aria-label="Copy text" title="Copy text">
+                <i data-lucide="copy"></i>
+              </button>
+              ${attachmentActions}
+              ${manageActions}
+            </div>
+          </div>
+          <div class="tag-row">
+            <span class="tag kind kind-${escapeHtml(kindClass)}">${escapeHtml(entry.kind || "note")}</span>
+            ${entryTimeTags(entry)}
+            ${attachmentTag}
+            ${entry.hidden ? `<span class="tag hidden-tag"><i data-lucide="eye-off"></i>Hidden</span>` : ""}
+          </div>
+          ${image}
+          ${body}
+          ${tags.length ? `<div class="tabmode-doc-tags">${tags.map((tag) => `<button class="tag" type="button" data-action="tag" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`).join("")}</div>` : ""}
+        </article>
+      `;
+    }
+
+    function renderTabContent() {
+      const sig = tabContentSignature();
+      if (sig === tabContentSig) return;
+      tabContentSig = sig;
+
+      const active = getActiveTab();
+      if (!active) {
+        els.tabContent.innerHTML = `
+          <div class="tabmode-blank">
+            <i data-lucide="layout-grid"></i>
+            <strong>No tabs open</strong>
+            <span>Use the + button or pick a note from the sidebar to open a tab.</span>
+          </div>
+        `;
+      } else if (!active.entryId) {
+        els.tabContent.innerHTML = renderTabLanding();
+      } else {
+        const entry = tabFindEntry(active.entryId);
+        if (entry && tabEntryVisible(active.entryId)) {
+          els.tabContent.innerHTML = renderTabDoc(entry);
+        } else {
+          els.tabContent.innerHTML = `
+            <div class="tabmode-blank">
+              <i data-lucide="file-x"></i>
+              <strong>This note isn't available</strong>
+              <span>It may have been deleted, or you don't have access to it. Close this tab or open another note.</span>
+            </div>
+          `;
+        }
+      }
+      refreshIcons();
+    }
+
+    function wireTabMode() {
+      els.modeToggle.addEventListener("click", toggleTabMode);
+      els.tabNewButton.addEventListener("click", newHomeTab);
+      els.tabSidebarClose.addEventListener("click", () => {
+        state.tabSidebarCollapsed = true;
+        renderTabMode();
+      });
+      els.tabSidebarOpen.addEventListener("click", () => {
+        state.tabSidebarCollapsed = false;
+        renderTabMode();
+      });
+
+      els.tabSideSearch.addEventListener("input", () => {
+        state.tabSideQuery = els.tabSideSearch.value;
+        renderTabSidebar();
+      });
+
+      els.tabSideFilters.addEventListener("click", (event) => {
+        const chip = event.target.closest("[data-tabkind]");
+        if (!chip) return;
+        state.tabSideKind = chip.dataset.tabkind;
+        renderTabSidebar();
+      });
+
+      els.tabSideList.addEventListener("click", (event) => {
+        const item = event.target.closest("[data-entry-id]");
+        if (!item) return;
+        openEntryInTab(item.dataset.entryId);
+        if (window.matchMedia("(max-width: 860px)").matches) {
+          state.tabSidebarCollapsed = true;
+          renderTabMode();
+        }
+      });
+
+      const activateTab = (el) => {
+        if (el.dataset.tabAction === "close") closeTab(el.dataset.tabId);
+        else focusTab(el.dataset.tabId);
+      };
+
+      els.tabTabs.addEventListener("click", (event) => {
+        const el = event.target.closest("[data-tab-action]");
+        if (!el) return;
+        activateTab(el);
+      });
+
+      els.tabTabs.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        const el = event.target.closest('[data-tab-action="focus"]');
+        if (!el) return;
+        event.preventDefault();
+        focusTab(el.dataset.tabId);
+      });
+
+      els.tabContent.addEventListener("click", (event) => {
+        const openCard = event.target.closest("[data-open-entry]");
+        if (openCard) {
+          openEntryInTab(openCard.dataset.openEntry);
+          return;
+        }
+        const target = event.target.closest("[data-action]");
+        if (!target) return;
+        const id = target.dataset.id;
+        switch (target.dataset.action) {
+          case "copy": copyEntry(id); break;
+          case "favorite": toggleFavorite(id); renderTabMode(); break;
+          case "edit": openEntryDialog(id); break;
+          case "delete": openDeleteDialog(id); break;
+          case "preview-image": openImageDialog(id); break;
+          case "preview-doc": openDocPreview(id); break;
+          case "download-file": downloadAttachment(id); break;
+          case "tag": applyTabTagFilter(target.dataset.tag || ""); break;
+        }
+      });
+
+      // The new-tab landing has its own search box; filter the grid in place so
+      // the input keeps focus while typing.
+      els.tabContent.addEventListener("input", (event) => {
+        if (!event.target || event.target.id !== "tabOpenSearch") return;
+        state.tabOpenQuery = event.target.value;
+        const grid = els.tabContent.querySelector("#tabLandingGrid");
+        if (grid) {
+          grid.innerHTML = renderLandingCards();
+          refreshIcons();
+        }
+      });
+    }
+
+    function restoreTabMode() {
+      loadTabsState();
+      if (!state.tabs.find((tab) => tab.id === state.activeTabId)) {
+        state.activeTabId = state.tabs[0] ? state.tabs[0].id : "";
+      }
+      if (state.tabMode) {
+        state.tabMode = false;
+        enterTabMode();
+      }
     }
 
     function boot() {
@@ -5690,6 +6834,7 @@
       state.entries = loadLocalEntries();
       wireEvents();
       render();
+      restoreTabMode();
       initFirebase();
       window.addEventListener("load", refreshIcons);
     }
