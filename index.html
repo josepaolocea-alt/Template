@@ -214,9 +214,10 @@
       position: sticky;
       top: 0;
       z-index: 20;
-      backdrop-filter: blur(18px);
       border-bottom: 1px solid var(--line);
-      background: color-mix(in srgb, var(--bg) 82%, transparent);
+      /* Opaque so page text scrolling underneath the sticky header cannot
+         bleed through (a translucent bg + blur only faded it, not hid it). */
+      background: var(--bg);
       animation: topbarIn 560ms var(--ease-out) both;
     }
 
@@ -2321,7 +2322,11 @@
       gap: 16px;
       align-items: start;
       padding: 20px 0 48px;
-      animation: heroIn 460ms var(--ease-out) both;
+      /* Opacity-only entrance: heroIn animates a transform, and a transform on
+         this grid becomes the containing block for its sticky children
+         (sidebar + tab strip), which breaks their sticky pinning while
+         scrolling. pageIn fades in without any transform. */
+      animation: pageIn 460ms var(--ease-out) both;
     }
 
     .signed-in .tabmode {
@@ -2339,7 +2344,8 @@
       padding: 14px;
       border: 1px solid var(--line);
       border-radius: 16px;
-      background: color-mix(in srgb, var(--panel-solid) 76%, transparent);
+      /* Opaque so page text scrolling behind the pinned sidebar can't show through. */
+      background: var(--panel-solid);
     }
 
     .tabmode.sidebar-collapsed {
