@@ -2591,6 +2591,7 @@
     }
 
     .tabmode-tab {
+      position: relative;
       display: inline-flex;
       align-items: center;
       gap: 7px;
@@ -2601,8 +2602,8 @@
       border-radius: 9px;
       background: color-mix(in srgb, var(--panel-solid) 55%, transparent);
       color: var(--muted);
-      cursor: pointer;
-      transition: background var(--motion-fast) ease, color var(--motion-fast) ease, border-color var(--motion-fast) ease;
+      cursor: grab;
+      transition: background var(--motion-fast) ease, color var(--motion-fast) ease, border-color var(--motion-fast) ease, opacity var(--motion-fast) ease;
     }
 
     .tabmode-tab:hover {
@@ -2616,6 +2617,30 @@
       background: color-mix(in srgb, var(--accent) 12%, var(--panel-solid));
       box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
     }
+
+    /* Dragging: dim the tab being moved and show a thin accent bar on the side
+       of the tab it will land before/after. */
+    .tabmode-tab.is-dragging {
+      opacity: 0.45;
+      cursor: grabbing;
+    }
+
+    .tabmode-tab.drop-before::before,
+    .tabmode-tab.drop-after::after {
+      content: "";
+      position: absolute;
+      top: 4px;
+      bottom: 4px;
+      width: 2px;
+      border-radius: 2px;
+      background: var(--accent);
+    }
+
+    .tabmode-tab.drop-before::before { left: -3px; }
+    .tabmode-tab.drop-after::after { right: -3px; }
+
+    /* Keep the close button usable as a normal pointer target within the tab. */
+    .tabmode-tab-close { cursor: pointer; }
 
     .tabmode-tab-label {
       max-width: 160px;
@@ -2899,7 +2924,7 @@
           <i data-lucide="log-out"></i>
           <span class="optional">Sign out</span>
         </button>
-        <button class="icon-button" id="modeToggle" type="button" aria-label="Open tab workspace" title="Open tab workspace" aria-pressed="false">
+        <button class="icon-button" id="modeToggle" type="button" aria-label="Open tab workspace" title="Open tab workspace" aria-pressed="false" hidden>
           <i data-lucide="panels-top-left"></i>
         </button>
         <button class="button primary" id="addButton" type="button" aria-label="Add data" hidden>
@@ -3403,7 +3428,12 @@
     const STORAGE_KEY = "promptvault.entries.v1";
     const THEME_KEY = "promptvault.theme";
     const FAVORITES_KEY = "promptvault.favorites.v1";
-    const TABS_KEY = "promptvault.tabs.v1";
+    // Tab-mode workspaces are per-account: each signed-in user keeps their own
+    // set of open tabs on this device, so one person's choices never sync onto
+    // another's. LEGACY_TABS_KEY is the old shared (single-workspace) key we
+    // migrate from once, for the first user to sign in after this change.
+    const TABS_KEY_PREFIX = "promptvault.tabs.v1::";
+    const LEGACY_TABS_KEY = "promptvault.tabs.v1";
     const SAMPLE_TAGS = ["voip", "sms", "sms & voip"];
 
     const seedEntries = [
@@ -3487,6 +3517,7 @@
       tabMode: false,
       tabs: [],
       activeTabId: "",
+      tabsOwner: null,
       tabSideQuery: "",
       tabSideKind: "all",
       tabSidebarCollapsed: false
@@ -4335,6 +4366,8 @@
       if (els.moreMenu.hidden) toggleMenu(false);
       els.signOutButton.hidden = !signedIn;
       els.signInButton.hidden = signedIn;
+      // Tab mode is a signed-in-only workspace: hide its toggle for visitors.
+      els.modeToggle.hidden = !signedIn;
 
       if (signedIn && els.brandInitial) {
         const source = String(state.currentUser.email || state.currentUser.displayName || "").trim();
@@ -4356,6 +4389,8 @@
 
       renderStats();
       renderResults(true);
+      // Load / swap / drop the tab workspace to match whoever is signed in.
+      syncTabsForUser();
       if (state.tabMode) renderTabMode();
     }
 
@@ -6356,9 +6391,32 @@
       return state.tabs.find((tab) => tab.id === state.activeTabId) || null;
     }
 
+    // The localStorage key for the signed-in user's workspace. Empty while
+    // signed out — tab mode is unavailable then, so load/persist are no-ops.
+    function tabsStorageKey() {
+      const email = state.currentUser && state.currentUser.email
+        ? String(state.currentUser.email).toLowerCase()
+        : "";
+      return email ? TABS_KEY_PREFIX + email : "";
+    }
+
     function loadTabsState() {
+      const key = tabsStorageKey();
+      if (!key) return;
       try {
-        const raw = JSON.parse(localStorage.getItem(TABS_KEY) || "null");
+        let rawStr = localStorage.getItem(key);
+        if (rawStr === null) {
+          // One-time migration: the first user to sign in after the per-user
+          // split adopts the old shared workspace, then it is retired so other
+          // accounts start with a clean, independent set of tabs.
+          const legacy = localStorage.getItem(LEGACY_TABS_KEY);
+          if (legacy !== null) {
+            rawStr = legacy;
+            try { localStorage.setItem(key, legacy); } catch (e) {}
+            try { localStorage.removeItem(LEGACY_TABS_KEY); } catch (e) {}
+          }
+        }
+        const raw = JSON.parse(rawStr || "null");
         if (raw && typeof raw === "object") {
           state.tabs = Array.isArray(raw.tabs)
             ? raw.tabs
@@ -6374,8 +6432,10 @@
     }
 
     function persistTabsState() {
+      const key = tabsStorageKey();
+      if (!key) return;
       try {
-        localStorage.setItem(TABS_KEY, JSON.stringify({
+        localStorage.setItem(key, JSON.stringify({
           tabs: state.tabs.map((tab) => ({ id: tab.id, entryId: tab.entryId })),
           activeId: state.activeTabId,
           open: state.tabMode
@@ -6416,8 +6476,10 @@
       window.scrollTo({ top: 0 });
     }
 
-    function exitTabMode() {
-      state.tabMode = false;
+    // Return the topbar/DOM to search view without persisting. Used both by
+    // exitTabMode and when swapping accounts (where the outgoing user's saved
+    // "open" flag must be left untouched).
+    function teardownTabModeUI() {
       document.documentElement.classList.remove("tab-mode-active");
       els.tabMode.hidden = true;
       els.modeToggle.classList.remove("is-active");
@@ -6425,6 +6487,11 @@
       els.modeToggle.setAttribute("aria-label", "Open tab workspace");
       els.modeToggle.setAttribute("title", "Open tab workspace");
       els.modeToggle.innerHTML = '<i data-lucide="panels-top-left"></i>';
+    }
+
+    function exitTabMode() {
+      state.tabMode = false;
+      teardownTabModeUI();
       persistTabsState();
       refreshIcons();
       render();
@@ -6433,6 +6500,41 @@
     function toggleTabMode() {
       if (state.tabMode) exitTabMode();
       else enterTabMode();
+    }
+
+    // Align the in-memory tab workspace with the signed-in account. On an
+    // account switch (including sign-out) the previous user's tabs are cleared
+    // from view and memory, then the incoming user's own saved tabs are
+    // restored. Signed-out visitors get no workspace at all.
+    function syncTabsForUser() {
+      const email = state.currentUser && state.currentUser.email
+        ? String(state.currentUser.email).toLowerCase()
+        : "";
+      if (email === state.tabsOwner) return; // same account — nothing to swap
+
+      const wasShowing = state.tabMode;
+      state.tabMode = false;
+      state.tabs = [];
+      state.activeTabId = "";
+      state.tabSideQuery = "";
+      state.tabSideKind = "all";
+      resetTabSignatures();
+      if (wasShowing) teardownTabModeUI();
+
+      state.tabsOwner = email;
+      if (!email) {
+        refreshIcons();
+        return; // signed out: tab mode is unavailable
+      }
+
+      loadTabsState();
+      if (!state.tabs.find((tab) => tab.id === state.activeTabId)) {
+        state.activeTabId = state.tabs[0] ? state.tabs[0].id : "";
+      }
+      if (state.tabMode) {
+        state.tabMode = false; // enterTabMode expects to flip it on
+        enterTabMode();
+      }
     }
 
     function openEntryInTab(entryId) {
@@ -6487,6 +6589,50 @@
       renderTabMode();
     }
 
+    /* --- Reordering: tabs can be dragged (or moved with Ctrl/Alt+Arrows) to
+       any position in the strip. Order is saved per-user like everything else. */
+    let tabDragId = null;
+
+    function tabIndexOf(id) {
+      return state.tabs.findIndex((tab) => tab.id === id);
+    }
+
+    function clearTabDropMarkers() {
+      els.tabTabs.querySelectorAll(".drop-before, .drop-after").forEach((el) => {
+        el.classList.remove("drop-before", "drop-after");
+      });
+    }
+
+    // Move the dragged tab to just before/after the tab it was dropped on.
+    function moveTab(fromId, toId, placeAfter) {
+      const from = tabIndexOf(fromId);
+      if (from === -1 || fromId === toId) return;
+      const moved = state.tabs.splice(from, 1)[0];
+      let to = tabIndexOf(toId);
+      if (to === -1) {
+        state.tabs.push(moved);
+      } else {
+        if (placeAfter) to += 1;
+        state.tabs.splice(to, 0, moved);
+      }
+      persistTabsState();
+      renderTabStrip();
+    }
+
+    // Keyboard reordering: nudge the focused tab one slot left/right.
+    function moveTabByStep(id, delta) {
+      const from = tabIndexOf(id);
+      if (from === -1) return;
+      const to = Math.max(0, Math.min(state.tabs.length - 1, from + delta));
+      if (to === from) return;
+      const moved = state.tabs.splice(from, 1)[0];
+      state.tabs.splice(to, 0, moved);
+      persistTabsState();
+      renderTabStrip();
+      const el = els.tabTabs.querySelector(`.tabmode-tab[data-tab-id="${CSS.escape(id)}"]`);
+      if (el) el.focus();
+    }
+
     function applyTabTagFilter(tag) {
       state.tabSideQuery = tag;
       state.tabSideKind = "all";
@@ -6520,7 +6666,7 @@
           ? `<span class="kind-dot kind-${escapeHtml(kindClassOf(entry))}"></span>`
           : `<i data-lucide="file-plus"></i>`;
         return `
-          <div class="tabmode-tab${isActive ? " is-active" : ""}" role="tab" tabindex="0" data-tab-action="focus" data-tab-id="${escapeHtml(tab.id)}" aria-selected="${isActive}" title="${escapeHtml(title)}">
+          <div class="tabmode-tab${isActive ? " is-active" : ""}" role="tab" tabindex="0" draggable="true" data-tab-action="focus" data-tab-id="${escapeHtml(tab.id)}" aria-selected="${isActive}" title="${escapeHtml(title)}">
             ${lead}
             <span class="tabmode-tab-label">${escapeHtml(title)}</span>
             <button class="tabmode-tab-close" type="button" data-tab-action="close" data-tab-id="${escapeHtml(tab.id)}" aria-label="Close ${escapeHtml(title)}">
@@ -6776,11 +6922,65 @@
       });
 
       els.tabTabs.addEventListener("keydown", (event) => {
+        // Ctrl/Cmd/Alt + Arrow reorders the focused tab for keyboard users.
+        if ((event.ctrlKey || event.metaKey || event.altKey) &&
+            (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
+          const tab = event.target.closest(".tabmode-tab");
+          if (!tab) return;
+          event.preventDefault();
+          moveTabByStep(tab.dataset.tabId, event.key === "ArrowLeft" ? -1 : 1);
+          return;
+        }
         if (event.key !== "Enter" && event.key !== " ") return;
         const el = event.target.closest('[data-tab-action="focus"]');
         if (!el) return;
         event.preventDefault();
         focusTab(el.dataset.tabId);
+      });
+
+      // Drag a tab to any position in the strip. Handlers are delegated on the
+      // container so they survive the innerHTML rebuilds in renderTabStrip.
+      els.tabTabs.addEventListener("dragstart", (event) => {
+        const tab = event.target.closest(".tabmode-tab");
+        if (!tab) return;
+        tabDragId = tab.dataset.tabId;
+        tab.classList.add("is-dragging");
+        if (event.dataTransfer) {
+          event.dataTransfer.effectAllowed = "move";
+          try { event.dataTransfer.setData("text/plain", tabDragId); } catch (e) {}
+        }
+      });
+
+      els.tabTabs.addEventListener("dragover", (event) => {
+        if (!tabDragId) return;
+        event.preventDefault(); // required to allow a drop
+        if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+        const over = event.target.closest(".tabmode-tab");
+        clearTabDropMarkers();
+        if (!over || over.dataset.tabId === tabDragId) return;
+        const rect = over.getBoundingClientRect();
+        const after = event.clientX > rect.left + rect.width / 2;
+        over.classList.add(after ? "drop-after" : "drop-before");
+      });
+
+      els.tabTabs.addEventListener("drop", (event) => {
+        if (!tabDragId) return;
+        event.preventDefault();
+        const over = event.target.closest(".tabmode-tab");
+        clearTabDropMarkers();
+        if (over && over.dataset.tabId !== tabDragId) {
+          const rect = over.getBoundingClientRect();
+          const after = event.clientX > rect.left + rect.width / 2;
+          moveTab(tabDragId, over.dataset.tabId, after);
+        }
+        tabDragId = null;
+      });
+
+      els.tabTabs.addEventListener("dragend", () => {
+        clearTabDropMarkers();
+        const dragging = els.tabTabs.querySelector(".is-dragging");
+        if (dragging) dragging.classList.remove("is-dragging");
+        tabDragId = null;
       });
 
       els.tabContent.addEventListener("click", (event) => {
@@ -6806,17 +7006,6 @@
 
     }
 
-    function restoreTabMode() {
-      loadTabsState();
-      if (!state.tabs.find((tab) => tab.id === state.activeTabId)) {
-        state.activeTabId = state.tabs[0] ? state.tabs[0].id : "";
-      }
-      if (state.tabMode) {
-        state.tabMode = false;
-        enterTabMode();
-      }
-    }
-
     function boot() {
       const savedTheme = localStorage.getItem(THEME_KEY) || "dark";
       applyTheme(savedTheme);
@@ -6824,7 +7013,8 @@
       state.entries = loadLocalEntries();
       wireEvents();
       render();
-      restoreTabMode();
+      // Tab mode is signed-in only, so the workspace is restored per-account by
+      // syncTabsForUser() once auth resolves (via updateAuthUI), not at boot.
       initFirebase();
       window.addEventListener("load", refreshIcons);
     }
