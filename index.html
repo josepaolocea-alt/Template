@@ -1796,10 +1796,6 @@
         width: min(100% - 18px, 1180px);
       }
 
-      .topbar {
-        backdrop-filter: blur(14px);
-      }
-
       .topbar-inner {
         min-height: 58px;
         gap: 8px;
@@ -2321,7 +2317,10 @@
       grid-template-columns: 264px minmax(0, 1fr);
       gap: 16px;
       align-items: start;
-      padding: 20px 0 48px;
+      /* No top padding: it was a transparent gap between the header and the
+         tab strip that scrolling page text showed through. The strip/sidebar
+         now begin flush under the sticky header. */
+      padding: 0 0 48px;
       /* Opacity-only entrance: heroIn animates a transform, and a transform on
          this grid becomes the containing block for its sticky children
          (sidebar + tab strip), which breaks their sticky pinning while
@@ -2335,12 +2334,14 @@
 
     .tabmode-sidebar {
       position: sticky;
-      top: 88px;
+      /* Same pin point as the tab strip so both stay fixed flush under the
+         header with no pre-scroll movement. */
+      top: 72px;
       align-self: start;
       display: flex;
       flex-direction: column;
       gap: 12px;
-      max-height: calc(100vh - 108px);
+      max-height: calc(100vh - 88px);
       padding: 14px;
       border: 1px solid var(--line);
       border-radius: 16px;
@@ -2540,7 +2541,10 @@
 
     .tabmode-tabstrip {
       position: sticky;
-      top: 76px;
+      /* Pin flush against the bottom of the ~73px header (1px overlap avoids a
+         see-through seam). Sitting at/above its natural position means it never
+         travels before pinning — it stays put from the first pixel of scroll. */
+      top: 72px;
       z-index: 6;
       display: flex;
       align-items: center;
