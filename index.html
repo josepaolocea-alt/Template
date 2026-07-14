@@ -2542,8 +2542,9 @@
       padding: 6px;
       border: 1px solid var(--line);
       border-radius: 12px;
-      background: color-mix(in srgb, var(--bg) 82%, transparent);
-      backdrop-filter: blur(14px);
+      /* Opaque so page text scrolling underneath the sticky strip cannot
+         bleed through (a translucent bg + blur only faded it, not hid it). */
+      background: var(--bg);
     }
 
     .tabmode-tabs {
