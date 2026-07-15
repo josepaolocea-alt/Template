@@ -2909,6 +2909,21 @@
         padding: 20px 16px;
       }
     }
+
+    /* Sharp-edged theme: square every corner across both modes (search + tab),
+       covering all panels, cards, buttons, inputs, badges and toggles. The
+       circular status dots stay round since they are indicators, not controls.
+       Vendor pseudo-elements are kept in separate rules so that an unknown one
+       (e.g. -moz- in Chromium) cannot invalidate the whole selector list. */
+    *,
+    *::before,
+    *::after {
+      border-radius: 0 !important;
+    }
+    ::-webkit-scrollbar-thumb { border-radius: 0 !important; }
+    ::-webkit-slider-thumb { border-radius: 0 !important; }
+    ::-moz-range-thumb { border-radius: 0 !important; }
+    .kind-dot { border-radius: 50% !important; }
   </style>
 </head>
 <body>
