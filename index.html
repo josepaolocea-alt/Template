@@ -6,6 +6,7 @@
   <title>PromptVault</title>
   <meta name="description" content="A private notes and templates search app with admin-managed entries." />
   <link rel="icon" type="image/svg+xml" href="icon.svg" />
+  <link rel="shortcut icon" href="icon.svg" />
   <link rel="apple-touch-icon" href="icon.svg" />
   <link rel="manifest" href="manifest.webmanifest" />
   <meta name="theme-color" content="#262624" />
@@ -13,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:opsz,wght@9..40,100..1000&display=swap" />
-  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
+  <script src="https://unpkg.com/lucide@1.24.0/dist/umd/lucide.js" defer></script>
   <style>
     :root {
       color-scheme: dark;
@@ -148,7 +149,6 @@
       top: var(--cursor-y);
       z-index: 31;
       pointer-events: none;
-      border-radius: 999px;
       transform: translate(-50%, -50%);
       opacity: 0;
       transition: opacity var(--motion-mid) ease, width var(--motion-mid) var(--ease-spring), height var(--motion-mid) var(--ease-spring);
@@ -250,7 +250,6 @@
       display: grid;
       place-items: center;
       border: 1px solid var(--line-strong);
-      border-radius: 10px;
       background:
         linear-gradient(135deg, color-mix(in srgb, var(--accent) 24%, transparent), transparent 46%),
         var(--panel-solid);
@@ -309,7 +308,6 @@
       gap: 4px;
       padding: 6px;
       border: 1px solid var(--line-strong);
-      border-radius: 14px;
       background: var(--panel-solid);
       box-shadow: var(--shadow);
       z-index: 40;
@@ -330,7 +328,6 @@
     .icon-button,
     .chip {
       border: 1px solid var(--line-strong);
-      border-radius: 10px;
       background: color-mix(in srgb, var(--panel-solid) 78%, transparent);
       color: var(--text);
       position: relative;
@@ -518,7 +515,6 @@
       width: min(820px, 100%);
       margin: 34px auto 0;
       border: 1px solid var(--line-strong);
-      border-radius: 20px;
       background: color-mix(in srgb, var(--panel-solid) 84%, transparent);
       box-shadow: var(--shadow);
       overflow: hidden;
@@ -532,7 +528,6 @@
       position: absolute;
       inset: -1px;
       z-index: 0;
-      border-radius: inherit;
       background: linear-gradient(100deg, transparent 18%, color-mix(in srgb, var(--accent) 30%, transparent) 46%, color-mix(in srgb, var(--accent-blue) 22%, transparent) 52%, transparent 82%);
       opacity: 0;
       transform: translateX(-65%);
@@ -657,7 +652,6 @@
     .chip {
       min-height: 36px;
       padding: 0 14px;
-      border-radius: 999px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -762,7 +756,6 @@
       align-items: center;
       padding: 10px;
       border: 1px solid var(--line);
-      border-radius: 8px;
       background: color-mix(in srgb, var(--panel-solid) 68%, transparent);
       transition: transform var(--motion-mid) var(--ease-spring), border-color var(--motion-mid) ease, background var(--motion-mid) ease;
     }
@@ -778,7 +771,6 @@
       height: 38px;
       display: grid;
       place-items: center;
-      border-radius: 8px;
       color: var(--accent-blue);
       background: color-mix(in srgb, var(--accent-blue) 12%, transparent);
     }
@@ -812,7 +804,6 @@
       margin-top: 16px;
       padding: 10px 12px;
       border: 1px solid var(--line);
-      border-radius: 8px;
       color: var(--muted);
       font-size: 0.83rem;
       line-height: 1.45;
@@ -889,7 +880,6 @@
     .select-wrap select {
       min-height: 40px;
       border: 1px solid var(--line-strong);
-      border-radius: 8px;
       background: var(--panel-solid);
       padding: 0 36px 0 12px;
       color: var(--text);
@@ -933,7 +923,6 @@
       gap: 14px;
       padding: 16px;
       border: 1px solid var(--line);
-      border-radius: 16px;
       background: color-mix(in srgb, var(--panel-solid) 76%, transparent);
       transform-origin: center top;
       animation: resultIn 460ms var(--ease-out) both;
@@ -959,7 +948,6 @@
 
     .result-image {
       min-height: 142px;
-      border-radius: 8px;
       overflow: hidden;
       border: 1px solid var(--line);
       background: var(--bg-2);
@@ -1013,7 +1001,6 @@
        it stays legible in both light and dark mode. box-decoration-break keeps
        the padding and rounded corners intact when a match wraps across lines. */
     .search-highlight {
-      border-radius: 4px;
       padding: 0 3px;
       background: color-mix(in srgb, var(--accent-warm) 32%, transparent);
       color: inherit;
@@ -1074,7 +1061,6 @@
       min-height: 26px;
       padding: 4px 8px;
       border: 1px solid var(--line);
-      border-radius: 999px;
       color: var(--muted);
       font-size: 0.78rem;
       font-weight: 560;
@@ -1095,22 +1081,22 @@
     }
 
     .kind {
-      color: var(--accent-blue);
+      color: var(--accent-blue-ink);
       border-color: color-mix(in srgb, var(--accent-blue) 40%, var(--line));
     }
 
     .kind-template {
-      color: var(--accent-warm);
+      color: var(--accent-warm-ink);
       border-color: color-mix(in srgb, var(--accent-warm) 40%, var(--line));
     }
 
     .kind-note {
-      color: var(--accent-blue);
+      color: var(--accent-blue-ink);
       border-color: color-mix(in srgb, var(--accent-blue) 40%, var(--line));
     }
 
     .kind-process {
-      color: var(--accent);
+      color: var(--accent-ink);
       border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
     }
 
@@ -1121,7 +1107,7 @@
     }
 
     .tag.edited {
-      color: var(--accent);
+      color: var(--accent-ink);
       border-color: color-mix(in srgb, var(--accent) 34%, var(--line));
       background: color-mix(in srgb, var(--accent) 8%, var(--bg-2));
     }
@@ -1132,7 +1118,6 @@
       top: var(--y);
       width: var(--ripple-size);
       height: var(--ripple-size);
-      border-radius: 999px;
       background: color-mix(in srgb, var(--accent) 28%, transparent);
       pointer-events: none;
       transform: translate(-50%, -50%) scale(0);
@@ -1165,7 +1150,6 @@
     .modal {
       width: min(720px, calc(100% - 24px));
       border: 1px solid var(--line-strong);
-      border-radius: 16px;
       background: var(--panel-solid);
       color: var(--text);
       box-shadow: var(--shadow);
@@ -1208,7 +1192,6 @@
       height: min(76vh, 900px);
       display: block;
       border: 1px solid var(--line);
-      border-radius: 8px;
       background: var(--panel-solid);
     }
 
@@ -1235,7 +1218,6 @@
       gap: 12px;
       padding: 12px 14px;
       border: 1px solid var(--line-strong);
-      border-radius: 10px;
       background: color-mix(in srgb, var(--bg) 60%, transparent);
       cursor: pointer;
     }
@@ -1359,7 +1341,6 @@
       width: 100%;
       min-width: 0;
       border: 1px solid var(--line-strong);
-      border-radius: 10px;
       background: color-mix(in srgb, var(--bg) 64%, transparent);
       color: var(--text);
       font-weight: 430;
@@ -1408,7 +1389,6 @@
       align-items: center;
       gap: 7px;
       border: 1px solid var(--line-strong);
-      border-radius: 9px;
       background: color-mix(in srgb, var(--bg) 64%, transparent);
       color: var(--text);
       font-size: 0.82rem;
@@ -1460,7 +1440,6 @@
     .image-preview {
       min-height: 138px;
       border: 1px dashed var(--line-strong);
-      border-radius: 8px;
       display: grid;
       place-items: center;
       overflow: hidden;
@@ -1482,7 +1461,6 @@
       height: 210px;
       display: block;
       object-fit: cover;
-      border-radius: 6px;
     }
 
     .toast {
@@ -1495,7 +1473,6 @@
       pointer-events: none;
       padding: 10px 14px;
       border: 1px solid var(--line-strong);
-      border-radius: 8px;
       background: var(--panel-solid);
       color: var(--text);
       box-shadow: var(--shadow);
@@ -1675,13 +1652,18 @@
       --panel-solid: #30302e;
       --text: #f5f4ee;
       --muted: #b7b4a8;
-      --soft: #8a877c;
+      --soft: #9a978b;
       --line: rgba(255, 255, 255, 0.08);
       --line-strong: rgba(255, 255, 255, 0.14);
       --accent: #d97757;
-      --accent-strong: #c2603f;
+      --accent-strong: #b35636;
       --accent-blue: #c98a6b;
       --accent-warm: #e0a05c;
+      /* Accent shades tuned for use as small text (WCAG AA on --bg). The dark
+         skin's base accents already clear 4.5:1, so these simply match them. */
+      --accent-ink: #d97757;
+      --accent-blue-ink: #c98a6b;
+      --accent-warm-ink: #e0a05c;
       --shadow: 0 16px 50px rgba(0, 0, 0, 0.4);
       --focus: 0 0 0 3px rgba(217, 119, 87, 0.28);
     }
@@ -1693,13 +1675,18 @@
       --panel-solid: #ffffff;
       --text: #1f1e1d;
       --muted: #6b6862;
-      --soft: #97948b;
+      --soft: #726f66;
       --line: rgba(31, 30, 29, 0.10);
       --line-strong: rgba(31, 30, 29, 0.16);
       --accent: #cc785c;
       --accent-strong: #a84f2e;
       --accent-blue: #b5826a;
       --accent-warm: #c77b33;
+      /* Darker accent shades for small text — the light skin's base accents
+         only reach ~3.1:1 on --bg, so text uses these (AA >= 4.5:1). */
+      --accent-ink: #a24528;
+      --accent-blue-ink: #825e48;
+      --accent-warm-ink: #8a5716;
       --shadow: 0 16px 44px rgba(60, 55, 45, 0.10);
       --focus: 0 0 0 3px rgba(204, 120, 92, 0.22);
     }
@@ -1708,9 +1695,12 @@
       background: var(--bg);
     }
 
-    /* Primary action: solid coral block, white label. */
+    /* Primary action: solid coral block, white label. Uses the deeper
+       --accent-strong so the white label clears WCAG AA (~4.9:1) — the
+       lighter --accent only reached ~3.1:1 against white. */
     .button.primary {
       color: #ffffff;
+      background: var(--accent-strong);
       box-shadow: none;
     }
 
@@ -1720,6 +1710,7 @@
 
     .submit-search {
       color: #ffffff;
+      background: var(--accent-strong);
     }
 
     /* DM Mono for compact labels, section headings, and badges. */
@@ -1813,7 +1804,6 @@
       .brand-mark {
         width: 30px;
         height: 30px;
-        border-radius: 7px;
       }
 
       .brand span:last-child {
@@ -1859,7 +1849,6 @@
 
       .search-card {
         margin-top: 22px;
-        border-radius: 10px;
       }
 
       .promptbar {
@@ -1913,7 +1902,6 @@
       .result-card {
         padding: 12px;
         gap: 10px;
-        border-radius: 14px;
       }
 
       .result-head {
@@ -2197,7 +2185,6 @@
       .ask-result {
         padding: 0.75rem 0.9rem;
         border: 1px solid var(--line);
-        border-radius: 0.5rem;
         background: color-mix(in srgb, var(--panel-solid) 70%, transparent);
         cursor: pointer;
         transition: transform var(--motion-mid) var(--ease-spring), border-color var(--motion-mid) ease, background var(--motion-mid) ease;
@@ -2229,7 +2216,7 @@
         white-space: nowrap;
       }
       .ask-result-score.is-strong {
-        color: var(--accent);
+        color: var(--accent-ink);
         font-weight: 600;
       }
       .ask-result-meta {
@@ -2247,7 +2234,6 @@
       }
       .ask-answer-card {
         padding: 0.9rem 1rem;
-        border-radius: 0.5rem;
         margin: 1rem 0 0.75rem;
         border: 1px solid var(--line-strong);
         background: var(--panel-solid);
@@ -2269,10 +2255,10 @@
         color: var(--text);
       }
       .ask-answer-card.from-sources .ask-answer-badge {
-        color: var(--accent);
+        color: var(--accent-ink);
       }
       .ask-answer-card.general .ask-answer-badge {
-        color: var(--accent-blue);
+        color: var(--accent-blue-ink);
       }
       .ask-answer-text {
         font-size: 0.95rem;
@@ -2344,7 +2330,6 @@
       max-height: calc(100vh - 88px);
       padding: 14px;
       border: 1px solid var(--line);
-      border-radius: 16px;
       /* Opaque so page text scrolling behind the pinned sidebar can't show through. */
       background: var(--panel-solid);
     }
@@ -2392,7 +2377,6 @@
       gap: 8px;
       padding: 0 10px;
       border: 1px solid var(--line-strong);
-      border-radius: 10px;
       background: color-mix(in srgb, var(--bg-2) 60%, transparent);
       transition: border-color var(--motion-fast) ease, box-shadow var(--motion-fast) ease;
     }
@@ -2478,7 +2462,6 @@
       text-align: left;
       padding: 8px 10px;
       border: 1px solid transparent;
-      border-radius: 9px;
       background: transparent;
       color: var(--muted);
       cursor: pointer;
@@ -2516,7 +2499,6 @@
     .kind-dot {
       width: 8px;
       height: 8px;
-      border-radius: 50%;
       flex: 0 0 auto;
       background: var(--accent-blue);
     }
@@ -2551,7 +2533,6 @@
       gap: 6px;
       padding: 6px;
       border: 1px solid var(--line);
-      border-radius: 12px;
       /* Opaque so page text scrolling underneath the sticky strip cannot
          bleed through (a translucent bg + blur only faded it, not hid it). */
       background: var(--bg);
@@ -2594,7 +2575,6 @@
     .tabmode-tabs::-webkit-scrollbar-thumb,
     .tabmode-side-list::-webkit-scrollbar-thumb {
       background: transparent;
-      border-radius: 999px;
     }
     .tabmode-tabs:hover::-webkit-scrollbar-thumb,
     .tabmode-side-list:hover::-webkit-scrollbar-thumb {
@@ -2610,7 +2590,6 @@
       max-width: 220px;
       padding: 7px 8px 7px 11px;
       border: 1px solid var(--line);
-      border-radius: 9px;
       background: color-mix(in srgb, var(--panel-solid) 55%, transparent);
       color: var(--muted);
       cursor: grab;
@@ -2643,7 +2622,6 @@
       top: 4px;
       bottom: 4px;
       width: 2px;
-      border-radius: 2px;
       background: var(--accent);
     }
 
@@ -2668,7 +2646,6 @@
       width: 20px;
       height: 20px;
       border: 0;
-      border-radius: 6px;
       background: transparent;
       color: var(--soft);
       cursor: pointer;
@@ -2706,7 +2683,6 @@
     .tabmode-content {
       min-height: calc(100vh - 200px);
       border: 1px solid var(--line);
-      border-radius: 16px;
       background: color-mix(in srgb, var(--panel-solid) 76%, transparent);
       padding: 26px clamp(18px, 3vw, 34px);
     }
@@ -2743,7 +2719,6 @@
     }
 
     .tabmode-doc-image {
-      border-radius: 12px;
       overflow: hidden;
       border: 1px solid var(--line);
       background: var(--bg-2);
@@ -2801,7 +2776,6 @@
       margin: 0 auto;
       display: grid;
       place-items: center;
-      border-radius: 12px;
       border: 1px solid var(--line-strong);
       background: color-mix(in srgb, var(--accent) 10%, var(--panel-solid));
       color: var(--accent);
@@ -2834,7 +2808,6 @@
       text-align: left;
       padding: 13px 14px;
       border: 1px solid var(--line);
-      border-radius: 12px;
       background: color-mix(in srgb, var(--panel-solid) 55%, transparent);
       cursor: pointer;
       transition: transform var(--motion-fast) var(--ease-spring), border-color var(--motion-fast) ease, background var(--motion-fast) ease;
@@ -2899,14 +2872,22 @@
         position: static;
         max-height: 320px;
       }
-      .tabmode-tabstrip {
-        top: 58px;
-      }
+      /* The header is still 72px between 641–860px, so the tab strip keeps its
+         default top: 72px here (the old top: 58px pinned it 14px behind the
+         header). It only drops to 58px once the header shrinks — see below. */
       /* On small screens the sidebar stacks as a panel above the tabs when
          opened; it starts collapsed so the note fills the screen. */
       .tabmode-content {
         min-height: 50vh;
         padding: 20px 16px;
+      }
+    }
+
+    /* Header shrinks to 58px at <=640px, so the sticky tab strip must pin lower
+       to stay flush against it instead of hiding behind it. */
+    @media (max-width: 640px) {
+      .tabmode-tabstrip {
+        top: 58px;
       }
     }
 
