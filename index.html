@@ -3242,6 +3242,31 @@
     </form>
   </dialog>
 
+  <dialog class="modal" id="exportDialog">
+    <div class="modal-head">
+      <h2 class="modal-title">Export all</h2>
+      <button class="icon-button" type="button" id="closeExportDialog" aria-label="Close">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <div class="entry-form">
+      <div class="source-pill">
+        <strong id="exportDialogCount">Choose a format</strong><br />
+        <span>CSV is a spreadsheet file you can re-import. TXT puts every entry into one readable text file.</span>
+      </div>
+      <div class="modal-foot">
+        <button class="button ghost" type="button" id="exportTxt">
+          <i data-lucide="file-text"></i>
+          <span>Export .txt</span>
+        </button>
+        <button class="button primary" type="button" id="exportCsv">
+          <i data-lucide="table"></i>
+          <span>Export .csv</span>
+        </button>
+      </div>
+    </div>
+  </dialog>
+
   <dialog class="modal image-dialog" id="imageDialog">
     <div class="modal-head">
       <h2 class="modal-title" id="imageDialogTitle">Image preview</h2>
@@ -3451,7 +3476,7 @@
       tabSideQuery: "",
       tabSideKind: "all",
       tabLandingQuery: "",
-      tabSidebarCollapsed: false
+      tabSidebarCollapsed: true
     };
 
     const els = {
@@ -3469,6 +3494,11 @@
       addButton: document.querySelector("#addButton"),
       csvButton: document.querySelector("#csvButton"),
       exportButton: document.querySelector("#exportButton"),
+      exportDialog: document.querySelector("#exportDialog"),
+      exportDialogCount: document.querySelector("#exportDialogCount"),
+      closeExportDialog: document.querySelector("#closeExportDialog"),
+      exportCsv: document.querySelector("#exportCsv"),
+      exportTxt: document.querySelector("#exportTxt"),
       backfillButton: document.querySelector("#backfillButton"),
       backfillLabel: document.querySelector("#backfillLabel"),
       searchForm: document.querySelector("#searchForm"),
@@ -5449,17 +5479,13 @@
       return `"${text.replaceAll('"', '""')}"`;
     }
 
-    function exportAllEntries() {
-      if (!state.isAdmin) {
-        showToast("Admin access is required to export data.");
-        return;
-      }
+    function exportedCreatedAt(entry) {
+      return entry.createdAt && typeof entry.createdAt.toDate === "function"
+        ? entry.createdAt.toDate().toISOString()
+        : entry.createdAt;
+    }
 
-      if (!state.entries.length) {
-        showToast("There are no entries to export.");
-        return;
-      }
-
+    function buildCsvExport() {
       const headers = ["id", "title", "kind", "body", "tags", "imageUrl", "attachmentUrl", "attachmentName", "createdAt"];
       const rows = state.entries.map((entry) => [
         entry.id,
@@ -5470,23 +5496,98 @@
         entry.imageUrl,
         entry.attachmentUrl,
         entry.attachmentName,
-        entry.createdAt && typeof entry.createdAt.toDate === "function" ? entry.createdAt.toDate().toISOString() : entry.createdAt
+        exportedCreatedAt(entry)
       ]);
-      const csv = [
+      return [
         headers.join(","),
         ...rows.map((row) => row.map(csvCell).join(","))
       ].join("\r\n");
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    }
+
+    function buildTxtExport() {
+      const rule = "=".repeat(72);
+      const thinRule = "-".repeat(72);
+      const lines = [
+        rule,
+        "ChatJPGC / PromptVault — full export",
+        `Generated: ${new Date().toISOString()}`,
+        `Entries: ${state.entries.length}`,
+        rule,
+        ""
+      ];
+
+      state.entries.forEach((entry, index) => {
+        const tags = normalizeTags(entry.tags);
+        lines.push(`[${index + 1}] ${entry.title || "Untitled"}`);
+        lines.push(thinRule);
+        lines.push(`ID: ${entry.id || ""}`);
+        lines.push(`Kind: ${entry.kind || ""}`);
+        lines.push(`Tags: ${tags.length ? tags.join(", ") : "none"}`);
+        lines.push(`Created: ${exportedCreatedAt(entry) || "unknown"}`);
+        if (entry.imageUrl) lines.push(`Image: ${entry.imageUrl}`);
+        if (entry.attachmentUrl) {
+          lines.push(`Attachment: ${entry.attachmentName || "file"} — ${entry.attachmentUrl}`);
+        }
+        lines.push("");
+        const body = String(entry.body || "").trim();
+        lines.push(...(body ? body.split(/\r?\n/) : ["(no body)"]));
+        lines.push("");
+        lines.push(rule);
+        lines.push("");
+      });
+
+      return lines.join("\r\n");
+    }
+
+    function downloadExport(format) {
+      if (!state.isAdmin) {
+        showToast("Admin access is required to export data.");
+        return;
+      }
+
+      if (!state.entries.length) {
+        showToast("There are no entries to export.");
+        return;
+      }
+
+      const isTxt = format === "txt";
+      const contents = isTxt ? buildTxtExport() : buildCsvExport();
+      const type = isTxt ? "text/plain;charset=utf-8" : "text/csv;charset=utf-8";
+      const blob = new Blob([contents], { type });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       const date = new Date().toISOString().slice(0, 10);
       link.href = url;
-      link.download = `chatjpgc-export-${date}.csv`;
+      link.download = `chatjpgc-export-${date}.${isTxt ? "txt" : "csv"}`;
       document.body.appendChild(link);
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
-      showToast(`Exported ${state.entries.length} entries.`);
+      closeExportDialog();
+      showToast(`Exported ${state.entries.length} entries as .${isTxt ? "txt" : "csv"}.`);
+    }
+
+    function openExportDialog() {
+      if (!state.isAdmin) {
+        showToast("Admin access is required to export data.");
+        return;
+      }
+
+      if (!state.entries.length) {
+        showToast("There are no entries to export.");
+        return;
+      }
+
+      els.exportDialogCount.textContent = `Export ${state.entries.length} ${state.entries.length === 1 ? "entry" : "entries"}`;
+      if (typeof els.exportDialog.showModal === "function") {
+        els.exportDialog.showModal();
+      } else {
+        els.exportDialog.setAttribute("open", "");
+      }
+    }
+
+    function closeExportDialog() {
+      els.exportDialog.close();
     }
 
     function openCsvDialog() {
@@ -6102,7 +6203,10 @@
         }
       });
       els.csvButton.addEventListener("click", openCsvDialog);
-      els.exportButton.addEventListener("click", exportAllEntries);
+      els.exportButton.addEventListener("click", openExportDialog);
+      els.closeExportDialog.addEventListener("click", closeExportDialog);
+      els.exportCsv.addEventListener("click", () => downloadExport("csv"));
+      els.exportTxt.addEventListener("click", () => downloadExport("txt"));
       els.backfillButton.addEventListener("click", backfillEmbeddings);
       els.closeDialog.addEventListener("click", closeEntryDialog);
       els.cancelEntry.addEventListener("click", closeEntryDialog);
@@ -6464,8 +6568,8 @@
       if (!getActiveTab()) {
         state.activeTabId = state.tabs[0] ? state.tabs[0].id : "";
       }
-      // Give the note the full width on small screens; the sidebar opens on demand.
-      state.tabSidebarCollapsed = window.matchMedia("(max-width: 860px)").matches;
+      // Give the note the full width; the sidebar opens on demand.
+      state.tabSidebarCollapsed = true;
       document.documentElement.classList.add("tab-mode-active");
       els.tabMode.hidden = false;
       els.modeToggle.classList.add("is-active");
