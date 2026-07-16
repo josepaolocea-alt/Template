@@ -839,50 +839,6 @@
       font-weight: 600;
     }
 
-    /* Sidebar tag list: text only, no icons — the parent row carries the icon. */
-    .tag-sublist {
-      max-height: 260px;
-      overflow-y: auto;
-    }
-
-    #tagsButton[aria-expanded="true"] .side-caret {
-      transform: rotate(180deg);
-    }
-
-    .tag-sub-item {
-      display: block;
-      width: 100%;
-      padding: 5px 8px;
-      border: 0;
-      border-radius: var(--radius-sm);
-      background: transparent;
-      color: var(--muted);
-      font-size: 0.92rem;
-      font-weight: 500;
-      text-align: left;
-      cursor: pointer;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      transition: background var(--motion-fast) ease, color var(--motion-fast) ease;
-    }
-
-    .tag-sub-item:hover {
-      background: var(--hover);
-      color: var(--text);
-    }
-
-    .tag-sub-item.active {
-      background: var(--active);
-      color: var(--text);
-      font-weight: 600;
-    }
-
-    .tag-sublist-empty {
-      padding: 5px 8px;
-      color: var(--soft);
-      font-size: 0.88rem;
-    }
 
     /* ===================================================================
        Results
@@ -1088,17 +1044,6 @@
     /* ===================================================================
        Library — expands in place under its sidebar row (no popup).
        =================================================================== */
-    .side-item .side-caret {
-      margin-left: auto;
-      width: 14px;
-      height: 14px;
-      transition: transform 160ms var(--ease-out);
-    }
-
-    #libraryButton[aria-expanded="true"] .side-caret {
-      transform: rotate(180deg);
-    }
-
     .side-sublist {
       display: grid;
       gap: 8px;
@@ -1159,6 +1104,25 @@
 
     .side-sub-item.active svg {
       color: var(--accent-ink);
+    }
+
+    /* Tag rows reuse the Library sub-row styling, minus the leading icon. The
+       list is left to grow: the sidebar itself scrolls, and a max-height here
+       would squeeze .side-sublist's auto grid rows down to their padding. */
+    .tag-sublist {
+      gap: 1px;
+    }
+
+    .tag-sub-item {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tag-sublist-empty {
+      padding: 6px 8px;
+      color: var(--soft);
+      font-size: 0.9rem;
     }
 
     .side-sort {
@@ -2798,7 +2762,6 @@
       <button class="side-item" id="tagsButton" type="button" aria-expanded="false" aria-controls="tagsPanel">
         <i data-lucide="tags"></i>
         <span>Tags</span>
-        <i data-lucide="chevron-down" class="side-caret"></i>
       </button>
       <div class="side-sublist tag-sublist" id="tagsPanel" hidden></div>
     </nav>
@@ -2809,7 +2772,6 @@
         <button class="side-item" id="libraryButton" type="button" aria-expanded="false" aria-controls="libraryPanel">
           <i data-lucide="library"></i>
           <span>Library</span>
-          <i data-lucide="chevron-down" class="side-caret"></i>
         </button>
         <div class="side-sublist" id="libraryPanel" hidden>
           <div class="filter-stack" id="filterStack">
@@ -3880,7 +3842,7 @@
       els.tagsPanel.innerHTML = tags.length
         ? tags.map((tag) => {
             const active = state.tagFilter === tag.toLowerCase();
-            return `<button class="tag-sub-item${active ? " active" : ""}" type="button" data-tag="${escapeHtml(tag)}" title="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`;
+            return `<button class="side-sub-item tag-sub-item${active ? " active" : ""}" type="button" data-tag="${escapeHtml(tag)}" title="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`;
           }).join("")
         : `<p class="tag-sublist-empty">No tags yet</p>`;
       tagRowSignature = signature;
