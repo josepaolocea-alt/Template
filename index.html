@@ -32,7 +32,10 @@
       --panel-solid: #30302e;
       --text: #f5f4ef;
       --muted: #b8b5aa;
-      --soft: #918e84;
+      /* Lifted to clear 4.5:1 on every surface it lands on, --panel included
+         (.format-hint sits there at 11.2px); the old #918e84 managed it on
+         --bg but fell to 4.37 on --panel. */
+      --soft: #9a978e;
       --line: rgba(255, 255, 255, 0.07);
       --line-strong: rgba(255, 255, 255, 0.13);
       --accent: #d97757;
@@ -78,7 +81,9 @@
       --panel-solid: #ffffff;
       --text: #1f1e1d;
       --muted: #6b6862;
-      --soft: #8d8a80;
+      /* Dark's --soft clears AA on its own; light needs this darker to stay
+         >= 4.5:1 for the small text that uses it (.side-label, .format-hint). */
+      --soft: #6f6c63;
       --line: rgba(31, 30, 29, 0.09);
       --line-strong: rgba(31, 30, 29, 0.15);
       --accent: #cc785c;
@@ -2640,6 +2645,30 @@
       }
     }
 
+    /* Touch devices have no true hover: :hover latches on tap and stays lit
+       until you tap elsewhere, so cards and nav items read as selected when
+       they aren't. Every hover background here is painted with var(--hover),
+       so neutralizing that one token retires all of them at once — no need to
+       wrap 35 rules in (hover: hover) and split each component from its own
+       hover state. Only backgrounds are token-driven; hover rules that shift
+       color or transform are left alone, being far less likely to read as a
+       stuck selection. */
+    @media (hover: none) {
+      :root,
+      [data-theme="light"] {
+        --hover: transparent;
+      }
+
+      /* These two ride along in grouped :hover selectors but aren't hover
+         states, so they'd be collateral damage of the reset above. Both are
+         real feedback and have to survive: the sort dropdown's open state,
+         and keyboard focus for anyone pairing a keyboard with a tablet. */
+      .sort-trigger[aria-expanded="true"],
+      .sort-option:focus-visible {
+        background: var(--active);
+      }
+    }
+
     /* ===================================================================
        Responsive
        =================================================================== */
@@ -2743,7 +2772,10 @@
         min-height: 58px;
       }
 
-      .promptbar input {
+      /* Both out-specify the bare `input` rule below, so they need their own
+         16px to keep iOS Safari from zooming the viewport on focus. */
+      .promptbar input,
+      .tabmode-side-search input {
         font-size: 16px;
       }
 
