@@ -799,39 +799,89 @@
       background: color-mix(in srgb, var(--accent-strong) 88%, #000000);
     }
 
-    .quick-tags {
-      display: grid;
-      justify-items: center;
-      gap: 10px;
-      margin-top: 18px;
+    /* The promptbar's leading icon doubles as the mode switch: each click
+       cycles search → AI generate → ask AI, swapping icon and placeholder. */
+    .mode-cycle {
+      border: 0;
+      background: transparent;
+      border-radius: 999px;
+      margin-left: 7px;
+      width: 38px;
+      height: 38px;
+      cursor: pointer;
+      transition: background var(--motion-fast) ease, color var(--motion-fast) ease;
     }
 
-    .tag-toggle {
-      min-height: 32px;
-      padding: 0 12px;
-      border-color: var(--line);
+    .mode-cycle:hover {
+      background: var(--hover);
+      color: var(--text);
     }
 
-    .tag-toggle svg:last-child {
-      width: 14px;
-      height: 14px;
-      transition: transform 160ms var(--ease-out);
+    .mode-cycle svg {
+      transition: color var(--motion-fast) ease;
     }
 
-    .tag-toggle[aria-expanded="true"] svg:last-child {
+    .promptbar[data-mode="generate"] > .mode-cycle svg,
+    .promptbar[data-mode="ask"] > .mode-cycle svg {
+      color: var(--accent-ink);
+    }
+
+    .mode-hint {
+      margin: 12px 0 0;
+      min-height: 1.2em;
+      text-align: center;
+      color: var(--soft);
+      font-size: 0.85rem;
+    }
+
+    .mode-hint b {
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    /* Sidebar tag list: text only, no icons — the parent row carries the icon. */
+    .tag-sublist {
+      max-height: 260px;
+      overflow-y: auto;
+    }
+
+    #tagsButton[aria-expanded="true"] .side-caret {
       transform: rotate(180deg);
     }
 
-    .quick-row {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: center;
+    .tag-sub-item {
+      display: block;
+      width: 100%;
+      padding: 5px 8px;
+      border: 0;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.92rem;
+      font-weight: 500;
+      text-align: left;
+      cursor: pointer;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      transition: background var(--motion-fast) ease, color var(--motion-fast) ease;
     }
 
-    .quick-row .chip {
-      animation: chipIn 180ms var(--ease-out) both;
+    .tag-sub-item:hover {
+      background: var(--hover);
+      color: var(--text);
+    }
+
+    .tag-sub-item.active {
+      background: var(--active);
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .tag-sublist-empty {
+      padding: 5px 8px;
+      color: var(--soft);
+      font-size: 0.88rem;
     }
 
     /* ===================================================================
@@ -1333,29 +1383,6 @@
       font-size: 0.8rem;
     }
 
-    .ai-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .ai-hint {
-      color: var(--soft);
-      font-size: 0.83rem;
-    }
-
-    #aiResultWrap {
-      display: grid;
-      gap: 12px;
-    }
-
-    #aiResult,
-    #aiPrompt {
-      overflow-y: auto;
-      resize: vertical;
-    }
-
     .image-preview {
       min-height: 130px;
       border: 1px dashed var(--line-strong);
@@ -1646,11 +1673,309 @@
     }
 
     /* ===================================================================
+       Inline AI panel — replaces the old generate/ask modals. Sits under
+       the results list so answers land in the same column as everything else.
+       =================================================================== */
+    .ai-panel {
+      padding: 0 0 80px;
+    }
+
+    .ai-panel:not([hidden]) {
+      animation: rise 320ms var(--ease-out) both;
+    }
+
+    .ai-panel-body {
+      margin: 0 auto;
+      width: min(760px, 100%);
+      display: grid;
+      gap: 14px;
+    }
+
+    .ai-output-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: var(--panel);
+      padding: 16px 18px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .ai-output-text {
+      white-space: pre-wrap;
+      line-height: 1.65;
+      color: var(--text);
+    }
+
+    .ai-output-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .ai-loading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .ai-loading-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent-strong);
+      animation: aiPulse 1s ease-in-out infinite;
+    }
+
+    @keyframes aiPulse {
+      0%, 100% { opacity: 0.35; transform: scale(0.85); }
+      50% { opacity: 1; transform: scale(1); }
+    }
+
+    /* ===================================================================
+       Compose view — full-page note editor (replaces the entry modal).
+       =================================================================== */
+    .compose {
+      width: min(760px, calc(100% - 32px));
+      padding: 8px 0 90px;
+    }
+
+    .compose:not([hidden]) {
+      animation: rise 260ms var(--ease-out) both;
+    }
+
+    .compose-bar {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      background: var(--bg);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .compose-back {
+      border-color: transparent;
+      color: var(--soft);
+    }
+
+    .compose-back:hover {
+      color: var(--text);
+    }
+
+    .compose-heading {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 550;
+      letter-spacing: -0.005em;
+    }
+
+    .compose-actions {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .compose-form {
+      display: grid;
+      gap: 18px;
+      padding-top: 22px;
+    }
+
+    /* Borderless heading-style title, the way Claude's composer reads. */
+    .compose-title {
+      border: 0;
+      border-radius: 0;
+      padding: 0;
+      background: transparent;
+      font-family: var(--font-display);
+      font-size: 1.9rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .compose-title:focus,
+    .compose-title:focus-visible {
+      border: 0;
+      outline: none;
+      box-shadow: none;
+      transform: none;
+      background: transparent;
+    }
+
+    .compose-title::placeholder {
+      color: color-mix(in srgb, var(--muted) 45%, transparent);
+    }
+
+    .compose-kind {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .kind-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 32px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.88rem;
+      font-weight: 550;
+      cursor: pointer;
+      transition: background var(--motion-fast) ease, color var(--motion-fast) ease, border-color var(--motion-fast) ease;
+    }
+
+    .kind-pill svg {
+      width: 14px;
+      height: 14px;
+      stroke-width: 2;
+    }
+
+    .kind-pill:hover {
+      background: var(--hover);
+      color: var(--text);
+    }
+
+    .kind-pill.active {
+      background: var(--active);
+      border-color: var(--line-strong);
+      color: var(--text);
+    }
+
+    .kind-pill.active svg {
+      color: var(--accent-ink);
+    }
+
+    .compose-body {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: var(--panel);
+      transition: border-color var(--motion-fast) ease;
+    }
+
+    .compose-body:focus-within {
+      border-color: var(--line-strong);
+    }
+
+    .compose-body textarea {
+      border: 0;
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      background: transparent;
+      min-height: 240px;
+      resize: none;
+    }
+
+    .compose-body textarea:focus,
+    .compose-body textarea:focus-visible {
+      border: 0;
+      outline: none;
+      box-shadow: none;
+      transform: none;
+      background: transparent;
+    }
+
+    .compose-toolbar {
+      border-top: 1px solid var(--line);
+      padding: 8px 12px;
+      margin: 0;
+    }
+
+    .compose-field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .compose-more {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: var(--panel);
+    }
+
+    .compose-more > summary {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 14px;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-weight: 550;
+      list-style: none;
+    }
+
+    .compose-more > summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .compose-more > summary:hover {
+      color: var(--text);
+    }
+
+    .compose-more-caret {
+      width: 15px;
+      height: 15px;
+      transition: transform 160ms var(--ease-out);
+    }
+
+    .compose-more[open] .compose-more-caret {
+      transform: rotate(90deg);
+    }
+
+    .compose-more-body {
+      display: grid;
+      gap: 14px;
+      padding: 4px 14px 16px;
+      border-top: 1px solid var(--line);
+    }
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .compose-active .hero,
+    .compose-active #workspace,
+    .compose-active #aiPanel {
+      display: none !important;
+    }
+
+    @media (max-width: 700px) {
+      .compose-title {
+        font-size: 1.5rem;
+      }
+
+      .compose-actions .button {
+        padding: 0 12px;
+      }
+    }
+
+    /* ===================================================================
        Tab mode — Obsidian/Claude-style workspace: notes list pane,
        rounded tab strip, document canvas.
        =================================================================== */
     .tab-mode-active .hero,
-    .tab-mode-active #workspace {
+    .tab-mode-active #workspace,
+    .tab-mode-active #aiPanel,
+    .tab-mode-active #composeView {
       display: none !important;
     }
 
@@ -2470,6 +2795,12 @@
         <i data-lucide="panels-top-left"></i>
         <span>Tabs</span>
       </button>
+      <button class="side-item" id="tagsButton" type="button" aria-expanded="false" aria-controls="tagsPanel">
+        <i data-lucide="tags"></i>
+        <span>Tags</span>
+        <i data-lucide="chevron-down" class="side-caret"></i>
+      </button>
+      <div class="side-sublist tag-sublist" id="tagsPanel" hidden></div>
     </nav>
 
     <div class="side-section" id="moreMenu" hidden>
@@ -2505,14 +2836,6 @@
         <button class="side-item" id="hiddenButton" type="button" hidden>
           <i data-lucide="eye-off"></i>
           <span>Hidden entries</span>
-        </button>
-        <button class="side-item" id="aiButton" type="button" hidden>
-          <i data-lucide="sparkles"></i>
-          <span>AI generate</span>
-        </button>
-        <button class="side-item" id="askButton" type="button" hidden>
-          <i data-lucide="search"></i>
-          <span>Ask AI</span>
         </button>
         <button class="side-item" id="csvButton" type="button" hidden>
           <i data-lucide="upload"></i>
@@ -2560,21 +2883,16 @@
 
         <div class="search-card">
           <form class="promptbar" id="searchForm">
-            <span class="icon-hold"><i data-lucide="search"></i></span>
+            <button class="icon-hold mode-cycle" id="searchModeButton" type="button">
+              <i data-lucide="search"></i>
+            </button>
             <input id="searchInput" type="search" autocomplete="off" placeholder="Ask for a note, template, image, or phrase..." />
-            <button class="icon-button submit-search" type="submit" aria-label="Search">
+            <button class="icon-button submit-search" id="searchSubmitButton" type="submit" aria-label="Search">
               <i data-lucide="arrow-up"></i>
             </button>
           </form>
         </div>
-
-        <div class="quick-tags" aria-label="Quick tags">
-          <button class="chip tag-toggle" id="quickTagToggle" type="button" aria-expanded="false" aria-controls="quickRow" aria-label="Show tags" title="Show tags">
-            <i data-lucide="tags"></i>
-            <i data-lucide="chevron-down"></i>
-          </button>
-          <div class="quick-row" id="quickRow" aria-label="Tags" hidden></div>
-        </div>
+        <p class="mode-hint" id="searchModeHint" aria-live="polite"></p>
       </div>
     </section>
 
@@ -2590,6 +2908,20 @@
         </button>
       </div>
       <div class="results-list results-stack" id="resultsList"></div>
+    </section>
+
+    <section class="ai-panel app-shell" id="aiPanel" aria-label="AI results" hidden>
+      <div class="results-meta-line">
+        <div class="results-meta-text">
+          <strong id="aiPanelHeading">AI</strong>
+          <span id="aiPanelMeta"></span>
+        </div>
+        <button class="button ghost clear-results" type="button" id="aiPanelClear" aria-label="Clear AI results">
+          <i data-lucide="x"></i>
+          <span>Clear</span>
+        </button>
+      </div>
+      <div class="ai-panel-body" id="aiPanelBody" aria-live="polite"></div>
     </section>
 
     <section class="tabmode app-shell" id="tabMode" aria-label="Tab workspace" hidden>
@@ -2620,167 +2952,96 @@
         <div class="tabmode-content" id="tabContent"></div>
       </div>
     </section>
-  </main>
+    <section class="compose app-shell" id="composeView" aria-label="Compose entry" hidden>
+      <div class="compose-bar">
+        <button class="icon-button compose-back" type="button" id="closeDialog" aria-label="Back">
+          <i data-lucide="arrow-left"></i>
+        </button>
+        <h2 class="compose-heading" id="entryDialogTitle">New note</h2>
+        <div class="compose-actions">
+          <button class="button ghost" type="button" id="cancelEntry">Cancel</button>
+          <button class="button primary" type="submit" form="entryForm" id="saveEntry">
+            <i data-lucide="save"></i>
+            <span id="saveEntryLabel">Save entry</span>
+          </button>
+        </div>
+      </div>
 
-  <dialog class="modal" id="entryDialog">
-    <div class="modal-head">
-      <h2 class="modal-title" id="entryDialogTitle">Add data</h2>
-      <button class="icon-button" type="button" id="closeDialog" aria-label="Close">
-        <i data-lucide="x"></i>
-      </button>
-    </div>
-    <form class="entry-form" id="entryForm">
-      <div class="field-grid">
-        <label>
-          Title
-          <input id="entryTitle" name="title" type="text" required maxlength="120" placeholder="Proposal intro template" />
-        </label>
-        <label>
-          Type
-          <select id="entryKind" name="kind">
+      <form class="compose-form" id="entryForm">
+        <input class="compose-title" id="entryTitle" name="title" type="text" required maxlength="120" placeholder="Untitled" aria-label="Title" />
+
+        <div class="compose-kind" role="group" aria-label="Type">
+          <button class="kind-pill active" type="button" data-compose-kind="template"><i data-lucide="copy-check"></i><span>Template</span></button>
+          <button class="kind-pill" type="button" data-compose-kind="note"><i data-lucide="notebook-tabs"></i><span>Note</span></button>
+          <button class="kind-pill" type="button" data-compose-kind="process"><i data-lucide="workflow"></i><span>Process</span></button>
+          <button class="kind-pill" type="button" data-compose-kind="image"><i data-lucide="image"></i><span>Image</span></button>
+          <select id="entryKind" name="kind" class="visually-hidden" tabindex="-1" aria-hidden="true">
             <option value="template">Template</option>
             <option value="note">Note</option>
             <option value="process">Process</option>
             <option value="image">Image</option>
           </select>
-        </label>
-      </div>
-
-      <label>
-        Text
-        <div class="format-toolbar">
-          <button type="button" id="entryBoldButton" class="format-button" title="Bold (Ctrl+B)" aria-label="Bold selected text">
-            <i data-lucide="bold"></i>
-            <span>Bold</span>
-          </button>
-          <span class="format-hint">Select text, then Bold or Ctrl+B, to wrap it in **asterisks**.</span>
         </div>
-        <textarea id="entryBody" name="body" placeholder="Paste the note, template, caption, or searchable details here."></textarea>
-      </label>
 
-      <label>
-        Tags
-        <input id="entryTags" name="tags" type="text" placeholder="voip, sms, sms & voip" />
-      </label>
-
-      <div class="field-grid">
-        <label>
-          Image URL
-          <input id="entryImageUrl" name="imageUrl" type="text" inputmode="url" placeholder="https://... or saved image data" />
-        </label>
-        <label>
-          Image file
-          <input id="entryImageFile" name="imageFile" type="file" accept="image/*" />
-        </label>
-      </div>
-
-      <div class="image-preview" id="imagePreview">
-        <span>No image selected</span>
-      </div>
-
-      <label>
-        Attachment URL
-        <input id="entryAttachmentUrl" name="attachmentUrl" type="url" placeholder="Paste a public PDF, document, or file link" />
-      </label>
-
-      <div class="source-pill" id="attachmentPreview">
-        <strong>No attachment</strong><br />
-        <span>Paste a PDF or document link to show a preview and download button on this entry.</span>
-      </div>
-
-      <label class="hidden-field" id="entryHiddenField" hidden>
-        <input id="entryHidden" name="hidden" type="checkbox" />
-        <span class="hidden-field-copy">
-          <strong>Hide from other users (admin only)</strong>
-          <span>Only admin accounts can see this entry. Members and signed-out visitors won't find it in search or lists.</span>
-        </span>
-      </label>
-
-      <div class="modal-foot">
-        <button class="button ghost" type="button" id="cancelEntry">Cancel</button>
-        <button class="button primary" type="submit" id="saveEntry">
-          <i data-lucide="save"></i>
-          <span id="saveEntryLabel">Save entry</span>
-        </button>
-      </div>
-    </form>
-  </dialog>
-
-  <dialog class="modal" id="aiDialog">
-    <div class="modal-head">
-      <h2 class="modal-title">Generate with AI</h2>
-      <button class="icon-button" type="button" id="closeAiDialog" aria-label="Close">
-        <i data-lucide="x"></i>
-      </button>
-    </div>
-    <form class="entry-form" id="aiForm">
-      <label>
-        What do you want?
-        <textarea id="aiPrompt" placeholder="Describe it in plain words, e.g. a polite, short reply checking with the vendor about a delayed delivery"></textarea>
-      </label>
-
-      <div class="ai-row">
-        <button class="button primary" type="submit" id="aiGenerate">
-          <i data-lucide="sparkles"></i>
-          <span id="aiGenerateLabel">Generate</span>
-        </button>
-        <span class="ai-hint">Generates text you can copy into a new entry.</span>
-      </div>
-
-      <div id="aiResultWrap" hidden>
-        <label>
-          Result
-          <textarea id="aiResult" readonly placeholder="Generated text appears here."></textarea>
-        </label>
-        <div class="ai-row">
-          <button class="button ghost" type="button" id="aiCopy">
-            <i data-lucide="copy"></i>
-            <span id="aiCopyLabel">Copy text</span>
-          </button>
-        </div>
-      </div>
-    </form>
-  </dialog>
-
-  <dialog class="modal" id="askDialog">
-    <div class="modal-head">
-      <h2 class="modal-title">Ask your knowledge base</h2>
-      <button class="icon-button" type="button" id="closeAskDialog" aria-label="Close">
-        <i data-lucide="x"></i>
-      </button>
-    </div>
-    <form class="entry-form" id="askForm">
-      <label>
-        Your question
-        <textarea id="askInput" placeholder="e.g. What did I write about onboarding new clients?" required></textarea>
-      </label>
-
-      <div class="ai-row">
-        <button class="button primary" type="submit" id="askSubmit">
-          <i data-lucide="search"></i>
-          <span id="askSubmitLabel">Search my notes</span>
-        </button>
-        <span class="ai-hint">Finds the most relevant entries by meaning, not just keywords.</span>
-      </div>
-
-      <div id="askResultsWrap" hidden>
-        <div class="ask-answer-card" id="askAnswerCard" hidden>
-          <div class="ask-answer-head">
-            <span class="ask-answer-badge" id="askAnswerBadge"></span>
-          </div>
-          <div class="ask-answer-text" id="askAnswerText"></div>
-          <div class="ask-answer-actions" id="askAnswerActions" hidden>
-            <button class="button ghost" type="button" id="askSaveAsEntry">
-              <i data-lucide="plus"></i>
-              <span>Save this as a new entry</span>
+        <div class="compose-body">
+          <textarea id="entryBody" name="body" placeholder="Write or paste the note, template, caption, or searchable details..."></textarea>
+          <div class="format-toolbar compose-toolbar">
+            <button type="button" id="entryBoldButton" class="format-button" title="Bold (Ctrl+B)" aria-label="Bold selected text">
+              <i data-lucide="bold"></i>
+              <span>Bold</span>
             </button>
+            <span class="format-hint">Select text, then Bold or Ctrl+B, to wrap it in **asterisks**.</span>
           </div>
         </div>
-        <h3 class="ask-results-heading" id="askResultsHeading">Top matches</h3>
-        <ul id="askResultsList" class="ask-results"></ul>
-      </div>
-    </form>
-  </dialog>
+
+        <label class="compose-field">
+          Tags
+          <input id="entryTags" name="tags" type="text" placeholder="voip, sms, sms & voip" />
+        </label>
+
+        <details class="compose-more" id="composeMore">
+          <summary>
+            <i data-lucide="chevron-right" class="compose-more-caret"></i>
+            <span>Image &amp; attachment</span>
+          </summary>
+          <div class="compose-more-body">
+            <div class="field-grid">
+              <label>
+                Image URL
+                <input id="entryImageUrl" name="imageUrl" type="text" inputmode="url" placeholder="https://... or saved image data" />
+              </label>
+              <label>
+                Image file
+                <input id="entryImageFile" name="imageFile" type="file" accept="image/*" />
+              </label>
+            </div>
+
+            <div class="image-preview" id="imagePreview">
+              <span>No image selected</span>
+            </div>
+
+            <label>
+              Attachment URL
+              <input id="entryAttachmentUrl" name="attachmentUrl" type="url" placeholder="Paste a public PDF, document, or file link" />
+            </label>
+
+            <div class="source-pill" id="attachmentPreview">
+              <strong>No attachment</strong><br />
+              <span>Paste a PDF or document link to show a preview and download button on this entry.</span>
+            </div>
+          </div>
+        </details>
+
+        <label class="hidden-field" id="entryHiddenField" hidden>
+          <input id="entryHidden" name="hidden" type="checkbox" />
+          <span class="hidden-field-copy">
+            <strong>Hide from other users (admin only)</strong>
+            <span>Only admin accounts can see this entry. Members and signed-out visitors won't find it in search or lists.</span>
+          </span>
+        </label>
+      </form>
+    </section>
+  </main>
 
   <dialog class="modal" id="entryDetailDialog">
     <div class="modal-head">
@@ -3015,7 +3276,12 @@
       favorites: new Set(),
       query: "",
       tagFilter: "",
-      quickTagsOpen: false,
+      tagsOpen: false,
+      searchMode: "search",
+      aiBusy: false,
+      composeOpen: false,
+      lastAskAnswer: null,
+      lastGenerated: null,
       kind: "all",
       browseMode: false,
       sort: "relevance",
@@ -3059,8 +3325,19 @@
       backfillLabel: document.querySelector("#backfillLabel"),
       searchForm: document.querySelector("#searchForm"),
       searchInput: document.querySelector("#searchInput"),
-      quickTagToggle: document.querySelector("#quickTagToggle"),
-      quickRow: document.querySelector("#quickRow"),
+      searchModeButton: document.querySelector("#searchModeButton"),
+      searchModeHint: document.querySelector("#searchModeHint"),
+      searchSubmitButton: document.querySelector("#searchSubmitButton"),
+      tagsButton: document.querySelector("#tagsButton"),
+      tagsPanel: document.querySelector("#tagsPanel"),
+      aiPanel: document.querySelector("#aiPanel"),
+      aiPanelHeading: document.querySelector("#aiPanelHeading"),
+      aiPanelMeta: document.querySelector("#aiPanelMeta"),
+      aiPanelBody: document.querySelector("#aiPanelBody"),
+      aiPanelClear: document.querySelector("#aiPanelClear"),
+      composeView: document.querySelector("#composeView"),
+      composeMore: document.querySelector("#composeMore"),
+      kindPills: document.querySelectorAll("[data-compose-kind]"),
       // Scoped to the sidebar filter list: result cards also carry data-kind.
       filterButtons: document.querySelectorAll("#filterStack [data-kind]"),
       sortSelect: document.querySelector("#sortSelect"),
@@ -3069,7 +3346,6 @@
       resultsHeading: document.querySelector("#resultsHeading"),
       resultsMeta: document.querySelector("#resultsMeta"),
       clearResultsButton: document.querySelector("#clearResultsButton"),
-      entryDialog: document.querySelector("#entryDialog"),
       entryDialogTitle: document.querySelector("#entryDialogTitle"),
       closeDialog: document.querySelector("#closeDialog"),
       cancelEntry: document.querySelector("#cancelEntry"),
@@ -3078,31 +3354,6 @@
       entryKind: document.querySelector("#entryKind"),
       entryBody: document.querySelector("#entryBody"),
       entryBoldButton: document.querySelector("#entryBoldButton"),
-      aiButton: document.querySelector("#aiButton"),
-      aiDialog: document.querySelector("#aiDialog"),
-      closeAiDialog: document.querySelector("#closeAiDialog"),
-      aiForm: document.querySelector("#aiForm"),
-      aiPrompt: document.querySelector("#aiPrompt"),
-      aiGenerate: document.querySelector("#aiGenerate"),
-      aiGenerateLabel: document.querySelector("#aiGenerateLabel"),
-      aiResultWrap: document.querySelector("#aiResultWrap"),
-      aiResult: document.querySelector("#aiResult"),
-      aiCopy: document.querySelector("#aiCopy"),
-      askButton: document.querySelector("#askButton"),
-      askDialog: document.querySelector("#askDialog"),
-      closeAskDialog: document.querySelector("#closeAskDialog"),
-      askForm: document.querySelector("#askForm"),
-      askInput: document.querySelector("#askInput"),
-      askSubmit: document.querySelector("#askSubmit"),
-      askSubmitLabel: document.querySelector("#askSubmitLabel"),
-      askResultsWrap: document.querySelector("#askResultsWrap"),
-      askResultsHeading: document.querySelector("#askResultsHeading"),
-      askResultsList: document.querySelector("#askResultsList"),
-      askAnswerCard: document.querySelector("#askAnswerCard"),
-      askAnswerBadge: document.querySelector("#askAnswerBadge"),
-      askAnswerText: document.querySelector("#askAnswerText"),
-      askAnswerActions: document.querySelector("#askAnswerActions"),
-      askSaveAsEntry: document.querySelector("#askSaveAsEntry"),
       entryDetailDialog: document.querySelector("#entryDetailDialog"),
       closeEntryDetailDialog: document.querySelector("#closeEntryDetailDialog"),
       entryDetailTitle: document.querySelector("#entryDetailTitle"),
@@ -3606,38 +3857,42 @@
 
     let tagRowSignature = null;
 
+    // The tag list lives in the sidebar under a "Tags" row. Entries are text
+    // only — the parent row carries the icon.
     function renderTagRow() {
       const tags = collectAllTags();
-      const signature = `${state.quickTagsOpen ? "open" : "closed"}:${state.tagFilter}:${tags.join("|")}`;
-      els.quickTagToggle.setAttribute("aria-expanded", String(state.quickTagsOpen));
-      const tagToggleLabel = state.quickTagsOpen ? "Hide tags" : "Show tags";
-      els.quickTagToggle.setAttribute("aria-label", tagToggleLabel);
-      els.quickTagToggle.setAttribute("title", tagToggleLabel);
+      const signature = `${state.tagsOpen ? "open" : "closed"}:${state.tagFilter}:${tags.join("|")}`;
+      els.tagsButton.setAttribute("aria-expanded", String(state.tagsOpen));
 
-      if (!state.quickTagsOpen) {
-        els.quickRow.hidden = true;
-        els.quickRow.innerHTML = "";
+      if (!state.tagsOpen) {
+        els.tagsPanel.hidden = true;
+        els.tagsPanel.innerHTML = "";
         tagRowSignature = signature;
         return;
       }
 
       if (tagRowSignature === signature) {
-        els.quickRow.hidden = false;
+        els.tagsPanel.hidden = false;
         return;
       }
 
-      els.quickRow.hidden = false;
-      els.quickRow.innerHTML = tags.map((tag) => {
-        const active = state.tagFilter === tag.toLowerCase();
-        return `<button class="chip${active ? " active" : ""}" type="button" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`;
-      }).join("");
+      els.tagsPanel.hidden = false;
+      els.tagsPanel.innerHTML = tags.length
+        ? tags.map((tag) => {
+            const active = state.tagFilter === tag.toLowerCase();
+            return `<button class="tag-sub-item${active ? " active" : ""}" type="button" data-tag="${escapeHtml(tag)}" title="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`;
+          }).join("")
+        : `<p class="tag-sublist-empty">No tags yet</p>`;
       tagRowSignature = signature;
-      refreshIcons();
     }
 
     function applyTagFilter(tag) {
       const cleanTag = String(tag || "").trim();
       if (!cleanTag) return;
+      // A tag filters the library, so drop back to search mode and out of the
+      // composer if either is in the way of the results.
+      if (state.composeOpen) closeEntryDialog();
+      applySearchMode("search");
       els.searchInput.value = cleanTag;
       state.query = cleanTag;
       state.tagFilter = cleanTag.toLowerCase();
@@ -3645,6 +3900,7 @@
       state.browseMode = false;
       syncFilterButtons();
       renderResults();
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     let resultsSignature = null;
@@ -3844,8 +4100,13 @@
       const signedIn = Boolean(state.currentUser);
       document.documentElement.classList.toggle("signed-in", signedIn);
       els.addButton.hidden = !signedIn;
-      els.aiButton.hidden = !signedIn || !APP_CONFIG.aiWorkerUrl;
-      els.askButton.hidden = !signedIn || !APP_CONFIG.aiWorkerUrl;
+      // Signing out takes the AI modes away with it: drop back to plain search
+      // rather than leaving the promptbar in a mode it cannot run.
+      if (!aiAvailable() && state.searchMode !== "search") {
+        applySearchMode("search");
+        clearAiPanel();
+      }
+      if (!signedIn && state.composeOpen) closeEntryDialog();
       els.hiddenButton.hidden = !state.isAdmin;
       els.csvButton.hidden = !state.isAdmin;
       els.exportButton.hidden = !state.isAdmin;
@@ -4016,6 +4277,18 @@
       }
     }
 
+    // Keeps the visible kind pills and the underlying <select> (which the form
+    // and saveEntry read) in step.
+    function setComposeKind(kind) {
+      const value = kind || "note";
+      els.entryKind.value = value;
+      els.kindPills.forEach((pill) => {
+        pill.classList.toggle("active", pill.dataset.composeKind === value);
+      });
+    }
+
+    // The composer is a full-page view rather than a modal: opening it hides
+    // the hero, results, and AI panel via the compose-active class.
     function openEntryDialog(entryId = null) {
       if (!state.currentUser && !state.isAdmin) {
         showToast("Sign in to add data.");
@@ -4033,18 +4306,23 @@
         return;
       }
 
+      if (state.tabMode) exitTabMode();
+
       state.editingId = entry ? entry.id : null;
       resetEntryForm();
-      els.entryDialogTitle.textContent = entry ? "Edit data" : "Add data";
+      els.entryDialogTitle.textContent = entry ? "Edit note" : "New note";
       els.saveEntryLabel.textContent = entry ? "Update entry" : "Save entry";
+      els.composeMore.open = Boolean(entry && (entry.imageUrl || entry.attachmentUrl));
 
       if (entry) {
         els.entryTitle.value = entry.title || "";
-        els.entryKind.value = entry.kind || "note";
+        setComposeKind(entry.kind || "note");
         els.entryBody.value = entry.body || "";
         els.entryTags.value = normalizeTags(entry.tags).join(", ");
         els.entryImageUrl.value = entry.imageUrl || "";
         els.entryAttachmentUrl.value = entry.attachmentUrl || "";
+      } else {
+        setComposeKind("template");
       }
 
       // The "hide from other users" toggle is an admin-only control.
@@ -4053,12 +4331,13 @@
 
       renderImagePreview(entry ? entry.imageUrl : "");
       renderAttachmentPreview(entry);
+
+      state.composeOpen = true;
+      document.documentElement.classList.add("compose-active");
+      els.composeView.hidden = false;
+      refreshIcons();
+      window.scrollTo({ top: 0 });
       window.requestAnimationFrame(resizeEntryBody);
-      if (typeof els.entryDialog.showModal === "function") {
-        els.entryDialog.showModal();
-      } else {
-        els.entryDialog.setAttribute("open", "");
-      }
       window.setTimeout(() => {
         if (entry && entry.imageUrl && !entry.body) {
           els.entryBody.focus();
@@ -4071,9 +4350,12 @@
 
     function closeEntryDialog() {
       state.editingId = null;
-      els.entryDialogTitle.textContent = "Add data";
+      state.composeOpen = false;
+      els.entryDialogTitle.textContent = "New note";
       els.saveEntryLabel.textContent = "Save entry";
-      els.entryDialog.close();
+      document.documentElement.classList.remove("compose-active");
+      els.composeView.hidden = true;
+      setComposeKind("template");
     }
 
     function resizeEntryBody() {
@@ -4122,35 +4404,104 @@
       resizeEntryBody();
     }
 
-    function openAiDialog() {
-      if (!state.currentUser) {
-        showToast("Sign in to use AI.");
-        return;
+    /* ===================================================================
+       Promptbar modes — the leading icon cycles search → generate → ask.
+       =================================================================== */
+    const SEARCH_MODES = {
+      search: {
+        icon: "search",
+        label: "Search",
+        next: "generate",
+        placeholder: "Ask for a note, template, image, or phrase...",
+        submitLabel: "Search",
+        hint: ""
+      },
+      generate: {
+        icon: "sparkles",
+        label: "AI Generate",
+        next: "ask",
+        placeholder: "Generate results from AI — describe the text you want written...",
+        submitLabel: "Generate with AI",
+        hint: "Writes new text from your description. Nothing is saved until you choose to."
+      },
+      ask: {
+        icon: "brain",
+        label: "Ask AI",
+        next: "search",
+        placeholder: "Ask AI a question — answered from your saved notes...",
+        submitLabel: "Ask AI",
+        hint: "Answers your question using your saved notes, and shows the sources it used."
       }
-      if (!APP_CONFIG.aiWorkerUrl) {
-        showToast("AI is not configured (APP_CONFIG.aiWorkerUrl is empty).");
-        return;
-      }
+    };
 
-      els.aiForm.reset();
-      els.aiResult.value = "";
-      els.aiResult.style.height = "";
-      els.aiResultWrap.hidden = true;
-      if (typeof els.aiDialog.showModal === "function") {
-        els.aiDialog.showModal();
-      } else {
-        els.aiDialog.setAttribute("open", "");
-      }
-      window.setTimeout(() => els.aiPrompt.focus(), 0);
+    function aiAvailable() {
+      return Boolean(state.currentUser) && Boolean(APP_CONFIG.aiWorkerUrl);
     }
 
-    function closeAiDialog() {
-      els.aiDialog.close();
+    function applySearchMode(mode) {
+      const key = SEARCH_MODES[mode] ? mode : "search";
+      const conf = SEARCH_MODES[key];
+      const nextConf = SEARCH_MODES[conf.next];
+      state.searchMode = key;
+
+      els.searchForm.dataset.mode = key;
+      els.searchModeButton.innerHTML = `<i data-lucide="${conf.icon}"></i>`;
+      els.searchModeButton.setAttribute("aria-label", `${conf.label} mode. Click to switch to ${nextConf.label}.`);
+      els.searchModeButton.setAttribute("title", `${conf.label} — click for ${nextConf.label}`);
+      els.searchInput.placeholder = conf.placeholder;
+      els.searchSubmitButton.setAttribute("aria-label", conf.submitLabel);
+      els.searchModeHint.innerHTML = conf.hint
+        ? `<b>${escapeHtml(conf.label)}</b> · ${escapeHtml(conf.hint)}`
+        : "";
+      refreshIcons();
     }
 
-    function resizeAiResult() {
-      els.aiResult.style.height = "auto";
-      els.aiResult.style.height = `${els.aiResult.scrollHeight}px`;
+    function cycleSearchMode() {
+      const next = SEARCH_MODES[state.searchMode].next;
+      if (next !== "search" && !aiAvailable()) {
+        showToast(
+          APP_CONFIG.aiWorkerUrl
+            ? "Sign in to use AI."
+            : "AI is not configured (APP_CONFIG.aiWorkerUrl is empty)."
+        );
+        return;
+      }
+      applySearchMode(next);
+      els.searchInput.focus();
+    }
+
+    /* ===================================================================
+       Inline AI panel — where generate/ask output lands, under the results.
+       =================================================================== */
+    function openAiPanel(heading, meta = "") {
+      els.aiPanelHeading.textContent = heading;
+      els.aiPanelMeta.textContent = meta;
+      els.aiPanel.hidden = false;
+    }
+
+    function clearAiPanel() {
+      els.aiPanel.hidden = true;
+      els.aiPanelBody.innerHTML = "";
+      els.aiPanelMeta.textContent = "";
+      state.lastAskAnswer = null;
+      state.lastGenerated = null;
+    }
+
+    function showAiLoading(message) {
+      els.aiPanelBody.innerHTML = `
+        <div class="ai-output-card">
+          <div class="ai-loading">
+            <span class="ai-loading-dot"></span>
+            <span>${escapeHtml(message)}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function setAiBusy(busy) {
+      state.aiBusy = busy;
+      els.searchSubmitButton.disabled = busy;
+      els.searchModeButton.disabled = busy;
     }
 
     async function authHeader() {
@@ -4166,22 +4517,39 @@
       return headers;
     }
 
-    async function runAiGenerate(event) {
-      event.preventDefault();
-      if (!APP_CONFIG.aiWorkerUrl) {
-        showToast("AI is not configured (APP_CONFIG.aiWorkerUrl is empty).");
-        return;
-      }
+    function renderAiError(message) {
+      els.aiPanelBody.innerHTML = `
+        <div class="ai-output-card">
+          <div class="ai-output-text">${escapeHtml(message)}</div>
+        </div>
+      `;
+    }
 
-      const prompt = els.aiPrompt.value.trim();
-      if (!prompt) {
-        showToast("Describe what you want first.");
-        return;
-      }
+    function renderGenerated(prompt, text) {
+      state.lastGenerated = { prompt, text };
+      els.aiPanelMeta.textContent = `for "${prompt.length > 60 ? `${prompt.slice(0, 57)}...` : prompt}"`;
+      els.aiPanelBody.innerHTML = `
+        <div class="ai-output-card">
+          <div class="ai-output-text">${escapeHtml(text)}</div>
+          <div class="ai-output-actions">
+            <button class="button ghost" type="button" data-ai-action="copy">
+              <i data-lucide="copy"></i>
+              <span>Copy text</span>
+            </button>
+            <button class="button ghost" type="button" data-ai-action="save-generated">
+              <i data-lucide="plus"></i>
+              <span>Save as new note</span>
+            </button>
+          </div>
+        </div>
+      `;
+      refreshIcons();
+    }
 
-      const originalLabel = els.aiGenerateLabel.textContent;
-      els.aiGenerate.disabled = true;
-      els.aiGenerateLabel.textContent = "Generating...";
+    async function runAiGenerate(prompt) {
+      openAiPanel("AI Generate", "Working...");
+      showAiLoading("Generating text...");
+      setAiBusy(true);
 
       try {
         const response = await fetch(`${APP_CONFIG.aiWorkerUrl.replace(/\/$/, "")}/generate`, {
@@ -4197,15 +4565,14 @@
           throw new Error(data.error || `Request failed (${response.status}).`);
         }
 
-        els.aiResult.value = data.text;
-        els.aiResultWrap.hidden = false;
-        window.requestAnimationFrame(resizeAiResult);
-        showToast("Text generated. Copy it into a new entry.");
+        renderGenerated(prompt, data.text);
       } catch (error) {
-        showToast(error && error.message ? error.message : "AI generation failed.");
+        const message = error && error.message ? error.message : "AI generation failed.";
+        els.aiPanelMeta.textContent = "Failed";
+        renderAiError(message);
+        showToast(message);
       } finally {
-        els.aiGenerate.disabled = false;
-        els.aiGenerateLabel.textContent = originalLabel;
+        setAiBusy(false);
       }
     }
 
@@ -4346,34 +4713,6 @@
       );
     }
 
-    function openAskDialog() {
-      if (!state.currentUser) {
-        showToast("Sign in to use AI.");
-        return;
-      }
-      if (!APP_CONFIG.aiWorkerUrl) {
-        showToast("AI is not configured (APP_CONFIG.aiWorkerUrl is empty).");
-        return;
-      }
-
-      els.askForm.reset();
-      els.askResultsList.innerHTML = "";
-      els.askResultsWrap.hidden = true;
-      els.askAnswerCard.hidden = true;
-      els.askAnswerActions.hidden = true;
-      state.lastAskAnswer = null;
-      if (typeof els.askDialog.showModal === "function") {
-        els.askDialog.showModal();
-      } else {
-        els.askDialog.setAttribute("open", "");
-      }
-      window.setTimeout(() => els.askInput.focus(), 0);
-    }
-
-    function closeAskDialog() {
-      els.askDialog.close();
-    }
-
     function openEntryDetailDialog(entryId) {
       const entry = state.entries.find((item) => item.id === entryId);
       if (!entry) {
@@ -4431,19 +4770,17 @@
       els.entryDetailDialog.close();
     }
 
-    function renderAskMatches(matches) {
-      els.askResultsList.innerHTML = "";
+    function askMatchesHtml(matches) {
       if (matches.length === 0) {
-        els.askResultsHeading.textContent = "No entries with embeddings yet";
-        return;
+        return `<h3 class="ask-results-heading">No entries with embeddings yet</h3>`;
       }
 
       const strongCount = matches.filter((m) => m.score >= ASK_MATCH_THRESHOLD).length;
-      els.askResultsHeading.textContent = strongCount > 0
+      const heading = strongCount > 0
         ? `Top ${matches.length} matches — ${strongCount} strong (≥${Math.round(ASK_MATCH_THRESHOLD * 100)}%)`
         : `Top ${matches.length} matches — none strong enough to cite`;
 
-      const html = matches.map((match) => {
+      const items = matches.map((match) => {
         const { entry, score } = match;
         const isStrong = score >= ASK_MATCH_THRESHOLD;
         const snippet = (entry.body || "").slice(0, ASK_SNIPPET_LENGTH);
@@ -4462,36 +4799,47 @@
           </li>
         `;
       }).join("");
-      els.askResultsList.innerHTML = html;
+
+      return `
+        <h3 class="ask-results-heading">${escapeHtml(heading)}</h3>
+        <ul class="ask-results">${items}</ul>
+      `;
     }
 
-    function renderAskAnswer({ answer, mode, sourceTitles }) {
+    function renderAskResult({ answer, mode, sourceTitles, matches }) {
       const isFromSources = mode === "with_sources";
-      els.askAnswerCard.className = `ask-answer-card ${isFromSources ? "from-sources" : "general"}`;
       const sourcesHint = isFromSources && sourceTitles.length
         ? ` — using: ${sourceTitles.join(", ")}`
         : "";
-      els.askAnswerBadge.textContent = isFromSources
+      const badge = isFromSources
         ? `📚 Based on your notes${sourcesHint}`
         : "🌐 No matching notes — answered from general knowledge";
-      els.askAnswerText.textContent = answer;
-      els.askAnswerActions.hidden = isFromSources;
-      els.askAnswerCard.hidden = false;
+      // Only offer "save as note" for general-knowledge answers: a sourced
+      // answer is already derived from entries that exist.
+      const actions = isFromSources ? "" : `
+        <div class="ask-answer-actions">
+          <button class="button ghost" type="button" data-ai-action="save-answer">
+            <i data-lucide="plus"></i>
+            <span>Save this as a new entry</span>
+          </button>
+        </div>
+      `;
+
+      els.aiPanelMeta.textContent = isFromSources ? "Answered from your notes" : "Answered from general knowledge";
+      els.aiPanelBody.innerHTML = `
+        <div class="ask-answer-card ${isFromSources ? "from-sources" : "general"}">
+          <div class="ask-answer-head">
+            <span class="ask-answer-badge">${escapeHtml(badge)}</span>
+          </div>
+          <div class="ask-answer-text">${escapeHtml(answer)}</div>
+          ${actions}
+        </div>
+        ${askMatchesHtml(matches)}
+      `;
+      refreshIcons();
     }
 
-    async function runAskSearch(event) {
-      event.preventDefault();
-      if (!APP_CONFIG.aiWorkerUrl) {
-        showToast("AI is not configured (APP_CONFIG.aiWorkerUrl is empty).");
-        return;
-      }
-
-      const question = els.askInput.value.trim();
-      if (!question) {
-        showToast("Type a question first.");
-        return;
-      }
-
+    async function runAskSearch(question) {
       const candidates = state.entries.filter(
         (entry) => Array.isArray(entry.embedding) && entry.embedding.length > 0
       );
@@ -4500,10 +4848,9 @@
         return;
       }
 
-      const originalLabel = els.askSubmitLabel.textContent;
-      els.askSubmit.disabled = true;
-      els.askSubmitLabel.textContent = "Searching...";
-      els.askAnswerCard.hidden = true;
+      openAiPanel("Ask AI", "Searching...");
+      showAiLoading("Finding the most relevant notes...");
+      setAiBusy(true);
 
       try {
         const { embedding: questionVector } = await fetchEmbedding(question);
@@ -4520,23 +4867,25 @@
           body: m.entry.body
         }));
 
-        renderAskMatches(scored);
-        els.askResultsWrap.hidden = false;
-        els.askSubmitLabel.textContent = "Thinking...";
+        els.aiPanelMeta.textContent = "Thinking...";
+        showAiLoading("Reading your notes and writing an answer...");
 
         const { answer, mode } = await fetchAnswer(question, sources);
         state.lastAskAnswer = { answer, mode, question };
-        renderAskAnswer({
+        renderAskResult({
           answer,
           mode,
-          sourceTitles: strongMatches.map((m) => m.entry.title || "Untitled")
+          sourceTitles: strongMatches.map((m) => m.entry.title || "Untitled"),
+          matches: scored
         });
       } catch (error) {
         console.warn("Ask flow failed", error);
-        showToast(error && error.message ? error.message : "Ask failed.");
+        const message = error && error.message ? error.message : "Ask failed.";
+        els.aiPanelMeta.textContent = "Failed";
+        renderAiError(message);
+        showToast(message);
       } finally {
-        els.askSubmit.disabled = false;
-        els.askSubmitLabel.textContent = originalLabel;
+        setAiBusy(false);
       }
     }
 
@@ -4546,28 +4895,41 @@
         return;
       }
       const { answer, question } = state.lastAskAnswer;
-      closeAskDialog();
       openEntryDialog();
       window.setTimeout(() => {
         els.entryTitle.value = question.length > 80 ? `${question.slice(0, 77)}...` : question;
-        els.entryKind.value = "note";
+        setComposeKind("note");
         els.entryBody.value = answer;
         els.entryTags.value = "";
         resizeEntryBody();
       }, 50);
     }
 
+    function saveGeneratedAsEntry() {
+      if (!state.lastGenerated) {
+        showToast("Nothing to save yet.");
+        return;
+      }
+      const { prompt, text } = state.lastGenerated;
+      openEntryDialog();
+      window.setTimeout(() => {
+        els.entryTitle.value = prompt.length > 80 ? `${prompt.slice(0, 77)}...` : prompt;
+        setComposeKind("note");
+        els.entryBody.value = text;
+        els.entryTags.value = "";
+        resizeEntryBody();
+      }, 50);
+    }
+
     async function copyAiResult() {
-      const text = els.aiResult.value;
+      const text = state.lastGenerated ? state.lastGenerated.text : "";
       if (!text) return;
       try {
         await navigator.clipboard.writeText(text);
+        showToast("Copied to clipboard.");
       } catch {
-        els.aiResult.focus();
-        els.aiResult.select();
-        document.execCommand("copy");
+        showToast("Could not copy — select the text and copy manually.");
       }
-      showToast("Copied to clipboard.");
     }
 
     function resetEntryForm() {
@@ -5489,6 +5851,8 @@
     function wireEvents() {
       els.libraryButton.addEventListener("click", () => toggleLibraryPanel());
       els.favoritesButton.addEventListener("click", () => {
+        if (state.composeOpen) closeEntryDialog();
+        applySearchMode("search");
         state.kind = "favorite";
         state.query = "";
         state.tagFilter = "";
@@ -5500,6 +5864,8 @@
       });
       els.hiddenButton.addEventListener("click", () => {
         if (!state.isAdmin) return; // admin-only view
+        if (state.composeOpen) closeEntryDialog();
+        applySearchMode("search");
         state.kind = "hidden";
         state.query = "";
         state.tagFilter = "";
@@ -5513,6 +5879,9 @@
       // browse state, and land back on the greeting screen.
       els.homeButton.addEventListener("click", () => {
         if (state.tabMode) exitTabMode();
+        if (state.composeOpen) closeEntryDialog();
+        clearAiPanel();
+        applySearchMode("search");
         state.query = "";
         state.kind = "all";
         state.tagFilter = "";
@@ -5539,14 +5908,36 @@
         }
       });
       els.addButton.addEventListener("click", () => openEntryDialog());
-      els.aiButton.addEventListener("click", openAiDialog);
-      els.aiForm.addEventListener("submit", runAiGenerate);
-      els.closeAiDialog.addEventListener("click", closeAiDialog);
-      els.aiCopy.addEventListener("click", copyAiResult);
-      els.askButton.addEventListener("click", openAskDialog);
-      els.askForm.addEventListener("submit", runAskSearch);
-      els.closeAskDialog.addEventListener("click", closeAskDialog);
-      els.askSaveAsEntry.addEventListener("click", saveAnswerAsEntry);
+
+      els.searchModeButton.addEventListener("click", cycleSearchMode);
+      els.aiPanelClear.addEventListener("click", clearAiPanel);
+
+      // Actions inside the AI panel are delegated: its body is re-rendered on
+      // every run, so per-button listeners would not survive.
+      els.aiPanelBody.addEventListener("click", (event) => {
+        const action = event.target.closest("[data-ai-action]");
+        if (action) {
+          if (action.dataset.aiAction === "copy") copyAiResult();
+          if (action.dataset.aiAction === "save-answer") saveAnswerAsEntry();
+          if (action.dataset.aiAction === "save-generated") saveGeneratedAsEntry();
+          return;
+        }
+        const match = event.target.closest("[data-entry-id]");
+        if (match) openEntryDetailDialog(match.dataset.entryId);
+      });
+
+      els.aiPanelBody.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        const match = event.target.closest("[data-entry-id]");
+        if (!match) return;
+        event.preventDefault();
+        openEntryDetailDialog(match.dataset.entryId);
+      });
+
+      els.kindPills.forEach((pill) => {
+        pill.addEventListener("click", () => setComposeKind(pill.dataset.composeKind));
+      });
+
       els.closeEntryDetailDialog.addEventListener("click", closeEntryDetailDialog);
       els.entryDetailDialog.addEventListener("click", (event) => {
         if (event.target === els.entryDetailDialog) {
@@ -5611,13 +6002,41 @@
       els.searchForm.addEventListener("submit", (event) => {
         event.preventDefault();
         window.clearTimeout(searchTimer);
-        state.query = els.searchInput.value;
-        state.tagFilter = "";
-        renderResults();
+
+        const text = els.searchInput.value.trim();
+
+        if (state.searchMode === "search") {
+          state.query = els.searchInput.value;
+          state.tagFilter = "";
+          renderResults();
+          return;
+        }
+
+        if (state.aiBusy) return;
+        if (!aiAvailable()) {
+          showToast(
+            APP_CONFIG.aiWorkerUrl
+              ? "Sign in to use AI."
+              : "AI is not configured (APP_CONFIG.aiWorkerUrl is empty)."
+          );
+          return;
+        }
+        if (!text) {
+          showToast(state.searchMode === "generate" ? "Describe what you want first." : "Type a question first.");
+          return;
+        }
+
+        if (state.searchMode === "generate") {
+          runAiGenerate(text);
+        } else {
+          runAskSearch(text);
+        }
       });
 
+      // Live filtering only applies to search mode; the AI modes run on submit.
       els.searchInput.addEventListener("input", () => {
         window.clearTimeout(searchTimer);
+        if (state.searchMode !== "search") return;
         searchTimer = window.setTimeout(() => {
           state.query = els.searchInput.value;
           state.tagFilter = "";
@@ -5625,19 +6044,21 @@
         }, 140);
       });
 
-      els.quickRow.addEventListener("click", (event) => {
+      els.tagsPanel.addEventListener("click", (event) => {
         const target = event.target.closest("[data-tag]");
         if (!target) return;
         applyTagFilter(target.dataset.tag || "");
       });
 
-      els.quickTagToggle.addEventListener("click", () => {
-        state.quickTagsOpen = !state.quickTagsOpen;
+      els.tagsButton.addEventListener("click", () => {
+        state.tagsOpen = !state.tagsOpen;
         renderTagRow();
       });
 
       els.filterButtons.forEach((button) => {
         button.addEventListener("click", () => {
+          if (state.composeOpen) closeEntryDialog();
+          applySearchMode("search");
           state.kind = button.dataset.kind;
           state.query = "";
           state.tagFilter = "";
@@ -5680,20 +6101,6 @@
       els.entryAttachmentUrl.addEventListener("input", () => {
         const url = els.entryAttachmentUrl.value.trim();
         renderAttachmentPreview(url ? { attachmentUrl: url, attachmentName: externalAttachmentName(url) } : null);
-      });
-
-      els.askResultsList.addEventListener("click", (event) => {
-        const target = event.target.closest("[data-entry-id]");
-        if (!target) return;
-        openEntryDetailDialog(target.dataset.entryId);
-      });
-
-      els.askResultsList.addEventListener("keydown", (event) => {
-        if (event.key !== "Enter" && event.key !== " ") return;
-        const target = event.target.closest("[data-entry-id]");
-        if (!target) return;
-        event.preventDefault();
-        openEntryDetailDialog(target.dataset.entryId);
       });
 
       els.resultsList.addEventListener("click", (event) => {
@@ -6390,6 +6797,13 @@
         }
       });
 
+      // The composer is a plain view now, not a <dialog>, so Escape has to be
+      // wired up by hand to keep the old dismiss behaviour.
+      document.addEventListener("keydown", (event) => {
+        if (event.key !== "Escape" || !state.composeOpen) return;
+        if (document.querySelector("dialog[open]")) return;
+        closeEntryDialog();
+      });
     }
 
     function boot() {
@@ -6398,6 +6812,7 @@
       state.favorites = loadFavorites();
       state.entries = loadLocalEntries();
       wireEvents();
+      applySearchMode("search");
       render();
       // Tab mode is signed-in only, so the workspace is restored per-account by
       // syncTabsForUser() once auth resolves (via updateAuthUI), not at boot.
