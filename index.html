@@ -132,21 +132,51 @@
       background: color-mix(in srgb, var(--accent) 32%, transparent);
     }
 
-    /* Quiet, thin scrollbars everywhere (Claude-style minimal chrome). */
-    * {
-      scrollbar-width: thin;
-      scrollbar-color: color-mix(in srgb, var(--soft) 38%, transparent) transparent;
+    /* Quiet, thin scrollbars everywhere (Claude-style minimal chrome). The
+       thumb stays invisible until the surface is hovered or actively
+       scrolling; the gutter is always reserved so nothing shifts. Setting
+       scrollbar-width/-color makes Chrome fall back to the native Windows
+       scrollbar (arrow buttons and all) and ignore the rules below, so those
+       properties are scoped to engines without ::-webkit-scrollbar. */
+    @supports not selector(::-webkit-scrollbar) {
+      * {
+        scrollbar-width: thin;
+        scrollbar-color: transparent transparent;
+      }
+      *:hover,
+      *:focus-within {
+        scrollbar-color: color-mix(in srgb, var(--soft) 38%, transparent) transparent;
+      }
     }
     ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
+      width: 10px;
+      height: 10px;
     }
-    ::-webkit-scrollbar-track {
+    /* Kills the stepper arrows at each end of the track. */
+    ::-webkit-scrollbar-button {
+      display: none;
+      width: 0;
+      height: 0;
+    }
+    ::-webkit-scrollbar-track,
+    ::-webkit-scrollbar-corner {
       background: transparent;
     }
     ::-webkit-scrollbar-thumb {
-      background: color-mix(in srgb, var(--soft) 38%, transparent);
+      background: transparent;
+      border: 3px solid transparent;
+      background-clip: content-box;
       border-radius: 99px;
+    }
+    :hover::-webkit-scrollbar-thumb,
+    .is-scrolling::-webkit-scrollbar-thumb {
+      background: color-mix(in srgb, var(--soft) 38%, transparent);
+      background-clip: content-box;
+    }
+    :hover::-webkit-scrollbar-thumb:hover,
+    .is-scrolling::-webkit-scrollbar-thumb:hover {
+      background: color-mix(in srgb, var(--soft) 60%, transparent);
+      background-clip: content-box;
     }
 
     button,
@@ -582,7 +612,7 @@
       color: var(--muted);
       font-size: 0.81rem;
       font-weight: 500;
-      background: color-mix(in srgb, var(--bg-2) 66%, transparent);
+      background: transparent;
       transition: background var(--motion-fast) ease, border-color var(--motion-fast) ease, color var(--motion-fast) ease;
     }
 
@@ -592,20 +622,19 @@
       background: color-mix(in srgb, var(--accent) 8%, transparent);
     }
 
+    /* Kind chips carry only a faint tint of their accent — enough to tell
+       kinds apart at a glance without competing with the card's content. */
     .kind,
     .kind-note {
-      color: var(--accent-blue-ink);
-      border-color: color-mix(in srgb, var(--accent-blue) 38%, var(--line));
+      color: color-mix(in srgb, var(--accent-blue-ink) 45%, var(--muted));
     }
 
     .kind-template {
-      color: var(--accent-warm-ink);
-      border-color: color-mix(in srgb, var(--accent-warm) 38%, var(--line));
+      color: color-mix(in srgb, var(--accent-warm-ink) 45%, var(--muted));
     }
 
     .kind-process {
-      color: var(--accent-ink);
-      border-color: color-mix(in srgb, var(--accent) 38%, var(--line));
+      color: color-mix(in srgb, var(--accent-ink) 45%, var(--muted));
     }
 
     .tag.time {
@@ -613,15 +642,14 @@
     }
 
     .tag.edited {
-      color: var(--accent-ink);
-      border-color: color-mix(in srgb, var(--accent) 32%, var(--line));
-      background: color-mix(in srgb, var(--accent) 8%, transparent);
+      color: var(--muted);
     }
 
+    /* Hidden entries are the one state worth flagging, so this keeps a tint —
+       just a much quieter one than before. */
     .tag.hidden-tag {
-      color: var(--danger);
-      border-color: color-mix(in srgb, var(--danger) 40%, var(--line));
-      background: color-mix(in srgb, var(--danger) 10%, transparent);
+      color: color-mix(in srgb, var(--danger) 70%, var(--muted));
+      border-color: color-mix(in srgb, var(--danger) 22%, var(--line));
     }
 
     .tag.hidden-tag svg {
@@ -2209,15 +2237,33 @@
     }
 
     .tabmode-newtab,
-    .tabmode-side-toggle {
+    .tabmode-side-toggle,
+    .tabmode-scroll {
       flex: 0 0 auto;
       border-color: transparent;
       color: var(--soft);
     }
 
     .tabmode-newtab:hover,
-    .tabmode-side-toggle:hover {
+    .tabmode-side-toggle:hover,
+    .tabmode-scroll:hover:not(:disabled) {
       color: var(--text);
+    }
+
+    /* Overflow arrows: only present while the strip actually scrolls, so the
+       hidden tabs at either end are discoverable without a scrollbar. */
+    .tabmode-scroll[hidden] {
+      display: none;
+    }
+
+    .tabmode-scroll:disabled {
+      opacity: 0.3;
+      cursor: default;
+    }
+
+    .tabmode-scroll:disabled:hover {
+      background: transparent;
+      border-color: transparent;
     }
 
     .tabmode-content {
@@ -2880,7 +2926,13 @@
           <button class="icon-button tiny-button tabmode-side-toggle" id="tabSidebarOpen" type="button" aria-label="Show sidebar" title="Show sidebar">
             <i data-lucide="panel-left-open"></i>
           </button>
+          <button class="icon-button tiny-button tabmode-scroll" id="tabScrollLeft" type="button" aria-label="Scroll tabs left" title="Scroll tabs left" hidden>
+            <i data-lucide="chevron-left"></i>
+          </button>
           <div class="tabmode-tabs" id="tabTabs" role="tablist"></div>
+          <button class="icon-button tiny-button tabmode-scroll" id="tabScrollRight" type="button" aria-label="Scroll tabs right" title="Scroll tabs right" hidden>
+            <i data-lucide="chevron-right"></i>
+          </button>
           <button class="icon-button tiny-button tabmode-newtab" id="tabNewButton" type="button" aria-label="New tab" title="New tab">
             <i data-lucide="plus"></i>
           </button>
@@ -3346,6 +3398,8 @@
       tabSideList: document.querySelector("#tabSideList"),
       tabStrip: document.querySelector("#tabStrip"),
       tabTabs: document.querySelector("#tabTabs"),
+      tabScrollLeft: document.querySelector("#tabScrollLeft"),
+      tabScrollRight: document.querySelector("#tabScrollRight"),
       tabNewButton: document.querySelector("#tabNewButton"),
       tabContent: document.querySelector("#tabContent")
     };
@@ -6377,7 +6431,10 @@
         const title = entry ? (entry.title || "Untitled") : (tab.entryId ? "Unavailable" : "New tab");
         return `${tab.id}~${tab.entryId || ""}~${title}`;
       }).join("|") + "::" + state.activeTabId;
-      if (sig === tabStripSig) return;
+      if (sig === tabStripSig) {
+        updateTabScrollButtons();
+        return;
+      }
       tabStripSig = sig;
 
       els.tabTabs.innerHTML = state.tabs.map((tab) => {
@@ -6394,6 +6451,47 @@
         `;
       }).join("");
       refreshIcons();
+      updateTabScrollButtons();
+      scrollActiveTabIntoView();
+    }
+
+    // The strip scrolls with no scrollbar, so these arrows are the only hint
+    // that tabs exist past either edge. Both stay mounted for as long as the
+    // strip overflows -- the spent one just disables -- so the tabs don't
+    // shift sideways every time you reach an end.
+    function updateTabScrollButtons() {
+      if (!els.tabScrollLeft || !els.tabScrollRight) return;
+      const strip = els.tabTabs;
+      const max = strip.scrollWidth - strip.clientWidth;
+      const overflows = max > 1;
+      els.tabScrollLeft.hidden = !overflows;
+      els.tabScrollRight.hidden = !overflows;
+      if (!overflows) return;
+      els.tabScrollLeft.disabled = strip.scrollLeft <= 1;
+      els.tabScrollRight.disabled = strip.scrollLeft >= max - 1;
+    }
+
+    function scrollTabStrip(direction) {
+      const strip = els.tabTabs;
+      strip.scrollBy({
+        left: direction * Math.max(140, Math.round(strip.clientWidth * 0.7)),
+        behavior: "smooth"
+      });
+    }
+
+    // offsetLeft is measured against the sticky strip, not the scroller, so
+    // compare in the scroller's own space via getBoundingClientRect.
+    function scrollActiveTabIntoView() {
+      const el = els.tabTabs.querySelector(".tabmode-tab.is-active");
+      if (!el) return;
+      const strip = els.tabTabs;
+      const stripBox = strip.getBoundingClientRect();
+      const box = el.getBoundingClientRect();
+      if (box.left < stripBox.left) {
+        strip.scrollTo({ left: strip.scrollLeft - (stripBox.left - box.left) - 8, behavior: "smooth" });
+      } else if (box.right > stripBox.right) {
+        strip.scrollTo({ left: strip.scrollLeft + (box.right - stripBox.right) + 8, behavior: "smooth" });
+      }
     }
 
     function tabSidebarRows() {
@@ -6637,6 +6735,15 @@
         if (!el) return;
         activateTab(el);
       });
+
+      els.tabScrollLeft.addEventListener("click", () => scrollTabStrip(-1));
+      els.tabScrollRight.addEventListener("click", () => scrollTabStrip(1));
+      els.tabTabs.addEventListener("scroll", updateTabScrollButtons, { passive: true });
+      if (window.ResizeObserver) {
+        new ResizeObserver(updateTabScrollButtons).observe(els.tabTabs);
+      } else {
+        window.addEventListener("resize", updateTabScrollButtons);
+      }
 
       els.tabTabs.addEventListener("keydown", (event) => {
         // Ctrl/Cmd/Alt + Arrow reorders the focused tab for keyboard users.
@@ -6949,6 +7056,24 @@
       }
 
       initWeather();
+    })();
+  </script>
+
+  <script>
+    // Scrollbar auto-hide: CSS keeps the thumb invisible until a surface is
+    // hovered, and this flags whatever is actively scrolling so the thumb also
+    // shows during keyboard/wheel scrolling, then fades out once it settles.
+    (function () {
+      const HIDE_DELAY_MS = 900;
+      const timers = new WeakMap();
+
+      document.addEventListener("scroll", (event) => {
+        const target = event.target === document ? document.documentElement : event.target;
+        if (!target || target.nodeType !== 1) return;
+        target.classList.add("is-scrolling");
+        clearTimeout(timers.get(target));
+        timers.set(target, setTimeout(() => target.classList.remove("is-scrolling"), HIDE_DELAY_MS));
+      }, true);
     })();
   </script>
 </body>
