@@ -630,18 +630,6 @@
       stroke-width: 2.2;
     }
 
-    .kind-dot {
-      width: 8px;
-      height: 8px;
-      flex: 0 0 auto;
-      border-radius: 50%;
-      background: var(--accent-blue);
-    }
-    .kind-dot.kind-template { background: var(--accent-warm); }
-    .kind-dot.kind-note { background: var(--accent-blue); }
-    .kind-dot.kind-process { background: var(--accent); }
-    .kind-dot.kind-image { background: var(--accent-strong); }
-
     /* ===================================================================
        Home hero — Claude's greeting screen: serif welcome, roomy rounded
        prompt box, quiet tag chips underneath.
@@ -669,8 +657,8 @@
     h1 {
       margin: 0;
       font-family: var(--font-display);
-      /* Caps around 32px — the Claude app's greeting size. */
-      font-size: clamp(1.9rem, 3.2vw, 2.3rem);
+      /* Caps around 35px — the Claude app's greeting size, nudged up ~10%. */
+      font-size: clamp(2.1rem, 3.5vw, 2.53rem);
       line-height: 1.12;
       letter-spacing: -0.012em;
       font-weight: 500;
@@ -695,7 +683,7 @@
       width: min(620px, 100%);
       margin: 14px auto 0;
       color: var(--muted);
-      font-size: 1rem;
+      font-size: 1.1rem;
       line-height: 1.6;
       text-wrap: balance;
     }
@@ -824,19 +812,6 @@
     .promptbar[data-mode="generate"] > .mode-cycle svg,
     .promptbar[data-mode="ask"] > .mode-cycle svg {
       color: var(--accent-ink);
-    }
-
-    .mode-hint {
-      margin: 12px 0 0;
-      min-height: 1.2em;
-      text-align: center;
-      color: var(--soft);
-      font-size: 0.85rem;
-    }
-
-    .mode-hint b {
-      color: var(--muted);
-      font-weight: 600;
     }
 
 
@@ -2584,7 +2559,7 @@
       }
 
       h1 {
-        font-size: clamp(1.7rem, 7.4vw, 2.2rem);
+        font-size: clamp(1.87rem, 8.1vw, 2.42rem);
       }
 
       .hero {
@@ -2593,7 +2568,7 @@
 
       .hero-copy {
         margin-top: 12px;
-        font-size: 0.9rem;
+        font-size: 0.99rem;
       }
 
       .search-card {
@@ -2854,7 +2829,6 @@
             </button>
           </form>
         </div>
-        <p class="mode-hint" id="searchModeHint" aria-live="polite"></p>
       </div>
     </section>
 
@@ -3288,7 +3262,6 @@
       searchForm: document.querySelector("#searchForm"),
       searchInput: document.querySelector("#searchInput"),
       searchModeButton: document.querySelector("#searchModeButton"),
-      searchModeHint: document.querySelector("#searchModeHint"),
       searchSubmitButton: document.querySelector("#searchSubmitButton"),
       tagsButton: document.querySelector("#tagsButton"),
       tagsPanel: document.querySelector("#tagsPanel"),
@@ -4375,24 +4348,21 @@
         label: "Search",
         next: "generate",
         placeholder: "Ask for a note, template, image, or phrase...",
-        submitLabel: "Search",
-        hint: ""
+        submitLabel: "Search"
       },
       generate: {
         icon: "sparkles",
         label: "AI Generate",
         next: "ask",
         placeholder: "Generate results from AI — describe the text you want written...",
-        submitLabel: "Generate with AI",
-        hint: "Writes new text from your description. Nothing is saved until you choose to."
+        submitLabel: "Generate with AI"
       },
       ask: {
         icon: "brain",
         label: "Ask AI",
         next: "search",
         placeholder: "Ask AI a question — answered from your saved notes...",
-        submitLabel: "Ask AI",
-        hint: "Answers your question using your saved notes, and shows the sources it used."
+        submitLabel: "Ask AI"
       }
     };
 
@@ -4412,9 +4382,6 @@
       els.searchModeButton.setAttribute("title", `${conf.label} — click for ${nextConf.label}`);
       els.searchInput.placeholder = conf.placeholder;
       els.searchSubmitButton.setAttribute("aria-label", conf.submitLabel);
-      els.searchModeHint.innerHTML = conf.hint
-        ? `<b>${escapeHtml(conf.label)}</b> · ${escapeHtml(conf.hint)}`
-        : "";
       refreshIcons();
     }
 
@@ -6417,12 +6384,8 @@
         const entry = tab.entryId ? tabFindEntry(tab.entryId) : null;
         const title = entry ? (entry.title || "Untitled") : (tab.entryId ? "Unavailable note" : "New tab");
         const isActive = tab.id === state.activeTabId;
-        const lead = tab.entryId
-          ? `<span class="kind-dot kind-${escapeHtml(kindClassOf(entry))}"></span>`
-          : `<i data-lucide="file-plus"></i>`;
         return `
           <div class="tabmode-tab${isActive ? " is-active" : ""}" role="tab" tabindex="0" draggable="true" data-tab-action="focus" data-tab-id="${escapeHtml(tab.id)}" aria-selected="${isActive}" title="${escapeHtml(title)}">
-            ${lead}
             <span class="tabmode-tab-label">${escapeHtml(title)}</span>
             <button class="tabmode-tab-close" type="button" data-tab-action="close" data-tab-id="${escapeHtml(tab.id)}" aria-label="Close ${escapeHtml(title)}">
               <i data-lucide="x"></i>
@@ -6477,7 +6440,6 @@
           const stateClass = isActive ? " is-active" : (openIds.has(entry.id) ? " is-open" : "");
           return `
             <button class="tabmode-side-item${stateClass}" type="button" data-entry-id="${escapeHtml(entry.id)}" title="${escapeHtml(entry.title || "Untitled")}">
-              <span class="kind-dot kind-${escapeHtml(kindClassOf(entry))}"></span>
               <span class="tabmode-side-item-title">${escapeHtml(entry.title || "Untitled")}</span>
             </button>
           `;
@@ -6510,7 +6472,7 @@
         const snippet = String(entry.body || (entry.imageUrl ? "Image reference" : "")).replace(/\s+/g, " ").trim().slice(0, 120);
         return `
           <button class="tabmode-open-card" type="button" data-open-entry="${escapeHtml(entry.id)}">
-            <span class="tabmode-open-card-title"><span class="kind-dot kind-${escapeHtml(kindClassOf(entry))}"></span><span>${escapeHtml(entry.title || "Untitled")}</span></span>
+            <span class="tabmode-open-card-title"><span>${escapeHtml(entry.title || "Untitled")}</span></span>
             <p class="tabmode-open-card-snippet">${escapeHtml(snippet || "No preview text.")}</p>
           </button>
         `;
