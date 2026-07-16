@@ -105,10 +105,14 @@
       display: none !important;
     }
 
+    /* Base type scale. 87.5% = 14px, matching the Claude app's compact UI
+       text. Reading surfaces (note bodies, result text, the prompt input)
+       opt back up to ~15-16px below so content stays comfortable.
+       Raise this one value if the whole app should read larger. */
     html {
       min-height: 100%;
       background: var(--bg);
-      font-size: 93.75%;
+      font-size: 87.5%;
     }
 
     body {
@@ -268,7 +272,7 @@
       border-radius: var(--radius-sm);
       background: transparent;
       color: var(--accent-ink);
-      font-size: 0.95rem;
+      font-size: 1rem;
       font-weight: 600;
       transition: background var(--motion-fast) ease;
     }
@@ -309,7 +313,7 @@
     .side-label {
       padding: 0 8px;
       color: var(--soft);
-      font-size: 0.72rem;
+      font-size: 0.77rem;
       font-weight: 600;
       letter-spacing: 0.07em;
       text-transform: uppercase;
@@ -325,7 +329,7 @@
       border-radius: var(--radius-sm);
       background: transparent;
       color: var(--muted);
-      font-size: 0.93rem;
+      font-size: 1rem;
       font-weight: 500;
       text-align: left;
       white-space: nowrap;
@@ -438,7 +442,7 @@
       border-radius: var(--radius-sm);
       background: transparent;
       color: var(--text);
-      font-size: 0.9rem;
+      font-size: 1rem;
       font-weight: 550;
       transition: background var(--motion-fast) ease, border-color var(--motion-fast) ease, color var(--motion-fast) ease, box-shadow var(--motion-fast) ease, transform var(--motion-fast) ease;
     }
@@ -538,7 +542,7 @@
       border-radius: 999px;
       background: transparent;
       color: var(--muted);
-      font-size: 0.85rem;
+      font-size: 0.93rem;
       font-weight: 500;
       transition: background var(--motion-fast) ease, border-color var(--motion-fast) ease, color var(--motion-fast) ease;
     }
@@ -576,7 +580,7 @@
       border: 1px solid var(--line);
       border-radius: 999px;
       color: var(--muted);
-      font-size: 0.76rem;
+      font-size: 0.81rem;
       font-weight: 500;
       background: color-mix(in srgb, var(--bg-2) 66%, transparent);
       transition: background var(--motion-fast) ease, border-color var(--motion-fast) ease, color var(--motion-fast) ease;
@@ -665,7 +669,8 @@
     h1 {
       margin: 0;
       font-family: var(--font-display);
-      font-size: clamp(2rem, 3.6vw, 2.75rem);
+      /* Caps around 32px — the Claude app's greeting size. */
+      font-size: clamp(1.9rem, 3.2vw, 2.3rem);
       line-height: 1.12;
       letter-spacing: -0.012em;
       font-weight: 500;
@@ -690,7 +695,7 @@
       width: min(620px, 100%);
       margin: 14px auto 0;
       color: var(--muted);
-      font-size: 0.95rem;
+      font-size: 1rem;
       line-height: 1.6;
       text-wrap: balance;
     }
@@ -759,7 +764,7 @@
       min-width: 0;
       border: 0;
       background: transparent;
-      font-size: 1.05rem;
+      font-size: 1.15rem;
       outline: none;
       caret-color: var(--accent);
     }
@@ -959,7 +964,7 @@
 
     .result-head h2 {
       margin: 0;
-      font-size: 1.08rem;
+      font-size: 1.15rem;
       line-height: 1.3;
       font-weight: 600;
       letter-spacing: -0.005em;
@@ -974,7 +979,7 @@
     .result-text {
       margin: 0;
       color: color-mix(in srgb, var(--text) 74%, var(--muted));
-      font-size: 0.93rem;
+      font-size: 1.05rem;
       line-height: 1.62;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
@@ -1031,99 +1036,104 @@
     }
 
     /* ===================================================================
-       Library dialog internals
+       Library — expands in place under its sidebar row (no popup).
        =================================================================== */
-    .library-dialog {
-      width: min(540px, calc(100% - 24px));
+    .side-item .side-caret {
+      margin-left: auto;
+      width: 14px;
+      height: 14px;
+      transition: transform 160ms var(--ease-out);
     }
 
-    .library-dialog .modal-body {
-      padding: 18px;
-      display: grid;
-      gap: 16px;
+    #libraryButton[aria-expanded="true"] .side-caret {
+      transform: rotate(180deg);
     }
 
-    .stats {
+    .side-sublist {
       display: grid;
       gap: 8px;
+      /* Aligns the sub-rows under the parent row's label, with a hairline
+         spine like Obsidian's nested lists. */
+      margin: 2px 0 6px 17px;
+      padding-left: 9px;
+      border-left: 1px solid var(--line);
+      animation: sublistIn 180ms var(--ease-out) both;
     }
 
-    .stat {
-      display: grid;
-      grid-template-columns: 36px 1fr;
-      gap: 10px;
-      align-items: center;
-      padding: 10px;
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      background: color-mix(in srgb, var(--bg) 55%, transparent);
-    }
-
-    .stat-icon {
-      width: 36px;
-      height: 36px;
-      display: grid;
-      place-items: center;
-      border-radius: 10px;
-      color: var(--accent-ink);
-      background: color-mix(in srgb, var(--accent) 11%, transparent);
-    }
-
-    .stat-icon svg {
-      width: 17px;
-      height: 17px;
-    }
-
-    .stat strong {
-      display: block;
-      font-size: 1.1rem;
-      font-weight: 650;
-    }
-
-    .stat span {
-      display: block;
-      color: var(--muted);
-      font-size: 0.8rem;
-      line-height: 1.35;
+    @keyframes sublistIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .filter-stack {
       display: grid;
-      gap: 6px;
+      gap: 1px;
     }
 
-    .library-dialog .filter-stack {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .filter-stack .chip {
-      justify-content: flex-start;
+    .side-sub-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
       width: 100%;
+      padding: 6px 8px;
+      border: 0;
       border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.95rem;
+      font-weight: 500;
+      text-align: left;
+      white-space: nowrap;
+      transition: background var(--motion-fast) ease, color var(--motion-fast) ease;
     }
 
-    .select-wrap {
-      display: inline-flex;
+    .side-sub-item svg {
+      width: 15px;
+      height: 15px;
+      stroke-width: 2;
+      flex: 0 0 auto;
+      color: var(--soft);
+      transition: color var(--motion-fast) ease;
+    }
+
+    .side-sub-item:hover {
+      background: var(--hover);
+      color: var(--text);
+    }
+
+    .side-sub-item.active {
+      background: var(--active);
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .side-sub-item.active svg {
+      color: var(--accent-ink);
+    }
+
+    .side-sort {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
       align-items: center;
       gap: 8px;
+      padding: 2px 8px 0;
+      color: var(--soft);
+      font-size: 0.83rem;
+      font-weight: 500;
+    }
+
+    .side-sort select {
+      min-height: 30px;
+      padding: 0 26px 0 8px;
+      font-size: 0.82rem;
+      background-color: transparent;
+      border-color: var(--line);
       color: var(--muted);
     }
 
-    .library-dialog .select-wrap {
-      display: grid;
-      grid-template-columns: minmax(120px, 1fr) minmax(0, 1fr);
-      align-items: center;
-      gap: 12px;
+    .side-sort select:hover {
       color: var(--text);
-    }
-
-    .select-wrap select {
-      min-height: 38px;
-      border: 1px solid var(--line-strong);
-      border-radius: var(--radius-sm);
-      background: var(--panel-solid);
-      padding: 0 32px 0 12px;
-      color: var(--text);
+      border-color: var(--line-strong);
     }
 
     .source-pill {
@@ -1131,7 +1141,7 @@
       border: 1px solid var(--line);
       border-radius: var(--radius);
       color: var(--muted);
-      font-size: 0.82rem;
+      font-size: 0.87rem;
       line-height: 1.5;
       background: color-mix(in srgb, var(--bg) 55%, transparent);
     }
@@ -1233,22 +1243,48 @@
       min-width: 0;
       border: 1px solid var(--line-strong);
       border-radius: var(--radius-sm);
-      background: color-mix(in srgb, var(--bg) 62%, var(--panel-solid));
+      /* background-color, not the background shorthand: the shorthand would
+         wipe out the select's chevron background-image below. */
+      background-color: color-mix(in srgb, var(--bg) 62%, var(--panel-solid));
       color: var(--text);
-      transition: border-color var(--motion-fast) ease, background var(--motion-fast) ease, box-shadow var(--motion-fast) ease;
+      transition: border-color var(--motion-fast) ease, background-color var(--motion-fast) ease, box-shadow var(--motion-fast) ease;
     }
 
     input:focus,
     textarea:focus,
     select:focus {
       border-color: color-mix(in srgb, var(--accent) 46%, var(--line-strong));
-      background: var(--panel-solid);
+      background-color: var(--panel-solid);
     }
 
     input,
     select {
       min-height: 42px;
       padding: 0 12px;
+    }
+
+    /* The native dropdown arrow renders as a stark white glyph in the dark
+       skin and ignores our palette, so it is replaced with a chevron drawn in
+       --muted. One data URI per theme, since a data URI can't read a CSS var. */
+    select {
+      appearance: none;
+      -webkit-appearance: none;
+      padding-right: 32px;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b8b5aa' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 15px 15px;
+    }
+
+    [data-theme="light"] select {
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b6862' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");
+    }
+
+    /* The dropdown list itself is drawn by the OS: these keep its rows on the
+       app's palette instead of the browser default white. */
+    select option {
+      background-color: var(--panel-solid);
+      color: var(--text);
     }
 
     textarea {
@@ -1294,7 +1330,7 @@
 
     .format-hint {
       color: var(--soft);
-      font-size: 0.75rem;
+      font-size: 0.8rem;
     }
 
     .ai-row {
@@ -1306,7 +1342,7 @@
 
     .ai-hint {
       color: var(--soft);
-      font-size: 0.78rem;
+      font-size: 0.83rem;
     }
 
     #aiResultWrap {
@@ -1378,7 +1414,7 @@
 
     .hidden-field .hidden-field-copy span {
       color: var(--muted);
-      font-size: 0.79rem;
+      font-size: 0.84rem;
       line-height: 1.45;
     }
 
@@ -1390,6 +1426,7 @@
 
     .entry-detail-text {
       white-space: pre-wrap;
+      font-size: 1.05rem;
       line-height: 1.62;
       color: var(--text);
     }
@@ -1445,7 +1482,7 @@
       flex-wrap: wrap;
       margin-top: 12px;
       color: var(--muted);
-      font-size: 0.8rem;
+      font-size: 0.85rem;
       line-height: 1.4;
     }
 
@@ -1505,7 +1542,7 @@
     }
 
     .ask-result-score {
-      font-size: 0.78rem;
+      font-size: 0.82rem;
       font-variant-numeric: tabular-nums;
       color: var(--muted);
       white-space: nowrap;
@@ -1517,13 +1554,13 @@
     }
 
     .ask-result-meta {
-      font-size: 0.78rem;
+      font-size: 0.82rem;
       color: var(--muted);
       margin-bottom: 0.35rem;
     }
 
     .ask-result-snippet {
-      font-size: 0.84rem;
+      font-size: 0.89rem;
       color: var(--text);
       opacity: 0.82;
       line-height: 1.45;
@@ -1568,7 +1605,7 @@
     }
 
     .ask-answer-text {
-      font-size: 0.94rem;
+      font-size: 1.03rem;
       line-height: 1.55;
       white-space: pre-wrap;
       word-wrap: break-word;
@@ -1707,7 +1744,7 @@
       border: 0;
       background: transparent;
       color: var(--text);
-      font-size: 0.87rem;
+      font-size: 0.95rem;
       padding: 8px 0;
       outline: none;
       min-height: 0;
@@ -1731,7 +1768,7 @@
     .tabmode-side-filters .chip {
       min-height: 28px;
       padding: 0 10px;
-      font-size: 0.76rem;
+      font-size: 0.81rem;
       gap: 5px;
     }
 
@@ -1782,7 +1819,7 @@
     .tabmode-side-item-title {
       flex: 1;
       min-width: 0;
-      font-size: 0.87rem;
+      font-size: 0.95rem;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -1879,7 +1916,7 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      font-size: 0.86rem;
+      font-size: 0.93rem;
       font-weight: 500;
     }
 
@@ -1980,7 +2017,7 @@
     .tabmode-doc-body {
       margin: 0;
       color: color-mix(in srgb, var(--text) 84%, var(--muted));
-      font-size: 1rem;
+      font-size: 1.09rem;
       line-height: 1.72;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
@@ -2091,7 +2128,7 @@
     .tabmode-open-card-snippet {
       margin: 0;
       color: var(--soft);
-      font-size: 0.79rem;
+      font-size: 0.84rem;
       line-height: 1.5;
       display: -webkit-box;
       -webkit-line-clamp: 2;
@@ -2368,16 +2405,6 @@
         font-size: 16px;
       }
 
-      .library-dialog .modal-body {
-        padding: 14px;
-        gap: 14px;
-      }
-
-      .library-dialog .select-wrap {
-        grid-template-columns: 1fr;
-        gap: 6px;
-      }
-
       .image-dialog-body {
         padding: 10px;
       }
@@ -2404,10 +2431,6 @@
 
       .modal-foot .button {
         width: 100%;
-      }
-
-      .library-dialog .filter-stack {
-        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -2452,10 +2475,29 @@
     <div class="side-section" id="moreMenu" hidden>
       <span class="side-label">Tools</span>
       <div class="side-group" id="menuPanel">
-        <button class="side-item" id="libraryButton" type="button">
+        <button class="side-item" id="libraryButton" type="button" aria-expanded="false" aria-controls="libraryPanel">
           <i data-lucide="library"></i>
           <span>Library</span>
+          <i data-lucide="chevron-down" class="side-caret"></i>
         </button>
+        <div class="side-sublist" id="libraryPanel" hidden>
+          <div class="filter-stack" id="filterStack">
+            <button class="side-sub-item active" type="button" data-kind="all"><i data-lucide="layout-grid"></i><span>All</span></button>
+            <button class="side-sub-item" type="button" data-kind="favorite"><i data-lucide="star"></i><span>Favorites</span></button>
+            <button class="side-sub-item" type="button" data-kind="template"><i data-lucide="copy-check"></i><span>Templates</span></button>
+            <button class="side-sub-item" type="button" data-kind="note"><i data-lucide="notebook-tabs"></i><span>Notes</span></button>
+            <button class="side-sub-item" type="button" data-kind="process"><i data-lucide="workflow"></i><span>Process</span></button>
+            <button class="side-sub-item" type="button" data-kind="image"><i data-lucide="image"></i><span>Images</span></button>
+          </div>
+          <label class="side-sort">
+            <span>Sort</span>
+            <select id="sortSelect" aria-label="Sort results">
+              <option value="relevance">Relevance</option>
+              <option value="newest">Newest</option>
+              <option value="title">Title</option>
+            </select>
+          </label>
+        </div>
         <button class="side-item" id="favoritesButton" type="button">
           <i data-lucide="star"></i>
           <span>Favorites</span>
@@ -2490,11 +2532,11 @@
     <div class="sidebar-foot">
       <button class="side-item" id="signInButton" type="button" aria-label="Sign in">
         <i data-lucide="log-in"></i>
-        <span class="optional">Sign in</span>
+        <span>Sign in</span>
       </button>
       <button class="side-item" id="signOutButton" type="button" aria-label="Sign out" hidden>
         <i data-lucide="log-out"></i>
-        <span class="optional">Sign out</span>
+        <span>Sign out</span>
       </button>
       <button class="icon-button" id="themeToggle" type="button" aria-label="Toggle color theme">
         <i data-lucide="sun"></i>
@@ -2738,59 +2780,6 @@
         <ul id="askResultsList" class="ask-results"></ul>
       </div>
     </form>
-  </dialog>
-
-  <dialog class="modal library-dialog" id="libraryDialog">
-    <div class="modal-head">
-      <h2 class="modal-title">Library</h2>
-      <button class="icon-button" type="button" id="closeLibraryDialog" aria-label="Close library">
-        <i data-lucide="x"></i>
-      </button>
-    </div>
-    <div class="modal-body">
-      <div class="stats">
-        <div class="stat">
-          <span class="stat-icon"><i data-lucide="database"></i></span>
-          <span><strong id="totalCount">0</strong><span>Saved entries</span></span>
-        </div>
-        <div class="stat">
-          <span class="stat-icon"><i data-lucide="image"></i></span>
-          <span><strong id="imageCount">0</strong><span>Image entries</span></span>
-        </div>
-        <div class="stat">
-          <span class="stat-icon"><i data-lucide="shield-check"></i></span>
-          <span><strong id="adminState">Viewer</strong><span>Current access</span></span>
-        </div>
-      </div>
-
-      <div class="filter-stack" aria-label="Entry filters">
-        <button class="chip active" type="button" data-kind="all"><i data-lucide="layout-grid"></i>All</button>
-        <button class="chip" type="button" data-kind="favorite"><i data-lucide="star"></i>Favorites</button>
-        <button class="chip" type="button" data-kind="template"><i data-lucide="copy-check"></i>Templates</button>
-        <button class="chip" type="button" data-kind="note"><i data-lucide="notebook-tabs"></i>Notes</button>
-        <button class="chip" type="button" data-kind="process"><i data-lucide="workflow"></i>Process</button>
-        <button class="chip" type="button" data-kind="image"><i data-lucide="image"></i>Images</button>
-      </div>
-
-      <label class="select-wrap">
-        <span>Sort results</span>
-        <select id="sortSelect" aria-label="Sort results">
-          <option value="relevance">Relevance</option>
-          <option value="newest">Newest</option>
-          <option value="title">Title</option>
-        </select>
-      </label>
-
-      <div class="source-pill">
-        <strong id="sourceName">Local demo</strong><br />
-        <span id="sourceDetail">Add Firebase config when you are ready to sync online.</span>
-      </div>
-
-      <div class="source-pill">
-        <strong id="authStatusTitle">Not signed in</strong><br />
-        <span id="authStatusDetail">Sign in with the admin Google account to add data.</span>
-      </div>
-    </div>
   </dialog>
 
   <dialog class="modal" id="entryDetailDialog">
@@ -3060,8 +3049,7 @@
       libraryButton: document.querySelector("#libraryButton"),
       favoritesButton: document.querySelector("#favoritesButton"),
       hiddenButton: document.querySelector("#hiddenButton"),
-      libraryDialog: document.querySelector("#libraryDialog"),
-      closeLibraryDialog: document.querySelector("#closeLibraryDialog"),
+      libraryPanel: document.querySelector("#libraryPanel"),
       signInButton: document.querySelector("#signInButton"),
       signOutButton: document.querySelector("#signOutButton"),
       addButton: document.querySelector("#addButton"),
@@ -3073,20 +3061,14 @@
       searchInput: document.querySelector("#searchInput"),
       quickTagToggle: document.querySelector("#quickTagToggle"),
       quickRow: document.querySelector("#quickRow"),
-      filterButtons: document.querySelectorAll("[data-kind]"),
+      // Scoped to the sidebar filter list: result cards also carry data-kind.
+      filterButtons: document.querySelectorAll("#filterStack [data-kind]"),
       sortSelect: document.querySelector("#sortSelect"),
       workspace: document.querySelector("#workspace"),
       resultsList: document.querySelector("#resultsList"),
       resultsHeading: document.querySelector("#resultsHeading"),
       resultsMeta: document.querySelector("#resultsMeta"),
       clearResultsButton: document.querySelector("#clearResultsButton"),
-      totalCount: document.querySelector("#totalCount"),
-      imageCount: document.querySelector("#imageCount"),
-      adminState: document.querySelector("#adminState"),
-      sourceName: document.querySelector("#sourceName"),
-      sourceDetail: document.querySelector("#sourceDetail"),
-      authStatusTitle: document.querySelector("#authStatusTitle"),
-      authStatusDetail: document.querySelector("#authStatusDetail"),
       entryDialog: document.querySelector("#entryDialog"),
       entryDialogTitle: document.querySelector("#entryDialogTitle"),
       closeDialog: document.querySelector("#closeDialog"),
@@ -3404,25 +3386,13 @@
       refreshIcons();
     }
 
-    function openLibraryDialog() {
-      if (typeof els.libraryDialog.showModal === "function") {
-        els.libraryDialog.showModal();
-      } else {
-        els.libraryDialog.setAttribute("open", "");
-      }
-      refreshIcons();
+    // Library expands in place under its sidebar row, listing the entry
+    // filters and the sort control. Passing no argument flips it.
+    function toggleLibraryPanel(open) {
+      const show = typeof open === "boolean" ? open : els.libraryPanel.hidden;
+      els.libraryPanel.hidden = !show;
+      els.libraryButton.setAttribute("aria-expanded", String(show));
     }
-
-    function closeLibraryDialog() {
-      if (els.libraryDialog.open) {
-        els.libraryDialog.close();
-      }
-    }
-
-    // The tools list now lives permanently in the sidebar (Claude-style), so
-    // there is no popup menu to open or close. Kept as a no-op because the
-    // sidebar action handlers still call it.
-    function toggleMenu() {}
 
     function showToast(message, duration = 2300) {
       els.toast.textContent = message;
@@ -3603,14 +3573,6 @@
       }
 
       return rows;
-    }
-
-    function renderStats() {
-      els.totalCount.textContent = state.entries.length;
-      els.imageCount.textContent = state.currentUser || state.isAdmin
-        ? state.entries.filter((entry) => Boolean(entry.imageUrl || entry.kind === "image")).length
-        : 0;
-      els.adminState.textContent = state.isAdmin ? "Admin" : (state.currentUser ? "Member" : "Viewer");
     }
 
     function syncFilterButtons() {
@@ -3873,7 +3835,6 @@
     }
 
     function render() {
-      renderStats();
       syncFilterButtons();
       renderResults(true);
       if (state.tabMode) renderTabMode();
@@ -3890,7 +3851,9 @@
       els.exportButton.hidden = !state.isAdmin;
       els.backfillButton.hidden = !state.isAdmin || !APP_CONFIG.aiWorkerUrl;
       els.moreMenu.hidden = !signedIn;
-      if (els.moreMenu.hidden) toggleMenu(false);
+      // Signing out hides the tools section: collapse Library so it is not
+      // still expanded for whoever signs in next.
+      if (els.moreMenu.hidden) toggleLibraryPanel(false);
       els.signOutButton.hidden = !signedIn;
       els.signInButton.hidden = signedIn;
       // Tab mode is a signed-in-only workspace: hide its toggle for visitors.
@@ -3901,29 +3864,16 @@
         els.brandInitial.textContent = source ? source.charAt(0).toUpperCase() : "?";
       }
 
-      if (signedIn) {
-        els.authStatusTitle.textContent = state.isAdmin ? "Signed in as admin" : "Signed in";
-        els.authStatusDetail.textContent = state.isAdmin
-          ? `${state.currentUser.email} can manage every entry.`
-          : `${state.currentUser.email} can add and manage their own entries.`;
-      } else if (state.firebaseReady) {
-        els.authStatusTitle.textContent = "Not signed in";
-        els.authStatusDetail.textContent = "Sign in to add entries and browse notes, processes, and images.";
-      } else {
-        els.authStatusTitle.textContent = "Not signed in";
-        els.authStatusDetail.textContent = "Firebase is not ready yet.";
-      }
-
-      renderStats();
       renderResults(true);
       // Load / swap / drop the tab workspace to match whoever is signed in.
       syncTabsForUser();
       if (state.tabMode) renderTabMode();
     }
 
+    // The library panel no longer shows a data-source line, so the source is
+    // only recorded for troubleshooting in the console.
     function setSource(name, detail) {
-      els.sourceName.textContent = name;
-      els.sourceDetail.textContent = detail;
+      console.info(`PromptVault source: ${name} — ${detail}`);
     }
 
     async function initFirebase() {
@@ -3961,8 +3911,6 @@
           })
           .catch((error) => {
             console.warn("Google redirect sign-in failed", error);
-            els.authStatusTitle.textContent = "Google sign-in failed";
-            els.authStatusDetail.textContent = authErrorMessage(error);
             showToast(
               (typeof authErrorMessage === "function" ? authErrorMessage(error) : null)
                 || "Google sign-in did not complete.",
@@ -4048,8 +3996,6 @@
             const email = (user.email || "").toLowerCase();
             const usedGoogle = (user.providerData || []).some((p) => p && p.providerId === "google.com");
             if (usedGoogle && !adminEmails.includes(email)) {
-              els.authStatusTitle.textContent = "Google account not allowed";
-              els.authStatusDetail.textContent = `${email || "This account"} is not listed in adminEmails.`;
               showToast("This Google account is not listed as an admin. Use email/password instead.", 8000);
               authMod.signOut(state.auth);
               return;
@@ -5343,8 +5289,6 @@
       els.googleSignInLabel.textContent = "Opening Google...";
       try {
         const authMod = await import("https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js");
-        els.authStatusTitle.textContent = "Opening Google sign-in";
-        els.authStatusDetail.textContent = "Choose your admin Google account in the popup.";
         const result = await authMod.signInWithPopup(state.auth, state.provider);
         if (result && result.user) {
           closeAuthDialog();
@@ -5358,8 +5302,6 @@
         if (shouldRedirect) {
           try {
             const authMod = await import("https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js");
-            els.authStatusTitle.textContent = "Redirecting to Google";
-            els.authStatusDetail.textContent = "The popup was blocked, so Google sign-in will continue on a full page.";
             showToast("Popup blocked. Redirecting to Google sign-in...", 5000);
             await authMod.signInWithRedirect(state.auth, state.provider);
             return;
@@ -5371,8 +5313,6 @@
           showToast("Google sign-in was closed before finishing.", 5000);
         } else {
           console.warn("Google sign in failed", error);
-          els.authStatusTitle.textContent = "Google sign-in failed";
-          els.authStatusDetail.textContent = authErrorMessage(error);
           showToast(authErrorMessage(error), 6500);
         }
         els.googleSignInButton.disabled = false;
@@ -5547,12 +5487,8 @@
     }
 
     function wireEvents() {
-      els.libraryButton.addEventListener("click", () => {
-        toggleMenu(false);
-        openLibraryDialog();
-      });
+      els.libraryButton.addEventListener("click", () => toggleLibraryPanel());
       els.favoritesButton.addEventListener("click", () => {
-        toggleMenu(false);
         state.kind = "favorite";
         state.query = "";
         state.tagFilter = "";
@@ -5563,7 +5499,6 @@
         window.scrollTo({ top: 0, behavior: "smooth" });
       });
       els.hiddenButton.addEventListener("click", () => {
-        toggleMenu(false);
         if (!state.isAdmin) return; // admin-only view
         state.kind = "hidden";
         state.query = "";
@@ -5573,12 +5508,6 @@
         syncFilterButtons();
         renderResults();
         window.scrollTo({ top: 0, behavior: "smooth" });
-      });
-      els.closeLibraryDialog.addEventListener("click", closeLibraryDialog);
-      els.libraryDialog.addEventListener("click", (event) => {
-        if (event.target === els.libraryDialog) {
-          closeLibraryDialog();
-        }
       });
       // Home: leave the tab workspace if it is open, clear any search or
       // browse state, and land back on the greeting screen.
@@ -5716,7 +5645,7 @@
           els.searchInput.value = "";
           syncFilterButtons();
           renderResults();
-          closeLibraryDialog();
+          window.scrollTo({ top: 0, behavior: "smooth" });
         });
       });
 
@@ -6502,11 +6431,13 @@
       document.addEventListener("keydown", (event) => {
         if (event.key === "Escape") setOpen(false);
       });
-      // Picking any sidebar action closes the drawer, except the theme
-      // toggle — people often flip themes to compare, so it stays open.
+      // Picking a sidebar action closes the drawer. Two stay open: the theme
+      // toggle (people flip it to compare) and Library (it expands in place,
+      // so its filters need to remain reachable).
+      const keepsDrawerOpen = ["themeToggle", "libraryButton"];
       sidebar.addEventListener("click", (event) => {
         const control = event.target.closest("button, a");
-        if (control && control.id !== "themeToggle") setOpen(false);
+        if (control && !keepsDrawerOpen.includes(control.id)) setOpen(false);
       });
 
       // Both brand links act like the Home button.
