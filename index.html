@@ -685,26 +685,12 @@
     h1 {
       margin: 0;
       font-family: var(--font-display);
-      /* Caps around 35px — the Claude app's greeting size, nudged up ~10%. */
-      font-size: clamp(2.1rem, 3.5vw, 2.53rem);
+      /* The Claude app's greeting size, nudged up ~10% twice over. */
+      font-size: clamp(2.31rem, 3.85vw, 2.78rem);
       line-height: 1.12;
       letter-spacing: -0.012em;
       font-weight: 500;
       text-wrap: balance;
-    }
-
-    .hero-mark {
-      display: inline-grid;
-      place-items: center;
-      vertical-align: -0.09em;
-      margin-right: 10px;
-      color: var(--accent);
-    }
-
-    .hero-mark svg {
-      width: 0.85em;
-      height: 0.85em;
-      stroke-width: 2.6;
     }
 
     .hero-copy {
@@ -1139,18 +1125,104 @@
       font-weight: 500;
     }
 
-    .side-sort select {
-      min-height: 30px;
-      padding: 0 26px 0 8px;
-      font-size: 0.82rem;
-      background-color: transparent;
-      border-color: var(--line);
-      color: var(--muted);
+    /* Chromium draws a native select's dropdown itself and ignores the option
+       colors we set below, so on Windows the list came out on a white popup our
+       light --text was unreadable against. The real <select> stays as the source
+       of truth but is hidden (same trick as #entryKind), and these rules draw the
+       popup on the app's own palette. */
+    .side-sort-menu {
+      position: relative;
+      min-width: 0;
     }
 
-    .side-sort select:hover {
+    .sort-trigger {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      width: 100%;
+      min-height: 30px;
+      padding: 0 8px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--muted);
+      font: inherit;
+      font-size: 0.82rem;
+      text-align: left;
+      cursor: pointer;
+      transition: color var(--motion-fast) ease, border-color var(--motion-fast) ease, background-color var(--motion-fast) ease;
+    }
+
+    .sort-trigger:hover,
+    .sort-trigger[aria-expanded="true"] {
       color: var(--text);
       border-color: var(--line-strong);
+      background: var(--hover);
+    }
+
+    .sort-trigger-value {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .sort-trigger svg {
+      width: 14px;
+      height: 14px;
+      flex: 0 0 auto;
+      color: var(--soft);
+      transition: transform var(--motion-fast) ease;
+    }
+
+    .sort-trigger[aria-expanded="true"] svg {
+      transform: rotate(180deg);
+    }
+
+    .sort-list {
+      position: absolute;
+      z-index: 50;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      display: grid;
+      gap: 1px;
+      padding: 4px;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-sm);
+      background: var(--panel-solid);
+      box-shadow: var(--shadow);
+    }
+
+    /* display: grid above would otherwise override the hidden attribute. */
+    .sort-list[hidden] {
+      display: none;
+    }
+
+    .sort-option {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      padding: 6px 8px;
+      border: 0;
+      border-radius: calc(var(--radius-sm) - 2px);
+      background: transparent;
+      color: var(--muted);
+      font: inherit;
+      font-size: 0.82rem;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .sort-option:hover,
+    .sort-option:focus-visible {
+      background: var(--hover);
+      color: var(--text);
+    }
+
+    .sort-option[aria-selected="true"] {
+      color: var(--accent-ink);
+      font-weight: 600;
     }
 
     .source-pill {
@@ -2129,6 +2201,10 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
+      /* Same height budget as .tabmode-sidebar's max-height. Pairing the two
+         means the note panel and the sidebar bottom out on the same line
+         without either having to know the tab strip's height. */
+      min-height: calc(100vh - 32px);
     }
 
     .tabmode-tabstrip {
@@ -2267,7 +2343,7 @@
     }
 
     .tabmode-content {
-      min-height: calc(100vh - 140px);
+      flex: 1;
       border: 1px solid var(--line);
       border-radius: var(--radius-lg);
       background: var(--panel);
@@ -2385,10 +2461,50 @@
       color: var(--text);
     }
 
-    .tabmode-landing-head p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 0.92rem;
+    .tabmode-landing-search {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      width: min(420px, 100%);
+      margin: 2px auto 0;
+      padding: 0 14px;
+      border: 1px solid var(--line-strong);
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--bg) 60%, transparent);
+      transition: border-color var(--motion-fast) ease, box-shadow var(--motion-fast) ease;
+    }
+
+    .tabmode-landing-search:focus-within {
+      border-color: color-mix(in srgb, var(--accent) 42%, var(--line-strong));
+      box-shadow: var(--focus);
+    }
+
+    .tabmode-landing-search svg {
+      width: 15px;
+      height: 15px;
+      color: var(--soft);
+      flex: 0 0 auto;
+    }
+
+    .tabmode-landing-search input {
+      flex: 1;
+      min-width: 0;
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      font-size: 0.95rem;
+      padding: 10px 0;
+      outline: none;
+      min-height: 0;
+    }
+
+    .tabmode-landing-search input:hover,
+    .tabmode-landing-search input:focus,
+    .tabmode-landing-search input:focus-visible {
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+      outline: none;
     }
 
     .tabmode-landing-grid {
@@ -2803,14 +2919,25 @@
             <button class="side-sub-item" type="button" data-kind="process"><i data-lucide="workflow"></i><span>Process</span></button>
             <button class="side-sub-item" type="button" data-kind="image"><i data-lucide="image"></i><span>Images</span></button>
           </div>
-          <label class="side-sort">
-            <span>Sort</span>
-            <select id="sortSelect" aria-label="Sort results">
-              <option value="relevance">Relevance</option>
-              <option value="newest">Newest</option>
-              <option value="title">Title</option>
-            </select>
-          </label>
+          <div class="side-sort">
+            <span id="sortLabel">Sort</span>
+            <div class="side-sort-menu">
+              <button class="sort-trigger" id="sortTrigger" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="sortListbox" aria-labelledby="sortLabel sortTrigger">
+                <span class="sort-trigger-value" id="sortTriggerValue">Relevance</span>
+                <i data-lucide="chevron-down"></i>
+              </button>
+              <div class="sort-list" id="sortListbox" role="listbox" aria-labelledby="sortLabel" hidden>
+                <button class="sort-option" type="button" role="option" data-sort="relevance" aria-selected="true">Relevance</button>
+                <button class="sort-option" type="button" role="option" data-sort="newest" aria-selected="false">Newest</button>
+                <button class="sort-option" type="button" role="option" data-sort="title" aria-selected="false">Title</button>
+              </div>
+              <select id="sortSelect" class="visually-hidden" tabindex="-1" aria-hidden="true">
+                <option value="relevance">Relevance</option>
+                <option value="newest">Newest</option>
+                <option value="title">Title</option>
+              </select>
+            </div>
+          </div>
         </div>
         <button class="side-item" id="favoritesButton" type="button">
           <i data-lucide="star"></i>
@@ -2853,7 +2980,7 @@
   <main>
     <section class="hero app-shell" aria-labelledby="heroTitle">
       <div class="hero-content">
-        <h1 id="heroTitle"><span class="hero-mark" aria-hidden="true"><i data-lucide="sparkles"></i></span>ChatJPGC</h1>
+        <h1 id="heroTitle">ChatJPGC</h1>
         <p class="hero-copy hero-clock" id="heroClock" aria-live="polite">
           <span id="clockDate">&nbsp;</span>
           <span class="hero-sep" aria-hidden="true">·</span>
@@ -3291,6 +3418,7 @@
       tabsOwner: null,
       tabSideQuery: "",
       tabSideKind: "all",
+      tabLandingQuery: "",
       tabSidebarCollapsed: false
     };
 
@@ -3328,6 +3456,10 @@
       // Scoped to the sidebar filter list: result cards also carry data-kind.
       filterButtons: document.querySelectorAll("#filterStack [data-kind]"),
       sortSelect: document.querySelector("#sortSelect"),
+      sortTrigger: document.querySelector("#sortTrigger"),
+      sortTriggerValue: document.querySelector("#sortTriggerValue"),
+      sortListbox: document.querySelector("#sortListbox"),
+      sortOptions: document.querySelectorAll("#sortListbox [data-sort]"),
       workspace: document.querySelector("#workspace"),
       resultsList: document.querySelector("#resultsList"),
       resultsHeading: document.querySelector("#resultsHeading"),
@@ -6068,6 +6200,63 @@
         renderResults();
       });
 
+      // The visible sort listbox writes through to the hidden #sortSelect, which
+      // stays the source of truth and fires the change handler above.
+      const setSortOpen = (open) => {
+        els.sortListbox.hidden = !open;
+        els.sortTrigger.setAttribute("aria-expanded", String(open));
+      };
+
+      const chooseSort = (value) => {
+        const options = Array.from(els.sortOptions);
+        const chosen = options.find((option) => option.dataset.sort === value);
+        if (!chosen) return;
+        els.sortTriggerValue.textContent = chosen.textContent.trim();
+        options.forEach((option) => option.setAttribute("aria-selected", String(option === chosen)));
+        if (els.sortSelect.value !== value) {
+          els.sortSelect.value = value;
+          els.sortSelect.dispatchEvent(new Event("change"));
+        }
+      };
+
+      els.sortTrigger.addEventListener("click", () => setSortOpen(els.sortListbox.hidden));
+
+      els.sortTrigger.addEventListener("keydown", (event) => {
+        if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+        event.preventDefault();
+        setSortOpen(true);
+        const selected = els.sortListbox.querySelector('[aria-selected="true"]');
+        if (selected) selected.focus();
+      });
+
+      els.sortOptions.forEach((option) => {
+        option.addEventListener("click", () => {
+          chooseSort(option.dataset.sort);
+          setSortOpen(false);
+          els.sortTrigger.focus();
+        });
+      });
+
+      els.sortListbox.addEventListener("keydown", (event) => {
+        const options = Array.from(els.sortOptions);
+        const index = options.indexOf(document.activeElement);
+        if (event.key === "Escape") {
+          setSortOpen(false);
+          els.sortTrigger.focus();
+        } else if (index > -1 && (event.key === "ArrowDown" || event.key === "ArrowUp")) {
+          event.preventDefault();
+          const step = event.key === "ArrowDown" ? 1 : -1;
+          options[(index + step + options.length) % options.length].focus();
+        }
+      });
+
+      document.addEventListener("click", (event) => {
+        if (els.sortListbox.hidden) return;
+        if (!event.target.closest(".side-sort-menu")) setSortOpen(false);
+      });
+
+      chooseSort(els.sortSelect.value);
+
       els.entryImageUrl.addEventListener("input", () => {
         renderImagePreview(els.entryImageUrl.value.trim());
       });
@@ -6294,6 +6483,7 @@
       state.activeTabId = "";
       state.tabSideQuery = "";
       state.tabSideKind = "all";
+      state.tabLandingQuery = "";
       resetTabSignatures();
       if (wasShowing) teardownTabModeUI();
 
@@ -6559,11 +6749,17 @@
     }
 
     function renderLandingCards() {
+      const query = state.tabLandingQuery.trim().toLowerCase();
       const rows = tabViewableEntries()
+        .filter((entry) => {
+          if (!query) return true;
+          const hay = `${entry.title || ""} ${normalizeTags(entry.tags).join(" ")} ${entry.body || ""}`.toLowerCase();
+          return hay.includes(query);
+        })
         .sort((a, b) => getTimestamp(b.createdAt) - getTimestamp(a.createdAt));
 
       if (!rows.length) {
-        return `<div class="tabmode-side-empty">No notes yet.</div>`;
+        return `<div class="tabmode-side-empty">${query ? "No notes match your search." : "No notes yet."}</div>`;
       }
 
       return rows.slice(0, 24).map((entry) => {
@@ -6583,7 +6779,10 @@
           <div class="tabmode-landing-head">
             <span class="landing-icon"><i data-lucide="square-pen"></i></span>
             <h2>Open a note</h2>
-            <p>Pick a recent note below, or find one with the sidebar filter.</p>
+            <div class="tabmode-landing-search">
+              <i data-lucide="search"></i>
+              <input id="tabLandingSearch" type="search" autocomplete="off" placeholder="Search notes..." aria-label="Search notes" value="${escapeHtml(state.tabLandingQuery)}" />
+            </div>
           </div>
           <div class="tabmode-landing-grid" id="tabLandingGrid">${renderLandingCards()}</div>
         </div>
@@ -6713,6 +6912,16 @@
         if (!chip) return;
         state.tabSideKind = chip.dataset.tabkind;
         renderTabSidebar();
+      });
+
+      // Delegated: the landing (and its search box) is rebuilt by innerHTML
+      // whenever the tab content re-renders. Only the card grid is repainted on
+      // input, so the field keeps focus and the caret while typing.
+      els.tabContent.addEventListener("input", (event) => {
+        if (!event.target.matches("#tabLandingSearch")) return;
+        state.tabLandingQuery = event.target.value;
+        const grid = els.tabContent.querySelector("#tabLandingGrid");
+        if (grid) grid.innerHTML = renderLandingCards();
       });
 
       els.tabSideList.addEventListener("click", (event) => {
