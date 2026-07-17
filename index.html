@@ -11,6 +11,12 @@
   <link rel="manifest" href="manifest.webmanifest" />
   <meta name="theme-color" content="#262624" />
   <link rel="preconnect" href="https://images.unsplash.com" />
+  <!-- Start the Firebase SDK download while the page is still parsing, rather
+       than when initFirebase() first imports it. Live entries arrive sooner. -->
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js" crossorigin />
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js" crossorigin />
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js" crossorigin />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&family=Lora:ital,wght@0,400..700;1,400..700&display=swap" />
@@ -3738,6 +3744,13 @@
     // migrate from once, for the first user to sign in after this change.
     const TABS_KEY_PREFIX = "promptvault.tabs.v1::";
     const LEGACY_TABS_KEY = "promptvault.tabs.v1";
+    // Firestore's first snapshot cannot arrive until the SDK has downloaded and
+    // auth has resolved, which leaves the workspace empty for a beat on every
+    // load. So each snapshot is also mirrored to localStorage, per account, and
+    // replayed at boot to paint real content on the first frame. The snapshot
+    // then overwrites it moments later.
+    const ENTRIES_CACHE_PREFIX = "promptvault.entriesCache.v1::";
+    const LAST_USER_KEY = "promptvault.lastUser.v1";
     const SAMPLE_TAGS = ["voip", "sms", "sms & voip"];
 
     const seedEntries = [
@@ -3827,6 +3840,9 @@
       tabs: [],
       activeTabId: "",
       tabsOwner: null,
+      // Set while a cached workspace is on screen and auth has not yet confirmed
+      // it; cleared the moment onAuthStateChanged reports the real account.
+      restoredUser: "",
       tabSideQuery: "",
       tabSideKind: "all",
       tabLandingQuery: "",
@@ -4090,6 +4106,78 @@
       }
     }
 
+    // Whether the viewer should see the signed-in library rather than the public
+    // templates. Between boot and auth resolving, a workspace restored from the
+    // cache stands in for currentUser — otherwise the restored notes would paint
+    // as "not available" for the moment it takes the SDK to load.
+    //
+    // Read-side gates (what to list, what to render) use this. Write-side gates
+    // must keep using state.currentUser: only a real, resolved account may save.
+    function viewerSignedIn() {
+      return Boolean(state.currentUser) || Boolean(state.restoredUser);
+    }
+
+    function entriesCacheKey(email) {
+      return email ? ENTRIES_CACHE_PREFIX + email : "";
+    }
+
+    // Who was signed in when this browser last had a snapshot, per localStorage.
+    function lastCachedUser() {
+      try {
+        return (localStorage.getItem(LAST_USER_KEY) || "").toLowerCase();
+      } catch (error) {
+        return "";
+      }
+    }
+
+    // Mirror the latest Firestore snapshot so the next load can paint from it.
+    // Embeddings are dropped: they are large float arrays that would blow the
+    // localStorage quota, and semantic search only runs once the live snapshot
+    // has arrived anyway.
+    function cacheEntriesForUser() {
+      const email = state.currentUser && state.currentUser.email
+        ? String(state.currentUser.email).toLowerCase()
+        : "";
+      const key = entriesCacheKey(email);
+      if (!key) return;
+      try {
+        const payload = JSON.stringify({
+          isAdmin: state.isAdmin,
+          entries: state.entries.map((entry) => Object.assign({}, entry, { embedding: null }))
+        });
+        localStorage.setItem(key, payload);
+        localStorage.setItem(LAST_USER_KEY, email);
+      } catch (error) {
+        // Usually the quota: drop the stale copy rather than leave a half-written
+        // one behind. The app still works, just without the instant first paint.
+        try { localStorage.removeItem(key); } catch (e) {}
+        console.warn("Could not cache entries", error);
+      }
+    }
+
+    function loadCachedEntries(email) {
+      const key = entriesCacheKey(email);
+      if (!key) return null;
+      try {
+        const raw = JSON.parse(localStorage.getItem(key) || "null");
+        if (!raw || !Array.isArray(raw.entries) || !raw.entries.length) return null;
+        return raw;
+      } catch (error) {
+        console.warn("Could not read cached entries", error);
+        return null;
+      }
+    }
+
+    function clearCachedEntries(email) {
+      const key = entriesCacheKey(email);
+      try {
+        if (key) localStorage.removeItem(key);
+        localStorage.removeItem(LAST_USER_KEY);
+      } catch (error) {
+        console.warn("Could not clear cached entries", error);
+      }
+    }
+
     // Favorites are a personal, per-browser preference (entries are shared),
     // so they live in localStorage as a list of entry ids rather than on the
     // shared entry documents.
@@ -4330,7 +4418,7 @@
       const activeTag = state.tagFilter.trim().toLowerCase();
       let rows = state.entries
         .filter((entry) => state.isAdmin || !entry.hidden)
-        .filter((entry) => state.isAdmin || state.currentUser || entry.kind === "template")
+        .filter((entry) => state.isAdmin || viewerSignedIn() || entry.kind === "template")
         .filter((entry) => {
           if (state.kind === "all") return true;
           // Admin-only view of every entry flagged hidden-from-others. The
@@ -4370,7 +4458,7 @@
     }
 
     function syncFilterButtons() {
-      const canSeeAll = Boolean(state.currentUser || state.isAdmin);
+      const canSeeAll = Boolean(viewerSignedIn() || state.isAdmin);
       if (!canSeeAll && state.kind !== "all" && state.kind !== "template" && state.kind !== "favorite") {
         state.kind = "all";
       }
@@ -4464,7 +4552,7 @@
         ? "favorites"
         : state.kind === "hidden"
           ? "hidden entries"
-          : ((state.currentUser || state.isAdmin)
+          : ((viewerSignedIn() || state.isAdmin)
             ? (state.kind === "all" ? "entries" : `${state.kind} entries`)
             : "templates");
 
@@ -4522,7 +4610,7 @@
             ? "Tap the star on any entry to save it here."
             : noHidden
               ? "Use the eye toggle on an entry to hide it from other users."
-              : ((state.currentUser || state.isAdmin) ? "Try another phrase or add a new entry." : "Try another phrase to search public templates.");
+              : ((viewerSignedIn() || state.isAdmin) ? "Try another phrase or add a new entry." : "Try another phrase to search public templates.");
           els.resultsList.innerHTML = `
             <div class="empty-state">
               <div>
@@ -4701,7 +4789,20 @@
         state.provider = new authMod.GoogleAuthProvider();
         state.provider.setCustomParameters({ prompt: "select_account" });
         await authMod.setPersistence(state.auth, authMod.browserLocalPersistence);
-        state.db = fireMod.getFirestore(app);
+        // Keep Firestore's own copy of the collection in IndexedDB. The first
+        // onSnapshot then resolves from disk instead of a network round trip
+        // (and the app keeps working offline). Falls back to the default
+        // memory cache where IndexedDB is unavailable, e.g. private browsing.
+        try {
+          state.db = fireMod.initializeFirestore(app, {
+            localCache: fireMod.persistentLocalCache({
+              tabManager: fireMod.persistentMultipleTabManager()
+            })
+          });
+        } catch (error) {
+          console.warn("Firestore disk cache unavailable", error);
+          state.db = fireMod.getFirestore(app);
+        }
         state.fire = fireMod;
         state.firebaseReady = true;
         setSource("Firebase", "Reading from Firestore collection: " + APP_CONFIG.collectionName);
@@ -4779,6 +4880,7 @@
 
           state.entriesUnsubscribe = fireMod.onSnapshot(knowledgeQuery, (snapshot) => {
             state.entries = snapshotToEntries(snapshot);
+            cacheEntriesForUser();
             render();
             if (mode === "admin") {
               normalizeHiddenFlags(snapshot);
@@ -4811,6 +4913,16 @@
           state.currentUser = user;
           const userEmail = user && user.email ? user.email.toLowerCase() : "";
           state.isAdmin = Boolean(userEmail && adminEmails.includes(userEmail));
+          // Auth has spoken: the optimistic stand-in steps aside, whether it was
+          // right (same account, nothing moves) or wrong (workspace swaps out).
+          state.restoredUser = "";
+          // Signing out retires the cached copy: the next person to open this
+          // browser must not see the previous account's entries painted at boot.
+          if (userEmail) {
+            try { localStorage.setItem(LAST_USER_KEY, userEmail); } catch (e) {}
+          } else {
+            clearCachedEntries(lastCachedUser());
+          }
           subscribeEntries();
           updateAuthUI();
         });
@@ -6969,14 +7081,14 @@
     function tabViewableEntries() {
       return state.entries
         .filter((entry) => state.isAdmin || !entry.hidden)
-        .filter((entry) => state.isAdmin || state.currentUser || entry.kind === "template");
+        .filter((entry) => state.isAdmin || viewerSignedIn() || entry.kind === "template");
     }
 
     function tabEntryVisible(entryId) {
       const entry = tabFindEntry(entryId);
       if (!entry) return false;
       if (!state.isAdmin && entry.hidden) return false;
-      if (!state.isAdmin && !state.currentUser && entry.kind !== "template") return false;
+      if (!state.isAdmin && !viewerSignedIn() && entry.kind !== "template") return false;
       return true;
     }
 
@@ -6987,9 +7099,12 @@
     // The localStorage key for the signed-in user's workspace. Empty while
     // signed out — tab mode is unavailable then, so load/persist are no-ops.
     function tabsStorageKey() {
+      // tabsOwner is the fallback so the workspace restored at boot (before auth
+      // has resolved and set currentUser) still reads and writes the right
+      // account's key. It is cleared on sign-out, so visitors get no key.
       const email = state.currentUser && state.currentUser.email
         ? String(state.currentUser.email).toLowerCase()
-        : "";
+        : (state.tabsOwner || "");
       return email ? TABS_KEY_PREFIX + email : "";
     }
 
@@ -7140,6 +7255,36 @@
         state.tabMode = false; // enterTabMode expects to flip it on
         enterTabMode();
       }
+    }
+
+    // Paint the last signed-in account's workspace from the localStorage mirror,
+    // before Firebase has loaded. Auth then confirms it: same account and
+    // syncTabsForUser is a no-op (nothing flickers), a different one — or none —
+    // and it swaps the workspace out as it always has.
+    function restoreCachedWorkspace() {
+      const email = lastCachedUser();
+      if (!email) return;
+      const cached = loadCachedEntries(email);
+      if (!cached) return;
+
+      state.entries = cached.entries;
+      // Restored so hidden entries do not blink out of an admin's list between
+      // this paint and auth resolving. Nothing is authorised on it: writes still
+      // go through Firestore rules, and updateAuthUI resets it from the token.
+      state.isAdmin = Boolean(cached.isAdmin);
+      state.tabsOwner = email;
+      state.restoredUser = email;
+
+      loadTabsState();
+      if (!state.tabs.find((tab) => tab.id === state.activeTabId)) {
+        state.activeTabId = state.tabs[0] ? state.tabs[0].id : "";
+      }
+      if (!state.tabMode) return;
+
+      document.documentElement.classList.add("signed-in");
+      els.modeToggle.hidden = false;
+      state.tabMode = false; // enterTabMode expects to flip it on
+      enterTabMode();
     }
 
     function openEntryInTab(entryId) {
@@ -7341,7 +7486,7 @@
     }
 
     function renderTabSidebar() {
-      const canSeeAll = Boolean(state.currentUser || state.isAdmin);
+      const canSeeAll = Boolean(viewerSignedIn() || state.isAdmin);
       const kinds = canSeeAll
         ? [["all", "All", "layout-grid"], ["template", "Templates", "copy-check"], ["note", "Notes", "notebook-tabs"], ["process", "Process", "workflow"], ["image", "Images", "image"], ["favorite", "Favorites", "star"]]
         : [["all", "All", "layout-grid"], ["template", "Templates", "copy-check"], ["favorite", "Favorites", "star"]];
@@ -7692,9 +7837,10 @@
       state.entries = loadLocalEntries();
       wireEvents();
       applySearchMode("search");
+      // Replay the last snapshot from localStorage so the workspace is on screen
+      // with its content in the first frame. Auth confirms or replaces it.
+      restoreCachedWorkspace();
       render();
-      // Tab mode is signed-in only, so the workspace is restored per-account by
-      // syncTabsForUser() once auth resolves (via updateAuthUI), not at boot.
       initFirebase();
       window.addEventListener("load", refreshIcons);
     }
