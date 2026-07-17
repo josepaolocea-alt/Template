@@ -1568,13 +1568,223 @@
       line-height: 1.45;
     }
 
-    .entry-detail-body {
+    .drawer-body {
       flex: 1;
       min-height: 0;
       overflow: auto;
       /* The body fills the drawer's height, so its rows must keep their natural
          size instead of stretching to share out the leftover space. */
       align-content: start;
+    }
+
+    /* A form that fills the drawer: only .drawer-body scrolls, so the foot
+       stays pinned to the bottom edge instead of floating mid-drawer. */
+    .drawer-form {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .drawer-form .modal-foot {
+      flex: 0 0 auto;
+    }
+
+    /* ===================================================================
+       Import CSV — drop zone and column reference
+       =================================================================== */
+    .csv-drop {
+      display: grid;
+      justify-items: center;
+      gap: 3px;
+      width: 100%;
+      padding: 26px 18px;
+      border: 1px dashed var(--line-strong);
+      border-radius: var(--radius);
+      background: color-mix(in srgb, var(--bg) 50%, transparent);
+      text-align: center;
+      transition: border-color var(--motion-fast) ease, background var(--motion-fast) ease;
+    }
+
+    /* Dragging a file over the zone reads as the same state as hovering it. */
+    .csv-drop:hover,
+    .csv-drop-wrap.is-dragging .csv-drop {
+      border-color: color-mix(in srgb, var(--accent) 55%, var(--line-strong));
+      background: color-mix(in srgb, var(--accent) 8%, transparent);
+    }
+
+    .csv-drop-icon {
+      display: grid;
+      place-items: center;
+      width: 40px;
+      height: 40px;
+      margin-bottom: 7px;
+      border-radius: 50%;
+      background: color-mix(in srgb, var(--accent) 14%, transparent);
+      color: var(--accent-ink);
+      transition: transform var(--motion-mid) var(--ease-spring);
+    }
+
+    .csv-drop-icon svg {
+      width: 19px;
+      height: 19px;
+      stroke-width: 1.9;
+    }
+
+    .csv-drop:hover .csv-drop-icon,
+    .csv-drop-wrap.is-dragging .csv-drop-icon {
+      transform: translateY(-2px);
+    }
+
+    .csv-drop-title {
+      color: var(--text);
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .csv-drop-hint {
+      color: var(--soft);
+      font-size: 0.86rem;
+    }
+
+    .csv-drop-browse {
+      color: var(--accent-ink);
+      font-weight: 600;
+    }
+
+    .csv-file {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 11px 11px 11px 13px;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      background: color-mix(in srgb, var(--bg) 50%, transparent);
+      animation: rise 220ms var(--ease-out) both;
+    }
+
+    .csv-file-icon {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      flex: 0 0 auto;
+      border-radius: var(--radius-sm);
+      background: color-mix(in srgb, var(--accent) 14%, transparent);
+      color: var(--accent-ink);
+    }
+
+    .csv-file-icon svg {
+      width: 17px;
+      height: 17px;
+      stroke-width: 1.9;
+    }
+
+    .csv-file-meta {
+      display: grid;
+      gap: 1px;
+      /* Lets the long-filename ellipsis actually kick in. */
+      min-width: 0;
+      flex: 1;
+    }
+
+    .csv-file-name {
+      color: var(--text);
+      font-size: 0.94rem;
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .csv-file-size {
+      color: var(--soft);
+      font-size: 0.8rem;
+    }
+
+    .csv-file-clear {
+      width: 32px;
+      height: 32px;
+      border-color: transparent;
+      color: var(--soft);
+    }
+
+    .csv-file-clear:hover {
+      color: var(--text);
+    }
+
+    .csv-guide {
+      display: grid;
+      gap: 9px;
+      padding: 13px 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: color-mix(in srgb, var(--bg) 55%, transparent);
+    }
+
+    .csv-guide-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .csv-guide-title {
+      margin: 0;
+      color: var(--text);
+      font-size: 0.87rem;
+      font-weight: 600;
+    }
+
+    .csv-sample {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--accent-ink);
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .csv-sample:hover {
+      text-decoration: underline;
+    }
+
+    .csv-sample svg {
+      width: 13px;
+      height: 13px;
+      stroke-width: 2;
+    }
+
+    .csv-cols {
+      display: grid;
+      gap: 5px;
+      margin: 0;
+    }
+
+    .csv-col {
+      display: grid;
+      grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    .csv-col dt code {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--text);
+    }
+
+    .csv-col dd {
+      margin: 0;
+      color: var(--soft);
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+
+    .csv-required {
+      color: var(--accent-ink);
+      font-weight: 600;
     }
 
     .entry-detail-text {
@@ -3310,7 +3520,7 @@
         <i data-lucide="x"></i>
       </button>
     </div>
-    <div class="entry-form entry-detail-body">
+    <div class="entry-form drawer-body">
       <div class="tag-row" id="entryDetailMeta"></div>
       <div class="image-preview" id="entryDetailImage" hidden></div>
       <div class="entry-detail-text" id="entryDetailText"></div>
@@ -3318,31 +3528,77 @@
     </div>
   </dialog>
 
-  <dialog class="modal" id="csvDialog">
+  <dialog class="modal drawer" id="csvDialog">
     <div class="modal-head">
       <h2 class="modal-title">Import CSV</h2>
       <button class="icon-button" type="button" id="closeCsvDialog" aria-label="Close">
         <i data-lucide="x"></i>
       </button>
     </div>
-    <form class="entry-form" id="csvForm">
-      <label>
-        CSV file
-        <input id="csvFile" name="csvFile" type="file" accept=".csv,text/csv" required />
-      </label>
+    <form class="drawer-form" id="csvForm">
+      <div class="entry-form drawer-body">
+        <div class="csv-drop-wrap" id="csvDropWrap">
+          <!-- The real input only holds the file: the zone below is what people
+               click, so this stays out of the tab order. No `required` either —
+               a hidden control cannot be focused to show a validation bubble,
+               so importCsvEntries does the empty check and toasts instead. -->
+          <input class="visually-hidden" id="csvFile" name="csvFile" type="file" accept=".csv,text/csv" tabindex="-1" aria-hidden="true" />
+          <button class="csv-drop" type="button" id="csvDropZone">
+            <span class="csv-drop-icon"><i data-lucide="file-up"></i></span>
+            <span class="csv-drop-title">Drop your CSV here</span>
+            <span class="csv-drop-hint">or <span class="csv-drop-browse">browse your files</span></span>
+          </button>
+          <div class="csv-file" id="csvFileCard" hidden>
+            <span class="csv-file-icon"><i data-lucide="file-spreadsheet"></i></span>
+            <span class="csv-file-meta">
+              <strong class="csv-file-name" id="csvFileName"></strong>
+              <span class="csv-file-size" id="csvFileSize"></span>
+            </span>
+            <button class="icon-button csv-file-clear" type="button" id="csvFileClear" aria-label="Remove selected file">
+              <i data-lucide="x"></i>
+            </button>
+          </div>
+        </div>
 
-      <div class="source-pill">
-        <strong>CSV columns</strong><br />
-        <span>title, kind, body, tags, imageUrl, attachmentUrl, attachmentName</span>
-        <a class="button ghost" href="sample-import.csv" download="sample-import.csv">
-          <i data-lucide="download"></i>
-          <span>Download sample CSV</span>
-        </a>
-      </div>
-
-      <div class="source-pill">
-        <strong>Kind values</strong><br />
-        <span>Use template, note, process, or image. Tags can use commas, semicolons, or pipes.</span>
+        <section class="csv-guide">
+          <div class="csv-guide-head">
+            <h3 class="csv-guide-title">Expected columns</h3>
+            <a class="csv-sample" href="sample-import.csv" download="sample-import.csv">
+              <i data-lucide="download"></i>
+              <span>Sample file</span>
+            </a>
+          </div>
+          <dl class="csv-cols">
+            <div class="csv-col">
+              <dt><code>title</code></dt>
+              <dd><span class="csv-required">Required</span></dd>
+            </div>
+            <div class="csv-col">
+              <dt><code>kind</code></dt>
+              <dd>template, note, process, or image</dd>
+            </div>
+            <div class="csv-col">
+              <dt><code>body</code></dt>
+              <dd>The entry text</dd>
+            </div>
+            <div class="csv-col">
+              <dt><code>tags</code></dt>
+              <dd>Commas, semicolons, or pipes</dd>
+            </div>
+            <div class="csv-col">
+              <dt><code>imageUrl</code></dt>
+              <dd>Link to an image</dd>
+            </div>
+            <div class="csv-col">
+              <dt><code>attachmentUrl</code></dt>
+              <dd>Link to a file</dd>
+            </div>
+            <div class="csv-col">
+              <dt><code>attachmentName</code></dt>
+              <dd>Label for that file</dd>
+            </div>
+          </dl>
+        </section>
       </div>
 
       <div class="modal-foot">
@@ -3645,6 +3901,12 @@
       cancelCsvImport: document.querySelector("#cancelCsvImport"),
       csvForm: document.querySelector("#csvForm"),
       csvFile: document.querySelector("#csvFile"),
+      csvDropWrap: document.querySelector("#csvDropWrap"),
+      csvDropZone: document.querySelector("#csvDropZone"),
+      csvFileCard: document.querySelector("#csvFileCard"),
+      csvFileName: document.querySelector("#csvFileName"),
+      csvFileSize: document.querySelector("#csvFileSize"),
+      csvFileClear: document.querySelector("#csvFileClear"),
       importCsv: document.querySelector("#importCsv"),
       imageDialog: document.querySelector("#imageDialog"),
       imageDialogTitle: document.querySelector("#imageDialogTitle"),
@@ -5037,19 +5299,12 @@
       }
 
       refreshIcons();
-      els.entryDetailDialog.classList.remove("is-closing");
-      els.entryDetailDialog.scrollTop = 0;
-      if (typeof els.entryDetailDialog.showModal === "function") {
-        els.entryDetailDialog.showModal();
-      } else {
-        els.entryDetailDialog.setAttribute("open", "");
-      }
+      openDrawerDialog(els.entryDetailDialog);
     }
 
-    // <dialog> has no exit transition of its own, so the drawer slides back out
+    // <dialog> has no exit transition of its own, so a drawer slides back out
     // under a class and only really closes once that animation ends.
-    function closeEntryDetailDialog() {
-      const drawer = els.entryDetailDialog;
+    function closeDrawerDialog(drawer, onClosed) {
       if (!drawer.open || drawer.classList.contains("is-closing")) return;
 
       const finish = () => {
@@ -5057,6 +5312,7 @@
         drawer.removeEventListener("animationend", onEnd);
         drawer.classList.remove("is-closing");
         drawer.close();
+        if (onClosed) onClosed();
       };
       // Animations on the backdrop and on anything inside the drawer bubble up
       // here too, so only the slide-out itself may end the close.
@@ -5067,6 +5323,20 @@
       const closeTimer = window.setTimeout(finish, 400);
       drawer.addEventListener("animationend", onEnd);
       drawer.classList.add("is-closing");
+    }
+
+    function openDrawerDialog(drawer) {
+      drawer.classList.remove("is-closing");
+      drawer.scrollTop = 0;
+      if (typeof drawer.showModal === "function") {
+        drawer.showModal();
+      } else {
+        drawer.setAttribute("open", "");
+      }
+    }
+
+    function closeEntryDetailDialog() {
+      closeDrawerDialog(els.entryDetailDialog);
     }
 
     function askMatchesHtml(matches) {
@@ -5719,17 +5989,49 @@
         return;
       }
 
-      els.csvForm.reset();
-      if (typeof els.csvDialog.showModal === "function") {
-        els.csvDialog.showModal();
-      } else {
-        els.csvDialog.setAttribute("open", "");
-      }
+      resetCsvFile();
+      openDrawerDialog(els.csvDialog);
     }
 
+    // The reset waits for the slide-out to finish: resetting up front would
+    // visibly swap the card back to the drop zone while the drawer is still
+    // on screen.
     function closeCsvDialog() {
+      closeDrawerDialog(els.csvDialog, resetCsvFile);
+    }
+
+    // The drop zone and the picked-file card are the same slot in two states.
+    function renderCsvFile() {
+      const file = els.csvFile.files[0];
+      els.csvDropZone.hidden = Boolean(file);
+      els.csvFileCard.hidden = !file;
+      if (!file) return;
+
+      els.csvFileName.textContent = file.name;
+      els.csvFileSize.textContent = formatBytes(file.size) || "CSV";
+    }
+
+    function resetCsvFile() {
       els.csvForm.reset();
-      els.csvDialog.close();
+      els.csvDropWrap.classList.remove("is-dragging");
+      renderCsvFile();
+    }
+
+    // Dropped files land on the real input, so the submit path stays the same
+    // whether the file was dropped or picked.
+    function assignCsvFile(fileList) {
+      const file = fileList && fileList[0];
+      if (!file) return;
+
+      if (!/\.csv$/i.test(file.name) && file.type !== "text/csv") {
+        showToast("That is not a CSV file.");
+        return;
+      }
+
+      const transfer = new DataTransfer();
+      transfer.items.add(file);
+      els.csvFile.files = transfer.files;
+      renderCsvFile();
     }
 
     function openImageDialog(entryId) {
@@ -6350,6 +6652,39 @@
       });
       els.closeCsvDialog.addEventListener("click", closeCsvDialog);
       els.cancelCsvImport.addEventListener("click", closeCsvDialog);
+      els.csvDropZone.addEventListener("click", () => els.csvFile.click());
+      els.csvFile.addEventListener("change", renderCsvFile);
+      els.csvFileClear.addEventListener("click", () => {
+        resetCsvFile();
+        els.csvDropZone.focus();
+      });
+      // Without preventDefault on dragover the browser just opens the file.
+      els.csvDropWrap.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        els.csvDropWrap.classList.add("is-dragging");
+      });
+      // dragleave also fires when the pointer crosses onto a child element, so
+      // only a leave that truly exits the zone clears the highlight.
+      els.csvDropWrap.addEventListener("dragleave", (event) => {
+        if (!els.csvDropWrap.contains(event.relatedTarget)) {
+          els.csvDropWrap.classList.remove("is-dragging");
+        }
+      });
+      els.csvDropWrap.addEventListener("drop", (event) => {
+        event.preventDefault();
+        els.csvDropWrap.classList.remove("is-dragging");
+        assignCsvFile(event.dataTransfer.files);
+      });
+      els.csvDialog.addEventListener("click", (event) => {
+        if (event.target === els.csvDialog) {
+          closeCsvDialog();
+        }
+      });
+      // Escape would close the drawer instantly; route it through the slide-out.
+      els.csvDialog.addEventListener("cancel", (event) => {
+        event.preventDefault();
+        closeCsvDialog();
+      });
       els.csvForm.addEventListener("submit", importCsvEntries);
       els.closeImageDialog.addEventListener("click", closeImageDialog);
       els.imageDialog.addEventListener("click", (event) => {
