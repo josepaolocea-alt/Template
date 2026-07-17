@@ -1154,6 +1154,14 @@
       font-size: 0.9rem;
     }
 
+    .side-sublist-note {
+      margin: 0;
+      padding: 2px 8px;
+      color: var(--soft);
+      font-size: 0.82rem;
+      line-height: 1.4;
+    }
+
     .side-sort {
       display: grid;
       grid-template-columns: auto minmax(0, 1fr);
@@ -3078,10 +3086,17 @@
           <i data-lucide="upload"></i>
           <span>Import CSV</span>
         </button>
-        <button class="side-item" id="exportButton" type="button" hidden>
+        <button class="side-item" id="exportButton" type="button" aria-expanded="false" aria-controls="exportPanel" hidden>
           <i data-lucide="download"></i>
           <span>Export all</span>
         </button>
+        <div class="side-sublist" id="exportPanel" hidden>
+          <div class="filter-stack">
+            <button class="side-sub-item" type="button" id="exportCsv"><i data-lucide="table"></i><span>Export .csv</span></button>
+            <button class="side-sub-item" type="button" id="exportTxt"><i data-lucide="file-text"></i><span>Export .txt</span></button>
+          </div>
+          <p class="side-sublist-note" id="exportPanelCount"></p>
+        </div>
         <button class="side-item" id="backfillButton" type="button" hidden>
           <i data-lucide="brain"></i>
           <span id="backfillLabel">Backfill embeddings</span>
@@ -3340,31 +3355,6 @@
     </form>
   </dialog>
 
-  <dialog class="modal" id="exportDialog">
-    <div class="modal-head">
-      <h2 class="modal-title">Export all</h2>
-      <button class="icon-button" type="button" id="closeExportDialog" aria-label="Close">
-        <i data-lucide="x"></i>
-      </button>
-    </div>
-    <div class="entry-form">
-      <div class="source-pill">
-        <strong id="exportDialogCount">Choose a format</strong><br />
-        <span>CSV is a spreadsheet file you can re-import. TXT puts every entry into one readable text file.</span>
-      </div>
-      <div class="modal-foot">
-        <button class="button ghost" type="button" id="exportTxt">
-          <i data-lucide="file-text"></i>
-          <span>Export .txt</span>
-        </button>
-        <button class="button primary" type="button" id="exportCsv">
-          <i data-lucide="table"></i>
-          <span>Export .csv</span>
-        </button>
-      </div>
-    </div>
-  </dialog>
-
   <dialog class="modal image-dialog" id="imageDialog">
     <div class="modal-head">
       <h2 class="modal-title" id="imageDialogTitle">Image preview</h2>
@@ -3592,9 +3582,8 @@
       addButton: document.querySelector("#addButton"),
       csvButton: document.querySelector("#csvButton"),
       exportButton: document.querySelector("#exportButton"),
-      exportDialog: document.querySelector("#exportDialog"),
-      exportDialogCount: document.querySelector("#exportDialogCount"),
-      closeExportDialog: document.querySelector("#closeExportDialog"),
+      exportPanel: document.querySelector("#exportPanel"),
+      exportPanelCount: document.querySelector("#exportPanelCount"),
       exportCsv: document.querySelector("#exportCsv"),
       exportTxt: document.querySelector("#exportTxt"),
       backfillButton: document.querySelector("#backfillButton"),
@@ -4393,6 +4382,7 @@
       els.hiddenButton.hidden = !state.isAdmin;
       els.csvButton.hidden = !state.isAdmin;
       els.exportButton.hidden = !state.isAdmin;
+      if (els.exportButton.hidden) toggleExportPanel(false);
       els.backfillButton.hidden = !state.isAdmin || !APP_CONFIG.aiWorkerUrl;
       els.moreMenu.hidden = !signedIn;
       // Signing out hides the tools section: collapse Library so it is not
@@ -5695,31 +5685,32 @@
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
-      closeExportDialog();
+      toggleExportPanel(false);
       showToast(`Exported ${state.entries.length} entries as .${isTxt ? "txt" : "csv"}.`);
     }
 
-    function openExportDialog() {
-      if (!state.isAdmin) {
-        showToast("Admin access is required to export data.");
-        return;
+    // Export expands in place under its sidebar row, the same way Library does,
+    // listing one row per format. Passing no argument flips it.
+    function toggleExportPanel(open) {
+      const show = typeof open === "boolean" ? open : els.exportPanel.hidden;
+
+      if (show) {
+        if (!state.isAdmin) {
+          showToast("Admin access is required to export data.");
+          return;
+        }
+
+        if (!state.entries.length) {
+          showToast("There are no entries to export.");
+          return;
+        }
+
+        const count = state.entries.length;
+        els.exportPanelCount.textContent = `${count} ${count === 1 ? "entry" : "entries"} · CSV re-imports, TXT reads as plain text.`;
       }
 
-      if (!state.entries.length) {
-        showToast("There are no entries to export.");
-        return;
-      }
-
-      els.exportDialogCount.textContent = `Export ${state.entries.length} ${state.entries.length === 1 ? "entry" : "entries"}`;
-      if (typeof els.exportDialog.showModal === "function") {
-        els.exportDialog.showModal();
-      } else {
-        els.exportDialog.setAttribute("open", "");
-      }
-    }
-
-    function closeExportDialog() {
-      els.exportDialog.close();
+      els.exportPanel.hidden = !show;
+      els.exportButton.setAttribute("aria-expanded", String(show));
     }
 
     function openCsvDialog() {
@@ -6340,8 +6331,7 @@
         }
       });
       els.csvButton.addEventListener("click", openCsvDialog);
-      els.exportButton.addEventListener("click", openExportDialog);
-      els.closeExportDialog.addEventListener("click", closeExportDialog);
+      els.exportButton.addEventListener("click", () => toggleExportPanel());
       els.exportCsv.addEventListener("click", () => downloadExport("csv"));
       els.exportTxt.addEventListener("click", () => downloadExport("txt"));
       els.backfillButton.addEventListener("click", backfillEmbeddings);
@@ -7373,10 +7363,10 @@
       document.addEventListener("keydown", (event) => {
         if (event.key === "Escape") setOpen(false);
       });
-      // Picking a sidebar action closes the drawer. Two stay open: the theme
-      // toggle (people flip it to compare) and Library (it expands in place,
-      // so its filters need to remain reachable).
-      const keepsDrawerOpen = ["themeToggle", "libraryButton"];
+      // Picking a sidebar action closes the drawer. Three stay open: the theme
+      // toggle (people flip it to compare), Library and Export all (they expand
+      // in place, so their rows need to remain reachable).
+      const keepsDrawerOpen = ["themeToggle", "libraryButton", "exportButton"];
       sidebar.addEventListener("click", (event) => {
         const control = event.target.closest("button, a");
         if (control && !keepsDrawerOpen.includes(control.id)) setOpen(false);
