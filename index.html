@@ -407,6 +407,16 @@
       color: var(--accent-ink);
     }
 
+    /* These four drive the search view, which the tab workspace hides, so they
+       have nothing to act on while it is open. */
+    .tab-mode-active #tagsButton,
+    .tab-mode-active #libraryButton,
+    .tab-mode-active #favoritesButton,
+    .tab-mode-active #hiddenButton {
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
     .sidebar-foot {
       margin-top: auto;
       padding-top: 14px;
@@ -7035,6 +7045,21 @@
       tabContentSig = null;
     }
 
+    // Tags, Library, Favorites and Hidden entries only act on the search view,
+    // which the tab workspace hides. The dimming is CSS; this keeps them out of
+    // reach of the keyboard too, and folds away any list they had expanded.
+    function setSearchNavInert(inert) {
+      [els.tagsButton, els.libraryButton, els.favoritesButton, els.hiddenButton]
+        .forEach((button) => {
+          button.disabled = inert;
+          button.setAttribute("aria-disabled", String(inert));
+        });
+      if (!inert) return;
+      state.tagsOpen = false;
+      renderTagRow();
+      toggleLibraryPanel(false);
+    }
+
     function enterTabMode() {
       state.tabMode = true;
       if (!state.tabs.length) {
@@ -7050,6 +7075,7 @@
       els.tabMode.hidden = false;
       els.modeToggle.classList.add("is-active");
       els.modeToggle.setAttribute("aria-pressed", "true");
+      setSearchNavInert(true);
       resetTabSignatures();
       persistTabsState();
       renderTabMode();
@@ -7064,6 +7090,7 @@
       els.tabMode.hidden = true;
       els.modeToggle.classList.remove("is-active");
       els.modeToggle.setAttribute("aria-pressed", "false");
+      setSearchNavInert(false);
     }
 
     function exitTabMode() {
