@@ -1564,6 +1564,9 @@
       flex: 1;
       min-height: 0;
       overflow: auto;
+      /* The body fills the drawer's height, so its rows must keep their natural
+         size instead of stretching to share out the leftover space. */
+      align-content: start;
     }
 
     .entry-detail-text {
