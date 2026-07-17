@@ -744,7 +744,8 @@
 
     .promptbar {
       display: grid;
-      grid-template-columns: 52px minmax(0, 1fr) 56px;
+      /* The clear button's column collapses to 0 while it is hidden. */
+      grid-template-columns: 52px minmax(0, 1fr) auto 56px;
       align-items: center;
       min-height: 68px;
     }
@@ -790,6 +791,40 @@
     /* Clear the native search-field cancel button; the design supplies its own controls. */
     .promptbar input::-webkit-search-cancel-button {
       -webkit-appearance: none;
+    }
+
+    /* .icon-button sets a display, which would otherwise beat the UA's
+       [hidden] rule and leave the button's grid column taking up space. */
+    .search-clear[hidden] {
+      display: none;
+    }
+
+    /* Both buttons are pinned: without this the submit button falls back into
+       the clear button's column whenever the clear button is hidden. */
+    .submit-search {
+      grid-column: 4;
+    }
+
+    .search-clear {
+      grid-column: 3;
+      width: 32px;
+      height: 32px;
+      margin-right: 4px;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--soft);
+      animation: fadeIn 140ms ease both;
+    }
+
+    .search-clear:hover {
+      background: var(--hover);
+      color: var(--text);
+    }
+
+    .search-clear svg {
+      width: 16px;
+      height: 16px;
     }
 
     .submit-search {
@@ -1268,6 +1303,39 @@
       animation: modalIn 240ms var(--ease-out) both;
     }
 
+    /* A drawer opens against the right edge rather than the middle of the
+       screen, so reading an ask-AI match keeps the results list in view. */
+    .modal.drawer {
+      width: min(480px, 100%);
+      height: 100%;
+      /* The dialog UA styles inset a modal from the viewport; the drawer sets
+         its own edges instead, so it can sit flush and fill the height. */
+      max-width: 100%;
+      max-height: 100%;
+      margin: 0 0 0 auto;
+      display: flex;
+      flex-direction: column;
+      border-width: 0 0 0 1px;
+      border-radius: 0;
+      overflow: hidden;
+    }
+
+    .modal.drawer[open] {
+      animation: drawerIn 320ms var(--ease-out) both;
+    }
+
+    .modal.drawer.is-closing {
+      animation: drawerOut 200ms ease both;
+    }
+
+    .modal.drawer.is-closing::backdrop {
+      animation: fadeOut 200ms ease both;
+    }
+
+    .modal.drawer .modal-head {
+      flex: 0 0 auto;
+    }
+
     .modal::backdrop {
       background: rgba(0, 0, 0, 0.55);
       backdrop-filter: blur(3px);
@@ -1490,9 +1558,9 @@
     }
 
     .entry-detail-body {
-      max-height: min(56vh, 520px);
+      flex: 1;
+      min-height: 0;
       overflow: auto;
-      padding-right: 4px;
     }
 
     .entry-detail-text {
@@ -2596,6 +2664,11 @@
     /* ===================================================================
        Motion
        =================================================================== */
+    @keyframes fadeOut {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+
     @keyframes fadeIn {
       from { opacity: 0; }
       to { opacity: 1; }
@@ -2619,6 +2692,16 @@
     @keyframes modalIn {
       from { opacity: 0; transform: translateY(14px) scale(0.98); }
       to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes drawerIn {
+      from { transform: translateX(100%); }
+      to { transform: translateX(0); }
+    }
+
+    @keyframes drawerOut {
+      from { transform: translateX(0); }
+      to { transform: translateX(100%); }
     }
 
     /* Signed in: skip entrance animations so daily use feels instant. */
@@ -2768,8 +2851,14 @@
       }
 
       .promptbar {
-        grid-template-columns: 44px minmax(0, 1fr) 50px;
+        grid-template-columns: 44px minmax(0, 1fr) auto 50px;
         min-height: 58px;
+      }
+
+      .search-clear {
+        width: 30px;
+        height: 30px;
+        margin-right: 2px;
       }
 
       /* Both out-specify the bare `input` rule below, so they need their own
@@ -2900,17 +2989,17 @@
     <button class="icon-button" id="sidebarToggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="appSidebar">
       <i data-lucide="menu"></i>
     </button>
-    <a class="brand" href="#" aria-label="PromptVault home">
+    <a class="brand" href="#" aria-label="ChatJPGC home">
       <span class="brand-mark"><i data-lucide="sparkles"></i></span>
-      <span class="brand-name">PromptVault</span>
+      <span class="brand-name">ChatJPGC</span>
     </a>
   </header>
 
   <aside class="sidebar" id="appSidebar" aria-label="Primary navigation">
     <div class="sidebar-head">
-      <a class="brand" href="#" aria-label="PromptVault home">
+      <a class="brand" href="#" aria-label="ChatJPGC home">
         <span class="brand-mark" id="brandMark"><i data-lucide="sparkles" class="brand-mark-icon"></i><span class="brand-mark-initial" id="brandInitial" aria-hidden="true"></span></span>
-        <span class="brand-name">PromptVault</span>
+        <span class="brand-name">ChatJPGC</span>
       </a>
     </div>
 
@@ -3012,7 +3101,7 @@
   <main>
     <section class="hero app-shell" aria-labelledby="heroTitle">
       <div class="hero-content">
-        <h1 id="heroTitle">ChatJPGC</h1>
+        <h1 id="heroTitle">What are you up to?</h1>
         <p class="hero-copy hero-clock" id="heroClock" aria-live="polite">
           <span id="clockDate">&nbsp;</span>
           <span class="hero-sep" aria-hidden="true">·</span>
@@ -3029,6 +3118,9 @@
               <i data-lucide="search"></i>
             </button>
             <input id="searchInput" type="search" autocomplete="off" placeholder="Ask for a note, template, image, or phrase..." />
+            <button class="icon-button search-clear" id="searchClearButton" type="button" aria-label="Clear search" hidden>
+              <i data-lucide="x"></i>
+            </button>
             <button class="icon-button submit-search" id="searchSubmitButton" type="submit" aria-label="Search">
               <i data-lucide="arrow-up"></i>
             </button>
@@ -3190,7 +3282,7 @@
     </section>
   </main>
 
-  <dialog class="modal" id="entryDetailDialog">
+  <dialog class="modal drawer" id="entryDetailDialog">
     <div class="modal-head">
       <h2 class="modal-title" id="entryDetailTitle">Entry details</h2>
       <button class="icon-button" type="button" id="closeEntryDetailDialog" aria-label="Close entry details">
@@ -3503,6 +3595,7 @@
       backfillLabel: document.querySelector("#backfillLabel"),
       searchForm: document.querySelector("#searchForm"),
       searchInput: document.querySelector("#searchInput"),
+      searchClearButton: document.querySelector("#searchClearButton"),
       searchModeButton: document.querySelector("#searchModeButton"),
       searchSubmitButton: document.querySelector("#searchSubmitButton"),
       tagsButton: document.querySelector("#tagsButton"),
@@ -4077,6 +4170,7 @@
       if (state.composeOpen) closeEntryDialog();
       applySearchMode("search");
       els.searchInput.value = cleanTag;
+      syncSearchClear();
       state.query = cleanTag;
       state.tagFilter = cleanTag.toLowerCase();
       state.kind = "all";
@@ -4618,6 +4712,17 @@
       return Boolean(state.currentUser) && Boolean(APP_CONFIG.aiWorkerUrl);
     }
 
+    // The clear button only earns its place in the prompt bar when there is
+    // text to clear; its grid column collapses while it is hidden.
+    function syncSearchClear() {
+      els.searchClearButton.hidden = els.searchInput.value.length === 0;
+    }
+
+    function resetSearchInput() {
+      els.searchInput.value = "";
+      syncSearchClear();
+    }
+
     function applySearchMode(mode) {
       const key = SEARCH_MODES[mode] ? mode : "search";
       const conf = SEARCH_MODES[key];
@@ -4936,6 +5041,8 @@
       }
 
       refreshIcons();
+      els.entryDetailDialog.classList.remove("is-closing");
+      els.entryDetailDialog.scrollTop = 0;
       if (typeof els.entryDetailDialog.showModal === "function") {
         els.entryDetailDialog.showModal();
       } else {
@@ -4943,8 +5050,27 @@
       }
     }
 
+    // <dialog> has no exit transition of its own, so the drawer slides back out
+    // under a class and only really closes once that animation ends.
     function closeEntryDetailDialog() {
-      els.entryDetailDialog.close();
+      const drawer = els.entryDetailDialog;
+      if (!drawer.open || drawer.classList.contains("is-closing")) return;
+
+      const finish = () => {
+        window.clearTimeout(closeTimer);
+        drawer.removeEventListener("animationend", onEnd);
+        drawer.classList.remove("is-closing");
+        drawer.close();
+      };
+      // Animations on the backdrop and on anything inside the drawer bubble up
+      // here too, so only the slide-out itself may end the close.
+      const onEnd = (event) => {
+        if (event.animationName === "drawerOut") finish();
+      };
+      // Backstop: if the animation never fires, the drawer still closes.
+      const closeTimer = window.setTimeout(finish, 400);
+      drawer.addEventListener("animationend", onEnd);
+      drawer.classList.add("is-closing");
     }
 
     function askMatchesHtml(matches) {
@@ -6105,7 +6231,7 @@
         state.query = "";
         state.tagFilter = "";
         state.browseMode = true;
-        els.searchInput.value = "";
+        resetSearchInput();
         syncFilterButtons();
         renderResults();
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -6118,7 +6244,7 @@
         state.query = "";
         state.tagFilter = "";
         state.browseMode = true;
-        els.searchInput.value = "";
+        resetSearchInput();
         syncFilterButtons();
         renderResults();
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -6134,7 +6260,7 @@
         state.kind = "all";
         state.tagFilter = "";
         state.browseMode = false;
-        els.searchInput.value = "";
+        resetSearchInput();
         syncFilterButtons();
         renderResults();
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -6191,6 +6317,11 @@
         if (event.target === els.entryDetailDialog) {
           closeEntryDetailDialog();
         }
+      });
+      // Escape would close the drawer instantly; route it through the slide-out.
+      els.entryDetailDialog.addEventListener("cancel", (event) => {
+        event.preventDefault();
+        closeEntryDetailDialog();
       });
       els.entryDetailActions.addEventListener("click", (event) => {
         const target = event.target.closest("[data-detail-action]");
@@ -6284,9 +6415,23 @@
         }
       });
 
+      // Clearing always drops the query too, so the results follow the empty
+      // bar instead of lingering on the last search.
+      els.searchClearButton.addEventListener("click", () => {
+        window.clearTimeout(searchTimer);
+        resetSearchInput();
+        if (state.searchMode === "search") {
+          state.query = "";
+          state.tagFilter = "";
+          renderResults();
+        }
+        els.searchInput.focus();
+      });
+
       // Live filtering only applies to search mode; the AI modes run on submit.
       els.searchInput.addEventListener("input", () => {
         window.clearTimeout(searchTimer);
+        syncSearchClear();
         if (state.searchMode !== "search") return;
         searchTimer = window.setTimeout(() => {
           state.query = els.searchInput.value;
@@ -6314,7 +6459,7 @@
           state.query = "";
           state.tagFilter = "";
           state.browseMode = true;
-          els.searchInput.value = "";
+          resetSearchInput();
           syncFilterButtons();
           renderResults();
           window.scrollTo({ top: 0, behavior: "smooth" });
@@ -6326,7 +6471,7 @@
         state.kind = "all";
         state.tagFilter = "";
         state.browseMode = false;
-        els.searchInput.value = "";
+        resetSearchInput();
         syncFilterButtons();
         renderResults();
       });
