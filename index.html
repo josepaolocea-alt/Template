@@ -3818,6 +3818,12 @@
       tagsOpen: false,
       searchMode: "search",
       aiBusy: false,
+      // Semantic search state: the query we last embedded, its vector, and an
+      // in-flight flag. The main Search box blends cosine similarity against
+      // these into keyword ranking when they match the current query.
+      semanticQuery: "",
+      semanticVector: null,
+      semanticBusy: false,
       composeOpen: false,
       lastAskAnswer: null,
       lastGenerated: null,
@@ -4372,6 +4378,32 @@
         .filter(Boolean);
     }
 
+    // Loose term matching so a plural query still finds a singular note (and
+    // vice-versa): "invoices" matches "invoice", "policies" matches "policy".
+    // Kept deliberately small — just the common English plural suffixes, no full
+    // stemmer — so it stays predictable and never over-matches on short stems.
+    function termVariants(term) {
+      const variants = new Set([term]);
+      if (term.length > 3) {
+        if (term.endsWith("ies")) variants.add(term.slice(0, -3) + "y");
+        if (term.endsWith("es")) variants.add(term.slice(0, -2));
+        if (term.endsWith("s")) variants.add(term.slice(0, -1));
+        variants.add(term + "s");
+      }
+      return [...variants];
+    }
+
+    function fieldHasTerm(field, term) {
+      // The term itself matches at any length (keeps short words like "up" working).
+      if (field.includes(term)) return true;
+      // Derived plural/singular variants must be reasonably long, so a stem never
+      // over-matches on a 1-2 letter fragment.
+      for (const variant of termVariants(term)) {
+        if (variant !== term && variant.length >= 3 && field.includes(variant)) return true;
+      }
+      return false;
+    }
+
     function scoreEntry(entry, terms, rawQuery) {
       if (!rawQuery) return { score: 1, matchedTerms: 0 };
 
@@ -4402,10 +4434,10 @@
       // matches still surface, but can never overpower a true phrase match.
       for (const term of terms) {
         let hit = false;
-        if (title.includes(term)) { score += 18; hit = true; }
-        if (tags.includes(term)) { score += 14; hit = true; }
-        if (body.includes(term)) { score += 8; hit = true; }
-        if (kind.includes(term)) { score += 5; hit = true; }
+        if (fieldHasTerm(title, term)) { score += 18; hit = true; }
+        if (fieldHasTerm(tags, term)) { score += 14; hit = true; }
+        if (fieldHasTerm(body, term)) { score += 8; hit = true; }
+        if (fieldHasTerm(kind, term)) { score += 5; hit = true; }
         if (hit) matchedTerms += 1;
       }
 
@@ -4416,6 +4448,11 @@
       const rawQuery = state.query.trim();
       const terms = tokenize(rawQuery);
       const activeTag = state.tagFilter.trim().toLowerCase();
+      // Semantic ranking only applies when we hold a query vector for the exact
+      // query on screen (fetched on submit). Otherwise this is pure keyword search.
+      const semanticActive = Boolean(
+        rawQuery && state.semanticVector && state.semanticQuery === rawQuery
+      );
       let rows = state.entries
         .filter((entry) => state.isAdmin || !entry.hidden)
         .filter((entry) => state.isAdmin || viewerSignedIn() || entry.kind === "template")
@@ -4432,12 +4469,27 @@
         .filter((entry) => !activeTag || normalizeTags(entry.tags).some((tag) => tag.toLowerCase() === activeTag))
         .map((entry) => {
           const { score, matchedTerms } = scoreEntry(entry, terms, rawQuery);
-          return { entry, score, matchedTerms };
+          // Blend embedding similarity into the keyword score so notes that match
+          // by meaning (not shared words) rise. Scaled so a perfect match adds
+          // about as much as a body phrase hit — never enough to top an exact title.
+          let semanticScore = 0;
+          let finalScore = score;
+          if (semanticActive && Array.isArray(entry.embedding) && entry.embedding.length) {
+            semanticScore = cosineSimilarity(state.semanticVector, entry.embedding);
+            finalScore += semanticScore * SEMANTIC_WEIGHT;
+          }
+          return { entry, score: finalScore, matchedTerms, semanticScore };
         })
         // AND matching: when the user types several words, an entry must contain
         // every one of them (in any field) before it shows. A single weak hit is
-        // no longer enough — searching "silver goose" needs both "silver" and "goose".
-        .filter((row) => !rawQuery || row.matchedTerms === terms.length);
+        // no longer enough — searching "silver goose" needs both "silver" and
+        // "goose". A strong semantic match is the one exception: it may surface
+        // even without every keyword, since it matches the query's meaning.
+        .filter((row) =>
+          !rawQuery ||
+          row.matchedTerms === terms.length ||
+          (semanticActive && row.semanticScore >= SEMANTIC_KEEP_THRESHOLD)
+        );
 
       if (state.sort === "relevance") {
         rows.sort((a, b) => {
@@ -4580,7 +4632,10 @@
       } else {
         els.resultsHeading.textContent = "All entries";
       }
-      els.resultsMeta.textContent = `${rows.length} ${kindLabel} found`;
+      const semanticOn = Boolean(
+        state.query.trim() && state.semanticVector && state.semanticQuery === state.query.trim()
+      );
+      els.resultsMeta.textContent = `${rows.length} ${kindLabel} found${semanticOn ? " · AI-ranked" : ""}`;
 
       // Signature of everything that affects the rendered cards. Firestore's
       // onSnapshot fires more than once (cache snapshot, server snapshot, and
@@ -4882,6 +4937,8 @@
             state.entries = snapshotToEntries(snapshot);
             cacheEntriesForUser();
             render();
+            // A deep link may have been waiting for its entry to load.
+            if (pendingEntryHash) openEntryFromHash();
             if (mode === "admin") {
               normalizeHiddenFlags(snapshot);
             }
@@ -5269,6 +5326,50 @@
     const ASK_MAX_RESULTS = 5;
     const ASK_SNIPPET_LENGTH = 180;
 
+    // How much a perfect embedding match (similarity 1.0) adds to an entry's
+    // keyword score, and the minimum similarity for a semantic-only match (no
+    // shared keywords) to appear at all. Tuned so meaning-based matches surface
+    // above scattered weak keyword hits but never above an exact title match.
+    const SEMANTIC_WEIGHT = 300;
+    const SEMANTIC_KEEP_THRESHOLD = 0.55;
+    // Guards against a slow embedding response overwriting a newer query's result.
+    let semanticSeq = 0;
+
+    // Embed the current query once (on submit) so getVisibleEntries can blend
+    // cosine similarity into the ranking. Signed-out visitors, offline users, and
+    // libraries with no embeddings simply keep keyword-only results.
+    async function updateSemanticQuery() {
+      const query = state.query.trim();
+      const hasEmbeddings = state.entries.some(
+        (entry) => Array.isArray(entry.embedding) && entry.embedding.length > 0
+      );
+      if (!aiAvailable() || query.length < 3 || !hasEmbeddings) {
+        state.semanticQuery = "";
+        state.semanticVector = null;
+        return;
+      }
+      // Already have the vector for this exact query — nothing to fetch.
+      if (state.semanticQuery === query && state.semanticVector) return;
+
+      const seq = ++semanticSeq;
+      state.semanticBusy = true;
+      try {
+        const { embedding } = await fetchEmbedding(query);
+        if (seq !== semanticSeq) return; // a newer query superseded this one
+        state.semanticVector = embedding;
+        state.semanticQuery = query;
+        renderResults();
+      } catch (error) {
+        console.warn("Semantic search unavailable, using keyword only", error);
+        if (seq === semanticSeq) {
+          state.semanticVector = null;
+          state.semanticQuery = "";
+        }
+      } finally {
+        if (seq === semanticSeq) state.semanticBusy = false;
+      }
+    }
+
     async function fetchAnswer(question, sources) {
       if (!APP_CONFIG.aiWorkerUrl) {
         throw new Error("AI worker URL is not configured.");
@@ -5301,12 +5402,33 @@
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !Array.isArray(data.embedding)) {
-        throw new Error(data.error || `HTTP ${response.status}`);
+        const error = new Error(data.error || `HTTP ${response.status}`);
+        // Surface the HTTP status so callers (e.g. backfill) can back off on 429.
+        error.status = response.status;
+        throw error;
       }
       return {
         embedding: data.embedding,
         model: data.model || "@cf/baai/bge-base-en-v1.5"
       };
+    }
+
+    // Generate an embedding for a just-saved entry and merge it into the stored
+    // document, without blocking the save. Failures are non-fatal: the entry is
+    // already saved, and an admin can re-run "Backfill embeddings" later.
+    async function embedEntryInBackground(docRef, entry) {
+      const text = buildEmbeddingText(entry);
+      if (!text.trim()) return;
+      try {
+        const { embedding, model } = await fetchEmbedding(text);
+        await state.fire.updateDoc(docRef, {
+          embedding,
+          embeddingModel: model,
+          embeddedAt: state.fire.serverTimestamp()
+        });
+      } catch (error) {
+        console.warn("Background embedding failed for entry", docRef && docRef.id, error);
+      }
     }
 
     async function backfillEmbeddings() {
@@ -5349,20 +5471,34 @@
           failed++;
           continue;
         }
-        try {
-          const { embedding, model } = await fetchEmbedding(text);
-          const docRef = state.fire.doc(state.db, APP_CONFIG.collectionName, entry.id);
-          await state.fire.updateDoc(docRef, {
-            embedding,
-            embeddingModel: model,
-            embeddedAt: state.fire.serverTimestamp()
-          });
-          done++;
-        } catch (error) {
-          console.warn("Failed to embed entry", entry.id, error);
-          failed++;
+        // One retry with a longer pause if the Worker's embed rate limit (429)
+        // kicks in, so a large backfill rides out a brief throttle instead of
+        // dropping entries.
+        for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+            const { embedding, model } = await fetchEmbedding(text);
+            const docRef = state.fire.doc(state.db, APP_CONFIG.collectionName, entry.id);
+            await state.fire.updateDoc(docRef, {
+              embedding,
+              embeddingModel: model,
+              embeddedAt: state.fire.serverTimestamp()
+            });
+            done++;
+            break;
+          } catch (error) {
+            if (error && error.status === 429 && attempt === 0) {
+              els.backfillLabel.textContent = "Rate limited — waiting...";
+              await new Promise((resolve) => setTimeout(resolve, 2500));
+              continue;
+            }
+            console.warn("Failed to embed entry", entry.id, error);
+            failed++;
+            break;
+          }
         }
-        await new Promise((resolve) => setTimeout(resolve, 150));
+        // ~4 requests/second keeps a normal backfill under the Worker's embed
+        // rate limit without the retry above ever firing.
+        await new Promise((resolve) => setTimeout(resolve, 250));
       }
 
       els.backfillLabel.textContent = originalLabel;
@@ -5373,6 +5509,33 @@
           : `Embedded ${done} entries. ${failed} failed — see console.`,
         6500
       );
+    }
+
+    // Deep links: /#entry/<id> opens an entry's detail drawer, so a specific
+    // note can be bookmarked or shared. Entries load asynchronously, so if the
+    // target isn't in memory yet we remember it and open it once entries arrive.
+    let pendingEntryHash = "";
+
+    function entryIdFromHash() {
+      const match = /^#entry\/(.+)$/.exec(window.location.hash || "");
+      return match ? decodeURIComponent(match[1]) : "";
+    }
+
+    function openEntryFromHash() {
+      const id = entryIdFromHash();
+      if (!id) {
+        pendingEntryHash = "";
+        return;
+      }
+      const entry = state.entries.find((item) => String(item.id) === id);
+      if (entry) {
+        pendingEntryHash = "";
+        if (!els.entryDetailDialog.open) openEntryDetailDialog(id);
+      } else {
+        // Not loaded yet (or not visible to this viewer) — retry after the next
+        // entries snapshot.
+        pendingEntryHash = id;
+      }
     }
 
     function openEntryDetailDialog(entryId) {
@@ -5422,6 +5585,10 @@
 
       refreshIcons();
       openDrawerDialog(els.entryDetailDialog);
+      // Reflect the open entry in the URL so it can be bookmarked or shared.
+      // replaceState (not location.hash) avoids re-triggering the hashchange
+      // handler that would otherwise try to re-open the same drawer.
+      window.history.replaceState(null, "", `#entry/${encodeURIComponent(entryId)}`);
     }
 
     // <dialog> has no exit transition of its own, so a drawer slides back out
@@ -5459,6 +5626,10 @@
 
     function closeEntryDetailDialog() {
       closeDrawerDialog(els.entryDetailDialog);
+      // Drop the #entry/<id> deep link so a later refresh doesn't reopen it.
+      if (entryIdFromHash()) {
+        window.history.replaceState(null, "", window.location.pathname + window.location.search);
+      }
     }
 
     function askMatchesHtml(matches) {
@@ -6313,22 +6484,6 @@
             updatedBy: state.currentUser ? state.currentUser.email : "local-admin"
           };
 
-          let embeddingFailed = false;
-          if (APP_CONFIG.aiWorkerUrl) {
-            const embedText = buildEmbeddingText({ title, kind, tags, body });
-            if (embedText.trim()) {
-              try {
-                const { embedding, model } = await fetchEmbedding(embedText);
-                payload.embedding = embedding;
-                payload.embeddingModel = model;
-                payload.embeddedAt = state.fire.serverTimestamp();
-              } catch (error) {
-                console.warn("Embedding generation failed during save", error);
-                embeddingFailed = true;
-              }
-            }
-          }
-
           if (state.editingId) {
             await state.fire.updateDoc(docRef, payload);
           } else {
@@ -6339,8 +6494,11 @@
             });
           }
 
-          if (embeddingFailed) {
-            showToast("Saved, but embedding failed. Run Backfill embeddings later.", 6500);
+          // The embedding (which powers Ask AI and semantic search) is a slow AI
+          // round-trip, so it runs AFTER the entry is written: the save itself is
+          // instant, and the vector is merged in with a second, background write.
+          if (APP_CONFIG.aiWorkerUrl) {
+            embedEntryInBackground(docRef, { title, kind, tags, body });
           }
         } else {
           const localId = state.editingId || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
@@ -6844,6 +7002,9 @@
           state.query = els.searchInput.value;
           state.tagFilter = "";
           renderResults();
+          // Enter/submit also embeds the query and re-ranks by meaning. Live
+          // typing stays keyword-only (below) so we don't embed on every stroke.
+          updateSemanticQuery();
           return;
         }
 
@@ -7828,6 +7989,10 @@
         if (document.querySelector("dialog[open]")) return;
         closeEntryDialog();
       });
+
+      // Editing the URL hash (or following a shared #entry/<id> link) opens the
+      // matching entry.
+      window.addEventListener("hashchange", openEntryFromHash);
     }
 
     function boot() {
@@ -7841,8 +8006,23 @@
       // with its content in the first frame. Auth confirms or replaces it.
       restoreCachedWorkspace();
       render();
+      // Open an entry immediately if the page was loaded on an #entry/<id> link;
+      // if its entry hasn't loaded yet, the Firestore snapshot handler retries.
+      openEntryFromHash();
       initFirebase();
       window.addEventListener("load", refreshIcons);
+      registerServiceWorker();
+    }
+
+    // Register the offline service worker. Only runs in a secure context (https
+    // or localhost); it is a progressive enhancement, so a failure is harmless.
+    function registerServiceWorker() {
+      if (!("serviceWorker" in navigator)) return;
+      window.addEventListener("load", () => {
+        navigator.serviceWorker
+          .register("sw.js")
+          .catch((error) => console.warn("Service worker registration failed", error));
+      });
     }
 
     boot();
