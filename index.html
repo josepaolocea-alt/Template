@@ -714,6 +714,33 @@
       text-wrap: balance;
     }
 
+    /* A quiet bit of life for the Home greeting. JavaScript picks one of
+       these at random every five minutes while the landing view is visible. */
+    #heroTitle[class*="greeting-motion-"] {
+      transform-origin: 50% 60%;
+      will-change: transform, opacity, filter;
+    }
+
+    #heroTitle.greeting-motion-float {
+      animation: greetingFloat 1250ms var(--ease-out) both;
+    }
+
+    #heroTitle.greeting-motion-breathe {
+      animation: greetingBreathe 1400ms ease-in-out both;
+    }
+
+    #heroTitle.greeting-motion-sway {
+      animation: greetingSway 1350ms ease-in-out both;
+    }
+
+    #heroTitle.greeting-motion-focus {
+      animation: greetingFocus 1250ms var(--ease-out) both;
+    }
+
+    #heroTitle.greeting-motion-glow {
+      animation: greetingGlow 1500ms ease-in-out both;
+    }
+
     .hero-copy {
       width: min(620px, 100%);
       margin: 14px auto 0;
@@ -2917,6 +2944,33 @@
     @keyframes rise {
       from { opacity: 0; transform: translateY(12px); }
       to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes greetingFloat {
+      0%, 100% { transform: translateY(0) rotate(0); }
+      38% { transform: translateY(-7px) rotate(-0.35deg); }
+      72% { transform: translateY(2px) rotate(0.2deg); }
+    }
+
+    @keyframes greetingBreathe {
+      0%, 100% { transform: scale(1); }
+      48% { transform: scale(1.035); }
+    }
+
+    @keyframes greetingSway {
+      0%, 100% { transform: translateX(0) rotate(0); }
+      28% { transform: translateX(-5px) rotate(-0.45deg); }
+      62% { transform: translateX(5px) rotate(0.45deg); }
+    }
+
+    @keyframes greetingFocus {
+      0%, 100% { opacity: 1; filter: blur(0); transform: scale(1); }
+      42% { opacity: 0.62; filter: blur(1.5px); transform: scale(0.985); }
+    }
+
+    @keyframes greetingGlow {
+      0%, 100% { text-shadow: 0 0 0 transparent; transform: translateY(0); }
+      50% { text-shadow: 0 4px 22px color-mix(in srgb, var(--accent) 42%, transparent); transform: translateY(-2px); }
     }
 
     @keyframes chipIn {
@@ -8069,6 +8123,50 @@
           setOpen(false);
         });
       });
+    })();
+
+    // Give the Home greeting one randomly selected, smooth motion every five
+    // minutes. The first motion waits for a full interval, and hidden/search
+    // views do not consume a motion or cause one to play in the background.
+    (function () {
+      const title = document.getElementById("heroTitle");
+      if (!title) return;
+
+      const FIVE_MINUTES_MS = 5 * 60 * 1000;
+      const motions = ["float", "breathe", "sway", "focus", "glow"];
+      const motionClasses = motions.map(name => "greeting-motion-" + name);
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+      let previousMotion = -1;
+
+      function homeLandingIsVisible() {
+        const workspace = document.getElementById("workspace");
+        return !document.hidden &&
+          title.getClientRects().length > 0 &&
+          (!workspace || workspace.hidden) &&
+          !document.documentElement.classList.contains("tab-mode-active") &&
+          !document.documentElement.classList.contains("compose-active");
+      }
+
+      function animateGreeting() {
+        if (reduceMotion.matches || !homeLandingIsVisible()) return;
+
+        // Choose among every motion except the one most recently played.
+        const availableMotions = previousMotion >= 0 ? motions.length - 1 : motions.length;
+        let nextMotion = Math.floor(Math.random() * availableMotions);
+        if (previousMotion >= 0 && nextMotion >= previousMotion) nextMotion += 1;
+        previousMotion = nextMotion;
+
+        title.classList.remove(...motionClasses);
+        // Force the class removal to settle so a motion can replay later.
+        void title.offsetWidth;
+        const activeClass = motionClasses[nextMotion];
+        title.classList.add(activeClass);
+        title.addEventListener("animationend", function cleanUp(event) {
+          if (event.target === title) title.classList.remove(activeClass);
+        }, { once: true });
+      }
+
+      setInterval(animateGreeting, FIVE_MINUTES_MS);
     })();
 
     // Live date + time (from the visitor's own device clock) and local weather.
