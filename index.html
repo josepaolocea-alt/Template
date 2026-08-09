@@ -714,8 +714,13 @@
       text-wrap: balance;
     }
 
-    /* A quiet bit of life for the Home greeting. JavaScript picks one of
-       these at random every five minutes while the landing view is visible. */
+    /* Keep the greeting's hover target snug to the visible text. JavaScript
+       picks one of these motions whenever the mouse enters that target. */
+    #heroTitle {
+      display: inline-block;
+      max-width: 100%;
+    }
+
     #heroTitle[class*="greeting-motion-"] {
       transform-origin: 50% 60%;
       will-change: transform, opacity, filter;
@@ -8125,30 +8130,19 @@
       });
     })();
 
-    // Give the Home greeting one randomly selected, smooth motion every five
-    // minutes. The first motion waits for a full interval, and hidden/search
-    // views do not consume a motion or cause one to play in the background.
+    // Give the Home greeting one randomly selected, smooth motion each time
+    // the mouse enters the text. Nothing runs on a timer or in the background.
     (function () {
       const title = document.getElementById("heroTitle");
       if (!title) return;
 
-      const FIVE_MINUTES_MS = 5 * 60 * 1000;
       const motions = ["float", "breathe", "sway", "focus", "glow"];
       const motionClasses = motions.map(name => "greeting-motion-" + name);
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
       let previousMotion = -1;
 
-      function homeLandingIsVisible() {
-        const workspace = document.getElementById("workspace");
-        return !document.hidden &&
-          title.getClientRects().length > 0 &&
-          (!workspace || workspace.hidden) &&
-          !document.documentElement.classList.contains("tab-mode-active") &&
-          !document.documentElement.classList.contains("compose-active");
-      }
-
       function animateGreeting() {
-        if (reduceMotion.matches || !homeLandingIsVisible()) return;
+        if (reduceMotion.matches) return;
 
         // Choose among every motion except the one most recently played.
         const availableMotions = previousMotion >= 0 ? motions.length - 1 : motions.length;
@@ -8166,7 +8160,7 @@
         }, { once: true });
       }
 
-      setInterval(animateGreeting, FIVE_MINUTES_MS);
+      title.addEventListener("mouseenter", animateGreeting);
     })();
 
     // Live date + time (from the visitor's own device clock) and local weather.
