@@ -721,6 +721,21 @@
       max-width: 100%;
     }
 
+    /* Opening greeting: reveal the existing typography with a typewriter
+       cursor. JavaScript measures the rendered heading, so this does not rely
+       on a monospace font or a fixed character width. */
+    #heroTitle.typewriter-animation {
+      width: 0;
+      overflow: hidden;
+      border-right: 2px solid color-mix(in srgb, currentColor 78%, transparent);
+      white-space: nowrap;
+      vertical-align: bottom;
+      will-change: width;
+      animation:
+        greetingTypewriter 3.2s steps(var(--typewriter-steps, 24), end) 450ms both,
+        greetingBlinkingCursor 560ms step-end 450ms infinite;
+    }
+
     #heroTitle[class*="greeting-motion-"] {
       transform-origin: 50% 60%;
       will-change: transform, opacity, filter;
@@ -2951,6 +2966,16 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
+    @keyframes greetingTypewriter {
+      from { width: 0; }
+      to { width: var(--typewriter-width); }
+    }
+
+    @keyframes greetingBlinkingCursor {
+      0%, 49% { border-right-color: color-mix(in srgb, currentColor 78%, transparent); }
+      50%, 100% { border-right-color: transparent; }
+    }
+
     @keyframes greetingFloat {
       0%, 100% { transform: translateY(0) rotate(0); }
       38% { transform: translateY(-7px) rotate(-0.35deg); }
@@ -4891,9 +4916,17 @@
     function updateHeroGreeting() {
       if (!els.heroTitle) return;
       const name = state.currentUser ? String(state.userName || "").trim() : "";
-      els.heroTitle.textContent = name
+      const greeting = name
         ? `What are you up to ${name}?`
         : "What are you up to?";
+      const changed = els.heroTitle.textContent !== greeting;
+      els.heroTitle.textContent = greeting;
+      // Authentication resolves after the first paint. If it adds the saved
+      // browser-local name while the intro is running, restart the reveal with
+      // the final personalized greeting instead of swapping text mid-animation.
+      if (changed && typeof window.playHeroTypewriter === "function") {
+        window.playHeroTypewriter();
+      }
     }
 
     function openUserNameDialog() {
@@ -8235,8 +8268,8 @@
       });
     })();
 
-    // Give the Home greeting one randomly selected, smooth motion each time
-    // the mouse enters the text. Nothing runs on a timer or in the background.
+    // Start with a measured typewriter reveal, then give the Home greeting one
+    // randomly selected smooth motion whenever the mouse enters the text.
     (function () {
       const title = document.getElementById("heroTitle");
       if (!title) return;
@@ -8245,9 +8278,42 @@
       const motionClasses = motions.map(name => "greeting-motion-" + name);
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
       let previousMotion = -1;
+      let typewriterRun = 0;
+
+      function playTypewriter() {
+        typewriterRun += 1;
+        const currentRun = typewriterRun;
+        title.classList.remove("typewriter-animation", ...motionClasses);
+        title.style.removeProperty("--typewriter-width");
+        title.style.removeProperty("--typewriter-steps");
+
+        if (reduceMotion.matches) return;
+
+        // Measure the existing display font at its responsive size, then use
+        // that exact width as the animation target.
+        const availableWidth = title.parentElement ? title.parentElement.clientWidth : title.scrollWidth;
+        const targetWidth = Math.min(Math.ceil(title.getBoundingClientRect().width), availableWidth);
+        title.style.setProperty("--typewriter-width", `${targetWidth}px`);
+        title.style.setProperty("--typewriter-steps", String(Math.max(1, title.textContent.length)));
+        void title.offsetWidth;
+        title.classList.add("typewriter-animation");
+
+        function finishTypewriter(event) {
+          if (event.animationName !== "greetingTypewriter") return;
+          title.removeEventListener("animationend", finishTypewriter);
+          if (currentRun !== typewriterRun) return;
+          title.classList.remove("typewriter-animation");
+          title.style.removeProperty("--typewriter-width");
+          title.style.removeProperty("--typewriter-steps");
+        }
+
+        title.addEventListener("animationend", finishTypewriter);
+      }
+
+      window.playHeroTypewriter = playTypewriter;
 
       function animateGreeting() {
-        if (reduceMotion.matches) return;
+        if (reduceMotion.matches || title.classList.contains("typewriter-animation")) return;
 
         // Choose among every motion except the one most recently played.
         const availableMotions = previousMotion >= 0 ? motions.length - 1 : motions.length;
@@ -8266,6 +8332,7 @@
       }
 
       title.addEventListener("mouseenter", animateGreeting);
+      window.requestAnimationFrame(playTypewriter);
     })();
 
     // Live date + time (from the visitor's own device clock) and local weather.
