@@ -3775,6 +3775,27 @@
     </div>
   </dialog>
 
+  <dialog class="modal" id="userNameDialog" aria-labelledby="userNameDialogTitle">
+    <div class="modal-head">
+      <h2 class="modal-title" id="userNameDialogTitle">What should we call you?</h2>
+    </div>
+    <form class="entry-form" id="userNameForm">
+      <label>
+        Name
+        <input id="userNameInput" name="userName" type="text" autocomplete="name" required maxlength="40" placeholder="e.g. Pao" />
+      </label>
+      <div class="source-pill">
+        <span>This is saved only in this browser, so you will be asked again when you use another browser.</span>
+      </div>
+      <div class="modal-foot">
+        <button class="button primary" type="submit" id="saveUserName">
+          <i data-lucide="check"></i>
+          <span>Save name</span>
+        </button>
+      </div>
+    </form>
+  </dialog>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script type="module">
@@ -3810,6 +3831,7 @@
     // then overwrites it moments later.
     const ENTRIES_CACHE_PREFIX = "promptvault.entriesCache.v1::";
     const LAST_USER_KEY = "promptvault.lastUser.v1";
+    const USER_NAME_KEY_PREFIX = "promptvault.userName.v1::";
     const SAMPLE_TAGS = ["voip", "sms", "sms & voip"];
 
     const seedEntries = [
@@ -3892,6 +3914,7 @@
       editingId: null,
       isAdmin: false,
       currentUser: null,
+      userName: "",
       firebaseReady: false,
       fire: null,
       db: null,
@@ -3916,6 +3939,7 @@
 
     const els = {
       brandInitial: document.querySelector("#brandInitial"),
+      heroTitle: document.querySelector("#heroTitle"),
       themeToggle: document.querySelector("#themeToggle"),
       moreMenu: document.querySelector("#moreMenu"),
       menuPanel: document.querySelector("#menuPanel"),
@@ -4022,6 +4046,10 @@
       authSubmit: document.querySelector("#authSubmit"),
       googleSignInButton: document.querySelector("#googleSignInButton"),
       googleSignInLabel: document.querySelector("#googleSignInLabel"),
+      userNameDialog: document.querySelector("#userNameDialog"),
+      userNameForm: document.querySelector("#userNameForm"),
+      userNameInput: document.querySelector("#userNameInput"),
+      saveUserName: document.querySelector("#saveUserName"),
       toast: document.querySelector("#toast"),
       modeToggle: document.querySelector("#modeToggle"),
       tabMode: document.querySelector("#tabMode"),
@@ -4842,8 +4870,69 @@
       if (state.tabMode) renderTabMode();
     }
 
+    function userNameStorageKey(user = state.currentUser) {
+      if (!user) return "";
+      const identity = user.uid
+        ? String(user.uid).trim()
+        : String(user.email || "").trim().toLowerCase();
+      return identity ? USER_NAME_KEY_PREFIX + encodeURIComponent(identity) : "";
+    }
+
+    function loadUserName(user) {
+      const key = userNameStorageKey(user);
+      if (!key) return "";
+      try {
+        return String(localStorage.getItem(key) || "").trim();
+      } catch (error) {
+        return "";
+      }
+    }
+
+    function updateHeroGreeting() {
+      if (!els.heroTitle) return;
+      const name = state.currentUser ? String(state.userName || "").trim() : "";
+      els.heroTitle.textContent = name
+        ? `What are you up to ${name}?`
+        : "What are you up to?";
+    }
+
+    function openUserNameDialog() {
+      if (!state.currentUser || state.userName || !els.userNameDialog || els.userNameDialog.open) return;
+      els.userNameForm.reset();
+      if (typeof els.userNameDialog.showModal === "function") {
+        els.userNameDialog.showModal();
+      } else {
+        els.userNameDialog.setAttribute("open", "");
+      }
+      window.setTimeout(() => els.userNameInput.focus(), 0);
+    }
+
+    function saveUserName(event) {
+      event.preventDefault();
+      if (!state.currentUser) return;
+
+      const name = els.userNameInput.value.trim().replace(/\s+/g, " ");
+      if (!name) {
+        els.userNameInput.focus();
+        return;
+      }
+
+      const key = userNameStorageKey();
+      try {
+        localStorage.setItem(key, name);
+      } catch (error) {
+        console.warn("Could not save the browser-specific name", error);
+      }
+
+      state.userName = name;
+      updateHeroGreeting();
+      if (els.userNameDialog.open) els.userNameDialog.close();
+      showToast(`Nice to meet you, ${name}.`);
+    }
+
     function updateAuthUI() {
       const signedIn = Boolean(state.currentUser);
+      updateHeroGreeting();
       document.documentElement.classList.toggle("signed-in", signedIn);
       els.addButton.hidden = !signedIn;
       // Signing out takes the AI modes away with it: drop back to plain search
@@ -4866,6 +4955,10 @@
       els.signInButton.hidden = signedIn;
       // Tab mode is a signed-in-only workspace: hide its toggle for visitors.
       els.modeToggle.hidden = !signedIn;
+
+      if (!signedIn && els.userNameDialog && els.userNameDialog.open) {
+        els.userNameDialog.close();
+      }
 
       if (signedIn && els.brandInitial) {
         const source = String(state.currentUser.email || state.currentUser.displayName || "").trim();
@@ -5027,6 +5120,8 @@
           }
 
           state.currentUser = user;
+          state.userName = loadUserName(user);
+          if (user && els.authDialog.open) closeAuthDialog();
           const userEmail = user && user.email ? user.email.toLowerCase() : "";
           state.isAdmin = Boolean(userEmail && adminEmails.includes(userEmail));
           // Auth has spoken: the optimistic stand-in steps aside, whether it was
@@ -5041,6 +5136,11 @@
           }
           subscribeEntries();
           updateAuthUI();
+          if (user && !state.userName) {
+            // Let the sign-in dialog finish closing before opening the required
+            // one-time, browser-local name prompt.
+            window.setTimeout(openUserNameDialog, 0);
+          }
         });
 
       } catch (error) {
@@ -6627,7 +6727,7 @@
 
     function closeAuthDialog() {
       els.authForm.reset();
-      els.authDialog.close();
+      if (els.authDialog.open) els.authDialog.close();
     }
 
     async function signInWithEmail(event) {
@@ -6701,6 +6801,7 @@
       }
 
       state.currentUser = null;
+      state.userName = "";
       state.isAdmin = false;
       updateAuthUI();
       showToast("Signed out.");
@@ -6919,6 +7020,10 @@
           closeAuthDialog();
         }
       });
+      els.userNameForm.addEventListener("submit", saveUserName);
+      // A name is required once per account in this browser; Escape should not
+      // silently dismiss the one-time prompt and leave the greeting unfinished.
+      els.userNameDialog.addEventListener("cancel", (event) => event.preventDefault());
       els.addButton.addEventListener("click", () => openEntryDialog());
 
       els.searchModeButton.addEventListener("click", cycleSearchMode);
