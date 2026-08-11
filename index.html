@@ -717,8 +717,10 @@
     /* Keep the greeting's hover target snug to the visible text. JavaScript
        picks one of these motions whenever the mouse enters that target. */
     #heroTitle {
-      display: inline-block;
+      display: block;
+      width: fit-content;
       max-width: 100%;
+      margin-inline: auto;
     }
 
     /* Opening greeting: reveal the existing typography with a typewriter
