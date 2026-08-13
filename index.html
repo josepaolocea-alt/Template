@@ -143,51 +143,17 @@
       background: color-mix(in srgb, var(--accent) 32%, transparent);
     }
 
-    /* Quiet, thin scrollbars everywhere (Claude-style minimal chrome). The
-       thumb stays invisible until the surface is hovered or actively
-       scrolling; the gutter is always reserved so nothing shifts. Setting
-       scrollbar-width/-color makes Chrome fall back to the native Windows
-       scrollbar (arrow buttons and all) and ignore the rules below, so those
-       properties are scoped to engines without ::-webkit-scrollbar. */
-    @supports not selector(::-webkit-scrollbar) {
-      * {
-        scrollbar-width: thin;
-        scrollbar-color: transparent transparent;
-      }
-      *:hover,
-      *:focus-within {
-        scrollbar-color: color-mix(in srgb, var(--soft) 38%, transparent) transparent;
-      }
+    /* Keep every surface scrollable while hiding all scrollbar chrome. This
+       applies to the page, sidebars, dialogs, tables, fields, and any future
+       overflow container in both Firefox and WebKit/Blink browsers. */
+    * {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
     }
     ::-webkit-scrollbar {
-      width: 10px;
-      height: 10px;
-    }
-    /* Kills the stepper arrows at each end of the track. */
-    ::-webkit-scrollbar-button {
       display: none;
       width: 0;
       height: 0;
-    }
-    ::-webkit-scrollbar-track,
-    ::-webkit-scrollbar-corner {
-      background: transparent;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: transparent;
-      border: 3px solid transparent;
-      background-clip: content-box;
-      border-radius: 99px;
-    }
-    :hover::-webkit-scrollbar-thumb,
-    .is-scrolling::-webkit-scrollbar-thumb {
-      background: color-mix(in srgb, var(--soft) 38%, transparent);
-      background-clip: content-box;
-    }
-    :hover::-webkit-scrollbar-thumb:hover,
-    .is-scrolling::-webkit-scrollbar-thumb:hover {
-      background: color-mix(in srgb, var(--soft) 60%, transparent);
-      background-clip: content-box;
     }
 
     button,
@@ -8499,22 +8465,5 @@
     })();
   </script>
 
-  <script>
-    // Scrollbar auto-hide: CSS keeps the thumb invisible until a surface is
-    // hovered, and this flags whatever is actively scrolling so the thumb also
-    // shows during keyboard/wheel scrolling, then fades out once it settles.
-    (function () {
-      const HIDE_DELAY_MS = 900;
-      const timers = new WeakMap();
-
-      document.addEventListener("scroll", (event) => {
-        const target = event.target === document ? document.documentElement : event.target;
-        if (!target || target.nodeType !== 1) return;
-        target.classList.add("is-scrolling");
-        clearTimeout(timers.get(target));
-        timers.set(target, setTimeout(() => target.classList.remove("is-scrolling"), HIDE_DELAY_MS));
-      }, true);
-    })();
-  </script>
 </body>
 </html>
