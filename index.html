@@ -197,7 +197,7 @@
       z-index: 1;
       margin-left: var(--sidebar-w);
       min-height: 100vh;
-      transition: margin-left var(--sidebar-motion) var(--sidebar-ease);
+      will-change: transform;
     }
 
     .app-shell {
@@ -478,7 +478,7 @@
       .sidebar-minimized .sidebar {
         width: var(--sidebar-minimized-w);
         padding-inline: 10px;
-        overflow-x: hidden;
+        overflow: visible;
       }
 
       .sidebar-minimized .sidebar-head {
@@ -534,8 +534,37 @@
         margin-top: 12px;
       }
 
-      .sidebar-minimized .side-sublist {
+      .sidebar-minimized .side-sublist:not(.compact-flyout) {
         display: none !important;
+      }
+
+      .sidebar-minimized .side-sublist.compact-flyout {
+        position: fixed;
+        z-index: 90;
+        display: grid !important;
+        width: min(248px, calc(100vw - var(--sidebar-minimized-w) - 24px));
+        max-height: min(70vh, 520px);
+        gap: 8px;
+        margin: 0;
+        padding: 10px;
+        overflow: auto;
+        border: 1px solid var(--line-strong);
+        border-radius: var(--radius);
+        background: color-mix(in srgb, var(--panel-solid) 96%, transparent);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(14px);
+        animation: compactFlyoutIn 180ms var(--ease-out) both;
+      }
+
+      .sidebar-minimized .side-sublist.compact-flyout::before {
+        content: attr(data-flyout-label);
+        display: block;
+        padding: 2px 8px 6px;
+        border-bottom: 1px solid var(--line);
+        color: var(--text);
+        font-size: 0.82rem;
+        font-weight: 650;
+        letter-spacing: 0.01em;
       }
 
       .sidebar-minimized .sidebar-foot {
@@ -1402,6 +1431,11 @@
     @keyframes sublistIn {
       from { opacity: 0; transform: translateY(-4px); }
       to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes compactFlyoutIn {
+      from { opacity: 0; transform: translateX(-6px) scale(0.98); }
+      to { opacity: 1; transform: translateX(0) scale(1); }
     }
 
     .filter-stack {
@@ -4278,6 +4312,7 @@
       brandInitial: document.querySelector("#brandInitial"),
       heroTitle: document.querySelector("#heroTitle"),
       themeToggle: document.querySelector("#themeToggle"),
+      sidebar: document.querySelector("#appSidebar"),
       sidebarMinimizeButton: document.querySelector("#sidebarMinimizeButton"),
       sidebarMinimizeTooltip: document.querySelector("#sidebarMinimizeTooltip"),
       moreMenu: document.querySelector("#moreMenu"),
@@ -4704,6 +4739,82 @@
       return document.documentElement.classList.contains("sidebar-minimized");
     }
 
+    function isDesktopCompactSidebar() {
+      return sidebarIsMinimized() && window.matchMedia("(min-width: 921px)").matches;
+    }
+
+    function compactSidebarPanelPairs() {
+      return [
+        [els.tagsButton, els.tagsPanel],
+        [els.libraryButton, els.libraryPanel],
+        [els.exportButton, els.exportPanel]
+      ];
+    }
+
+    function resetCompactSidebarPanel(button, panel, hide = true) {
+      panel.classList.remove("compact-flyout");
+      panel.removeAttribute("data-flyout-label");
+      panel.style.removeProperty("left");
+      panel.style.removeProperty("top");
+      if (hide) panel.hidden = true;
+      button.setAttribute("aria-expanded", String(!hide));
+    }
+
+    function closeCompactSidebarPanels(exceptPanel = null) {
+      compactSidebarPanelPairs().forEach(([button, panel]) => {
+        if (panel === exceptPanel || !panel.classList.contains("compact-flyout")) return;
+        resetCompactSidebarPanel(button, panel);
+        if (panel === els.tagsPanel) state.tagsOpen = false;
+      });
+    }
+
+    function positionCompactSidebarPanel(button, panel) {
+      if (!panel.classList.contains("compact-flyout") || panel.hidden) return;
+      const buttonRect = button.getBoundingClientRect();
+      const sidebarRect = els.sidebar.getBoundingClientRect();
+      const panelRect = panel.getBoundingClientRect();
+      const edge = 10;
+      const left = Math.min(
+        Math.max(sidebarRect.right + 8, buttonRect.right + 10),
+        window.innerWidth - panelRect.width - edge
+      );
+      const top = Math.max(edge, Math.min(
+        buttonRect.top - 8,
+        window.innerHeight - panelRect.height - edge
+      ));
+      panel.style.left = `${Math.round(left)}px`;
+      panel.style.top = `${Math.round(top)}px`;
+    }
+
+    function showCompactSidebarPanel(button, panel, label) {
+      closeCompactSidebarPanels(panel);
+      panel.classList.add("compact-flyout");
+      panel.dataset.flyoutLabel = label;
+      panel.hidden = false;
+      button.setAttribute("aria-expanded", "true");
+      positionCompactSidebarPanel(button, panel);
+    }
+
+    let sidebarContentAnimation = null;
+
+    function animateSidebarContentShift(mainElement, startLeft) {
+      const endLeft = mainElement.getBoundingClientRect().left;
+      const offset = startLeft - endLeft;
+      if (Math.abs(offset) < 1) return;
+      const styles = getComputedStyle(document.documentElement);
+      const duration = Number.parseFloat(styles.getPropertyValue("--sidebar-motion")) || 420;
+      sidebarContentAnimation = mainElement.animate(
+        [
+          { transform: `translateX(${offset}px)` },
+          { transform: "translateX(0)" }
+        ],
+        { duration, easing: "cubic-bezier(0.4, 0, 0.2, 1)" }
+      );
+      sidebarContentAnimation.addEventListener("finish", () => {
+        sidebarContentAnimation = null;
+      }, { once: true });
+    }
+
     function positionSidebarMinimizeTooltip() {
       if (els.sidebarMinimizeTooltip.hidden) return;
       const targetRect = els.sidebarMinimizeButton.getBoundingClientRect();
@@ -4740,6 +4851,20 @@
 
     function setSidebarMinimized(minimized, persist = true) {
       const compact = Boolean(minimized);
+      const mainElement = document.querySelector("main");
+      const animateContent = Boolean(
+        persist &&
+        mainElement &&
+        typeof mainElement.animate === "function" &&
+        window.matchMedia("(min-width: 921px)").matches &&
+        !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      );
+      if (sidebarContentAnimation) {
+        sidebarContentAnimation.cancel();
+        sidebarContentAnimation = null;
+      }
+      const mainStartLeft = animateContent ? mainElement.getBoundingClientRect().left : 0;
+      closeCompactSidebarPanels();
       document.documentElement.classList.toggle("sidebar-minimized", compact);
 
       if (compact) {
@@ -4755,6 +4880,8 @@
         els.sortListbox.hidden = true;
         els.sortTrigger.setAttribute("aria-expanded", "false");
       }
+
+      if (animateContent) animateSidebarContentShift(mainElement, mainStartLeft);
 
       els.sidebarMinimizeButton.setAttribute("aria-pressed", String(compact));
       const sidebarAction = compact ? "Expand sidebar" : "Collapse sidebar";
@@ -4773,16 +4900,19 @@
       refreshIcons();
     }
 
-    function expandSidebarForPanel() {
-      if (sidebarIsMinimized() && window.matchMedia("(min-width: 921px)").matches) {
-        setSidebarMinimized(false);
-      }
-    }
-
     // Library expands in place under its sidebar row, listing the entry
     // filters and the sort control. Passing no argument flips it.
     function toggleLibraryPanel(open) {
       const show = typeof open === "boolean" ? open : els.libraryPanel.hidden;
+      if (isDesktopCompactSidebar()) {
+        if (show) {
+          showCompactSidebarPanel(els.libraryButton, els.libraryPanel, "Library");
+        } else {
+          resetCompactSidebarPanel(els.libraryButton, els.libraryPanel);
+        }
+        return;
+      }
+      resetCompactSidebarPanel(els.libraryButton, els.libraryPanel, !show);
       els.libraryPanel.hidden = !show;
       els.libraryButton.setAttribute("aria-expanded", String(show));
     }
@@ -5053,6 +5183,9 @@
       els.tagsButton.setAttribute("aria-expanded", String(state.tagsOpen));
 
       if (!state.tagsOpen) {
+        if (els.tagsPanel.classList.contains("compact-flyout")) {
+          resetCompactSidebarPanel(els.tagsButton, els.tagsPanel);
+        }
         els.tagsPanel.hidden = true;
         els.tagsPanel.innerHTML = "";
         tagRowSignature = signature;
@@ -5061,6 +5194,9 @@
 
       if (tagRowSignature === signature) {
         els.tagsPanel.hidden = false;
+        if (isDesktopCompactSidebar()) {
+          showCompactSidebarPanel(els.tagsButton, els.tagsPanel, "Tags");
+        }
         return;
       }
 
@@ -5071,6 +5207,9 @@
             return `<button class="side-sub-item tag-sub-item${active ? " active" : ""}" type="button" data-tag="${escapeHtml(tag)}" title="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`;
           }).join("")
         : `<p class="tag-sublist-empty">No tags yet</p>`;
+      if (isDesktopCompactSidebar()) {
+        showCompactSidebarPanel(els.tagsButton, els.tagsPanel, "Tags");
+      }
       tagRowSignature = signature;
     }
 
@@ -6882,6 +7021,15 @@
         els.exportPanelCount.textContent = `${count} ${count === 1 ? "entry" : "entries"} · CSV re-imports, TXT reads as plain text.`;
       }
 
+      if (isDesktopCompactSidebar()) {
+        if (show) {
+          showCompactSidebarPanel(els.exportButton, els.exportPanel, "Export all");
+        } else {
+          resetCompactSidebarPanel(els.exportButton, els.exportPanel);
+        }
+        return;
+      }
+      resetCompactSidebarPanel(els.exportButton, els.exportPanel, !show);
       els.exportPanel.hidden = !show;
       els.exportButton.setAttribute("aria-expanded", String(show));
     }
@@ -7417,13 +7565,21 @@
       els.sidebarMinimizeButton.addEventListener("pointerleave", hideSidebarMinimizeTooltip);
       els.sidebarMinimizeButton.addEventListener("focus", showSidebarMinimizeTooltip);
       els.sidebarMinimizeButton.addEventListener("blur", hideSidebarMinimizeTooltip);
-      window.addEventListener("resize", positionSidebarMinimizeTooltip);
+      window.addEventListener("resize", () => {
+        positionSidebarMinimizeTooltip();
+        if (!isDesktopCompactSidebar()) {
+          closeCompactSidebarPanels();
+          return;
+        }
+        compactSidebarPanelPairs().forEach(([button, panel]) => {
+          positionCompactSidebarPanel(button, panel);
+        });
+      });
       els.sidebarMinimizeButton.addEventListener("click", () => {
         setSidebarMinimized(!sidebarIsMinimized());
         positionSidebarMinimizeTooltip();
       });
       els.libraryButton.addEventListener("click", () => {
-        expandSidebarForPanel();
         toggleLibraryPanel();
       });
       els.favoritesButton.addEventListener("click", () => {
@@ -7548,7 +7704,6 @@
       });
       els.csvButton.addEventListener("click", openCsvDialog);
       els.exportButton.addEventListener("click", () => {
-        expandSidebarForPanel();
         toggleExportPanel();
       });
       els.exportCsv.addEventListener("click", () => downloadExport("csv"));
@@ -7698,9 +7853,23 @@
       });
 
       els.tagsButton.addEventListener("click", () => {
-        expandSidebarForPanel();
         state.tagsOpen = !state.tagsOpen;
         renderTagRow();
+      });
+
+      document.addEventListener("pointerdown", (event) => {
+        if (!isDesktopCompactSidebar()) return;
+        const pairs = compactSidebarPanelPairs();
+        const clickedCompactControl = pairs.some(([button, panel]) => (
+          button.contains(event.target) || panel.contains(event.target)
+        ));
+        if (!clickedCompactControl) closeCompactSidebarPanels();
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && isDesktopCompactSidebar()) {
+          closeCompactSidebarPanels();
+        }
       });
 
       els.filterButtons.forEach((button) => {
