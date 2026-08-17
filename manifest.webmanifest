@@ -2,26 +2,27 @@
   "name": "PromptVault",
   "short_name": "PromptVault",
   "description": "A private notes and templates search app with admin-managed entries.",
-  "start_url": "./",
-  "scope": "./",
+  "id": "/chatjpgc-post-it-app",
+  "start_url": "/?source=post-it-app",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#07090d",
   "theme_color": "#07090d",
   "icons": [
     {
-      "src": "post-it-icon-192.png",
+      "src": "post-it-app-v2-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "post-it-icon-512.png",
+      "src": "post-it-app-v2-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "post-it-icon-maskable-512.png",
+      "src": "post-it-app-v2-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
