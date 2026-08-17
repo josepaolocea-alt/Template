@@ -602,6 +602,34 @@
       background: var(--hover);
     }
 
+    /* This control should read as quiet layout chrome, not as a primary action.
+       Its more-specific rule intentionally follows the shared icon-button skin. */
+    .icon-button.sidebar-minimize-button {
+      width: 28px;
+      height: 28px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--soft);
+      opacity: 0.58;
+      transition: color var(--motion-fast) ease, opacity var(--motion-fast) ease;
+    }
+
+    .icon-button.sidebar-minimize-button:hover,
+    .icon-button.sidebar-minimize-button:active,
+    .icon-button.sidebar-minimize-button:focus-visible {
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      opacity: 0.92;
+    }
+
+    .icon-button.sidebar-minimize-button svg {
+      width: 15px;
+      height: 15px;
+      stroke-width: 1.8;
+    }
+
     .button svg,
     .icon-button svg {
       width: 17px;
@@ -3513,8 +3541,8 @@
         <span class="brand-mark" id="brandMark"><i data-lucide="sparkles" class="brand-mark-icon"></i><span class="brand-mark-initial" id="brandInitial" aria-hidden="true"></span></span>
         <span class="brand-name">ChatJPGC</span>
       </a>
-      <button class="icon-button sidebar-minimize-button" id="sidebarMinimizeButton" type="button" aria-label="Minimize sidebar" aria-pressed="false" title="Minimize sidebar">
-        <i data-lucide="panel-left-close"></i>
+      <button class="icon-button sidebar-minimize-button" id="sidebarMinimizeButton" type="button" aria-label="Collapse navigation" aria-pressed="false" title="Collapse navigation">
+        <i data-lucide="chevron-left"></i>
       </button>
     </div>
 
@@ -4611,9 +4639,9 @@
       }
 
       els.sidebarMinimizeButton.setAttribute("aria-pressed", String(compact));
-      els.sidebarMinimizeButton.setAttribute("aria-label", compact ? "Expand sidebar" : "Minimize sidebar");
-      els.sidebarMinimizeButton.setAttribute("title", compact ? "Expand sidebar" : "Minimize sidebar");
-      els.sidebarMinimizeButton.innerHTML = `<i data-lucide="${compact ? "panel-left-open" : "panel-left-close"}"></i>`;
+      els.sidebarMinimizeButton.setAttribute("aria-label", compact ? "Expand navigation" : "Collapse navigation");
+      els.sidebarMinimizeButton.setAttribute("title", compact ? "Expand navigation" : "Collapse navigation");
+      els.sidebarMinimizeButton.innerHTML = `<i data-lucide="${compact ? "chevron-right" : "chevron-left"}"></i>`;
 
       if (persist) {
         try {
