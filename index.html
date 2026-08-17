@@ -21,6 +21,17 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&family=Lora:ital,wght@0,400..700;1,400..700&display=swap" />
   <script src="https://unpkg.com/lucide@1.24.0/dist/umd/lucide.js" defer></script>
+  <script>
+    // Restore the browser-local desktop sidebar choice before first paint, so
+    // a minimized rail never flashes open while the rest of the app boots.
+    try {
+      if (localStorage.getItem("promptvault.sidebarMinimized.v1") === "true") {
+        document.documentElement.classList.add("sidebar-minimized");
+      }
+    } catch (error) {
+      /* Storage is optional in locked-down/private browser contexts. */
+    }
+  </script>
   <style>
     /* ===================================================================
        PromptVault — Claude-style redesign.
@@ -68,6 +79,7 @@
       --motion-mid: 220ms;
       --motion-slow: 420ms;
       --sidebar-w: 272px;
+      --sidebar-minimized-w: 68px;
       --font-display: "Lora", "Iowan Old Style", Georgia, "Times New Roman", serif;
       --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
       --font-mono: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
@@ -183,6 +195,7 @@
       z-index: 1;
       margin-left: var(--sidebar-w);
       min-height: 100vh;
+      transition: margin-left var(--motion-mid) var(--ease-out);
     }
 
     .app-shell {
@@ -207,6 +220,7 @@
       border-right: 1px solid var(--line);
       overflow-y: auto;
       overscroll-behavior: contain;
+      transition: width var(--motion-mid) var(--ease-out), padding var(--motion-mid) var(--ease-out), transform 240ms var(--ease-out);
     }
 
     .sidebar-head {
@@ -215,6 +229,19 @@
       justify-content: space-between;
       gap: 8px;
       padding: 2px 4px 12px;
+    }
+
+    .sidebar-minimize-button {
+      flex: 0 0 auto;
+      width: 30px;
+      height: 30px;
+      border: 0;
+      background: transparent;
+    }
+
+    .sidebar-minimize-button svg {
+      width: 17px;
+      height: 17px;
     }
 
     .brand {
@@ -411,6 +438,72 @@
 
     .sidebar-foot .icon-button:hover {
       background: var(--hover);
+    }
+
+    /* Desktop minimized rail. The navigation remains available as icons while
+       the content area reclaims the unused sidebar width. */
+    @media (min-width: 921px) {
+      .sidebar-minimized main {
+        margin-left: var(--sidebar-minimized-w);
+      }
+
+      .sidebar-minimized .sidebar {
+        width: var(--sidebar-minimized-w);
+        padding-inline: 10px;
+        overflow-x: hidden;
+      }
+
+      .sidebar-minimized .sidebar-head {
+        display: grid;
+        justify-items: center;
+        gap: 7px;
+        padding-inline: 0;
+      }
+
+      .sidebar-minimized .sidebar-head .brand,
+      .sidebar-minimized .side-nav,
+      .sidebar-minimized .side-group,
+      .sidebar-minimized .side-section,
+      .sidebar-minimized .sidebar-foot {
+        width: 100%;
+      }
+
+      .sidebar-minimized .sidebar-head .brand {
+        justify-content: center;
+      }
+
+      .sidebar-minimized .brand-name,
+      .sidebar-minimized .new-note > span:not(.new-note-plus),
+      .sidebar-minimized .side-item > span,
+      .sidebar-minimized .side-label {
+        display: none;
+      }
+
+      .sidebar-minimized .new-note,
+      .sidebar-minimized .side-item {
+        justify-content: center;
+        gap: 0;
+        min-height: 38px;
+        padding-inline: 0;
+        text-align: center;
+      }
+
+      .sidebar-minimized .side-section {
+        margin-top: 12px;
+      }
+
+      .sidebar-minimized .side-sublist {
+        display: none !important;
+      }
+
+      .sidebar-minimized .sidebar-foot {
+        flex-direction: column;
+        gap: 3px;
+      }
+
+      .sidebar-minimized .sidebar-foot .side-item {
+        flex: 0 0 auto;
+      }
     }
 
     /* Mobile top bar + drawer scrim (sidebar slides in under 920px). */
@@ -983,8 +1076,7 @@
     }
 
     .result-card.has-image {
-      grid-template-columns: 176px minmax(0, 1fr);
-      align-items: stretch;
+      grid-template-columns: minmax(0, 1fr);
     }
 
     .result-card.is-hidden {
@@ -993,25 +1085,77 @@
     }
 
     .result-image {
-      min-height: 136px;
+      position: relative;
+      width: 100%;
+      height: 190px;
       overflow: hidden;
       border: 1px solid var(--line);
       border-radius: var(--radius);
-      background: var(--bg-2);
+      background:
+        linear-gradient(135deg, color-mix(in srgb, var(--bg-2) 88%, var(--panel)), var(--bg-2));
       padding: 0;
       cursor: zoom-in;
+      transition: border-color var(--motion-fast) ease, background var(--motion-fast) ease;
     }
 
     .result-image img {
       width: 100%;
       height: 100%;
-      object-fit: cover;
+      object-fit: contain;
       display: block;
-      transition: transform 500ms var(--ease-out);
+      padding: 6px;
+      box-sizing: border-box;
     }
 
-    .result-card:hover .result-image img {
-      transform: scale(1.03);
+    .result-image:hover,
+    .result-image:focus-visible {
+      border-color: var(--line-strong);
+      background: color-mix(in srgb, var(--bg-2) 82%, var(--hover));
+    }
+
+    .result-image-affordance {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 28px;
+      padding: 0 10px;
+      border: 1px solid color-mix(in srgb, var(--line-strong) 70%, transparent);
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--bg) 88%, transparent);
+      color: var(--text);
+      box-shadow: var(--shadow-sm);
+      font-size: 0.76rem;
+      font-weight: 600;
+      opacity: 0;
+      transform: translateY(3px);
+      transition: opacity var(--motion-fast) ease, transform var(--motion-fast) ease;
+      pointer-events: none;
+      backdrop-filter: blur(8px);
+    }
+
+    .result-image-affordance svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .result-image:hover .result-image-affordance,
+    .result-image:focus-visible .result-image-affordance {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .result-content {
+      min-width: 0;
+      display: grid;
+      gap: 14px;
+    }
+
+    .result-card.has-image .result-content {
+      grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
+      align-items: start;
     }
 
     .result-body {
@@ -1049,6 +1193,33 @@
       line-height: 1.62;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
+    }
+
+    .result-card.has-image .result-text {
+      display: -webkit-box;
+      overflow: hidden;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 6;
+      line-clamp: 6;
+      white-space: pre-line;
+    }
+
+    .result-open-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 2px;
+    }
+
+    .result-open-button {
+      min-height: 34px;
+      padding: 0 12px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+    }
+
+    .result-open-button svg {
+      width: 14px;
+      height: 14px;
     }
 
     .search-highlight {
@@ -1557,6 +1728,34 @@
       display: block;
       object-fit: cover;
       border-radius: var(--radius-sm);
+    }
+
+    .modal.drawer.entry-detail-has-image {
+      width: min(720px, 100%);
+    }
+
+    #entryDetailImage {
+      min-height: 220px;
+      padding: 10px;
+      border-style: solid;
+      background: var(--bg-2);
+    }
+
+    #entryDetailImage img {
+      width: 100%;
+      height: auto;
+      max-height: 52vh;
+      object-fit: contain;
+    }
+
+    .entry-detail-image-button {
+      display: block;
+      width: 100%;
+      padding: 0;
+      border: 0;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      cursor: zoom-in;
     }
 
     .hidden-field {
@@ -3063,6 +3262,10 @@
         width: min(300px, 84vw);
       }
 
+      .sidebar-minimize-button {
+        display: none;
+      }
+
       .sidebar-open .sidebar {
         transform: translateX(0);
         box-shadow: var(--shadow);
@@ -3090,13 +3293,8 @@
     }
 
     @media (max-width: 860px) {
-      .result-card.has-image {
-        grid-template-columns: 1fr;
-      }
-
-      .result-image {
-        aspect-ratio: 16 / 9;
-        min-height: 0;
+      .result-card.has-image .result-content {
+        grid-template-columns: minmax(160px, 200px) minmax(0, 1fr);
       }
 
       .tabmode {
@@ -3191,6 +3389,28 @@
         padding: 14px;
         gap: 10px;
         border-radius: var(--radius);
+      }
+
+      .result-card.has-image .result-content {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .result-image {
+        height: min(240px, 52vw);
+      }
+
+      .result-image-affordance {
+        opacity: 1;
+        transform: none;
+      }
+
+      .result-head {
+        display: grid;
+      }
+
+      .result-actions {
+        flex-wrap: wrap;
+        justify-content: flex-end;
       }
 
       .result-head h2 {
@@ -3293,6 +3513,9 @@
         <span class="brand-mark" id="brandMark"><i data-lucide="sparkles" class="brand-mark-icon"></i><span class="brand-mark-initial" id="brandInitial" aria-hidden="true"></span></span>
         <span class="brand-name">ChatJPGC</span>
       </a>
+      <button class="icon-button sidebar-minimize-button" id="sidebarMinimizeButton" type="button" aria-label="Minimize sidebar" aria-pressed="false" title="Minimize sidebar">
+        <i data-lucide="panel-left-close"></i>
+      </button>
     </div>
 
     <button class="new-note" id="addButton" type="button" aria-label="Add data" hidden>
@@ -3810,6 +4033,7 @@
 
     const STORAGE_KEY = "promptvault.entries.v1";
     const THEME_KEY = "promptvault.theme";
+    const SIDEBAR_MINIMIZED_KEY = "promptvault.sidebarMinimized.v1";
     const FAVORITES_KEY = "promptvault.favorites.v1";
     // Tab-mode workspaces are per-account: each signed-in user keeps their own
     // set of open tabs on this device, so one person's choices never sync onto
@@ -3934,6 +4158,7 @@
       brandInitial: document.querySelector("#brandInitial"),
       heroTitle: document.querySelector("#heroTitle"),
       themeToggle: document.querySelector("#themeToggle"),
+      sidebarMinimizeButton: document.querySelector("#sidebarMinimizeButton"),
       moreMenu: document.querySelector("#moreMenu"),
       menuPanel: document.querySelector("#menuPanel"),
       homeButton: document.querySelector("#homeButton"),
@@ -4352,6 +4577,58 @@
       const icon = theme === "dark" ? "sun" : "moon";
       els.themeToggle.innerHTML = `<i data-lucide="${icon}"></i>`;
       refreshIcons();
+    }
+
+    function sidebarIsMinimized() {
+      return document.documentElement.classList.contains("sidebar-minimized");
+    }
+
+    function prepareSidebarTooltips() {
+      document.querySelectorAll("#appSidebar button").forEach((button) => {
+        const label = button.getAttribute("aria-label") || button.textContent.trim().replace(/\s+/g, " ");
+        if (!label) return;
+        if (!button.hasAttribute("aria-label")) button.setAttribute("aria-label", label);
+        if (!button.hasAttribute("title")) button.setAttribute("title", label);
+      });
+    }
+
+    function setSidebarMinimized(minimized, persist = true) {
+      const compact = Boolean(minimized);
+      document.documentElement.classList.toggle("sidebar-minimized", compact);
+
+      if (compact) {
+        // Nested panels need their labels to be useful, so retire them when the
+        // rail becomes icon-only. Selecting their icon expands the rail again.
+        state.tagsOpen = false;
+        els.tagsPanel.hidden = true;
+        els.tagsButton.setAttribute("aria-expanded", "false");
+        els.libraryPanel.hidden = true;
+        els.libraryButton.setAttribute("aria-expanded", "false");
+        els.exportPanel.hidden = true;
+        els.exportButton.setAttribute("aria-expanded", "false");
+        els.sortListbox.hidden = true;
+        els.sortTrigger.setAttribute("aria-expanded", "false");
+      }
+
+      els.sidebarMinimizeButton.setAttribute("aria-pressed", String(compact));
+      els.sidebarMinimizeButton.setAttribute("aria-label", compact ? "Expand sidebar" : "Minimize sidebar");
+      els.sidebarMinimizeButton.setAttribute("title", compact ? "Expand sidebar" : "Minimize sidebar");
+      els.sidebarMinimizeButton.innerHTML = `<i data-lucide="${compact ? "panel-left-open" : "panel-left-close"}"></i>`;
+
+      if (persist) {
+        try {
+          localStorage.setItem(SIDEBAR_MINIMIZED_KEY, String(compact));
+        } catch (error) {
+          console.warn("Could not remember the sidebar layout", error);
+        }
+      }
+      refreshIcons();
+    }
+
+    function expandSidebarForPanel() {
+      if (sidebarIsMinimized() && window.matchMedia("(min-width: 921px)").matches) {
+        setSidebarMinimized(false);
+      }
     }
 
     // Library expands in place under its sidebar row, listing the entry
@@ -4816,38 +5093,50 @@
         const image = entry.imageUrl ? `
           <button class="result-image" type="button" data-action="preview-image" data-id="${escapeHtml(entry.id)}" aria-label="Preview image for ${escapeHtml(entry.title)}">
             <img src="${escapeHtml(entry.imageUrl)}" alt="${escapeHtml(entry.title)}" loading="lazy" />
+            <span class="result-image-affordance"><i data-lucide="maximize-2"></i>View image</span>
           </button>
         ` : "";
 
         const body = entry.body ? `<p class="result-text">${renderBodyHtml(entry.body)}</p>` : `<p class="result-text">Image reference saved without text.</p>`;
+        const openEntryButton = entry.imageUrl ? `
+          <div class="result-open-row">
+            <button class="button ghost result-open-button" type="button" data-action="open-entry" data-id="${escapeHtml(entry.id)}">
+              <i data-lucide="panel-right-open"></i>
+              <span>Open entry</span>
+            </button>
+          </div>
+        ` : "";
 
         return `
           <article class="result-card ${entry.imageUrl ? "has-image" : ""}${entry.hidden ? " is-hidden" : ""}" data-kind="${escapeHtml(entry.kind || "note")}" style="--i:${Math.min(index, 10)}">
-            ${image}
-            <div class="result-body">
-              <div class="result-head">
-                <div>
-                  <h2>${highlightMatches(entry.title)}</h2>
-                  <div class="tag-row" aria-label="Entry metadata">
-                    <span class="tag kind kind-${escapeHtml(kindClass)}">${escapeHtml(entry.kind || "note")}</span>
-                    ${entryTimeTags(entry)}
-                    ${attachmentTag}
-                    ${entry.hidden ? `<span class="tag hidden-tag"><i data-lucide="eye-off"></i>Hidden</span>` : ""}
-                  </div>
-                </div>
-                <div class="result-actions">
-                  ${favoriteButton}
-                  ${hideToggle}
-                  ${adminActions}
-                  ${attachmentActions}
-                  <button class="icon-button tiny-button" type="button" data-action="copy" data-id="${escapeHtml(entry.id)}" aria-label="Copy text">
-                    <i data-lucide="copy"></i>
-                  </button>
+            <div class="result-head">
+              <div>
+                <h2>${highlightMatches(entry.title)}</h2>
+                <div class="tag-row" aria-label="Entry metadata">
+                  <span class="tag kind kind-${escapeHtml(kindClass)}">${escapeHtml(entry.kind || "note")}</span>
+                  ${entryTimeTags(entry)}
+                  ${attachmentTag}
+                  ${entry.hidden ? `<span class="tag hidden-tag"><i data-lucide="eye-off"></i>Hidden</span>` : ""}
                 </div>
               </div>
-              ${body}
-              <div class="tag-row">
-                ${tags.map((tag) => `<button class="tag" type="button" data-action="tag" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`).join("")}
+              <div class="result-actions">
+                ${favoriteButton}
+                ${hideToggle}
+                ${adminActions}
+                ${attachmentActions}
+                <button class="icon-button tiny-button" type="button" data-action="copy" data-id="${escapeHtml(entry.id)}" aria-label="Copy text">
+                  <i data-lucide="copy"></i>
+                </button>
+              </div>
+            </div>
+            <div class="result-content">
+              ${image}
+              <div class="result-body">
+                ${body}
+                <div class="tag-row">
+                  ${tags.map((tag) => `<button class="tag" type="button" data-action="tag" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`).join("")}
+                </div>
+                ${openEntryButton}
               </div>
             </div>
           </article>
@@ -5706,6 +5995,7 @@
       }
 
       const tags = normalizeTags(entry.tags);
+      els.entryDetailDialog.classList.toggle("entry-detail-has-image", Boolean(entry.imageUrl));
       els.entryDetailTitle.textContent = entry.title || "Untitled";
       els.entryDetailMeta.innerHTML = `
         <span class="tag kind kind-${escapeHtml(String(entry.kind || "note").toLowerCase().replace(/[^a-z0-9-]/g, ""))}">${escapeHtml(entry.kind || "note")}</span>
@@ -5717,27 +6007,39 @@
 
       if (entry.imageUrl) {
         els.entryDetailImage.hidden = false;
-        els.entryDetailImage.innerHTML = `<img src="${escapeHtml(entry.imageUrl)}" alt="${escapeHtml(entry.title || "Entry image")}" />`;
+        els.entryDetailImage.innerHTML = `
+          <button class="entry-detail-image-button" type="button" data-detail-action="preview-image" data-id="${escapeHtml(entry.id)}" aria-label="View full image for ${escapeHtml(entry.title || "this entry")}">
+            <img src="${escapeHtml(entry.imageUrl)}" alt="${escapeHtml(entry.title || "Entry image")}" />
+          </button>
+        `;
       } else {
         els.entryDetailImage.hidden = true;
         els.entryDetailImage.innerHTML = "";
       }
 
-      if (entry.attachmentUrl) {
+      const detailImagePreview = entry.imageUrl ? `
+        <button class="button ghost" type="button" data-detail-action="preview-image" data-id="${escapeHtml(entry.id)}">
+          <i data-lucide="maximize-2"></i>
+          <span>View full image</span>
+        </button>
+      ` : "";
+      const detailPreview = entry.attachmentUrl && getDocEmbedUrl(entry.attachmentUrl) ? `
+        <button class="button ghost" type="button" data-detail-action="preview-doc" data-id="${escapeHtml(entry.id)}">
+          <i data-lucide="file-search"></i>
+          <span>Preview attachment</span>
+        </button>
+      ` : "";
+      const detailDownload = entry.attachmentUrl ? `
+        <button class="button ghost" type="button" data-detail-action="download" data-id="${escapeHtml(entry.id)}">
+          <i data-lucide="download"></i>
+          <span>Download attachment</span>
+        </button>
+      ` : "";
+      const detailActions = `${detailImagePreview}${detailPreview}${detailDownload}`;
+
+      if (detailActions) {
         els.entryDetailActions.hidden = false;
-        const detailPreview = getDocEmbedUrl(entry.attachmentUrl) ? `
-          <button class="button ghost" type="button" data-detail-action="preview-doc" data-id="${escapeHtml(entry.id)}">
-            <i data-lucide="file-search"></i>
-            <span>Preview attachment</span>
-          </button>
-        ` : "";
-        els.entryDetailActions.innerHTML = `
-          ${detailPreview}
-          <button class="button ghost" type="button" data-detail-action="download" data-id="${escapeHtml(entry.id)}">
-            <i data-lucide="download"></i>
-            <span>Download attachment</span>
-          </button>
-        `;
+        els.entryDetailActions.innerHTML = detailActions;
       } else {
         els.entryDetailActions.hidden = true;
         els.entryDetailActions.innerHTML = "";
@@ -6963,7 +7265,13 @@
     }
 
     function wireEvents() {
-      els.libraryButton.addEventListener("click", () => toggleLibraryPanel());
+      els.sidebarMinimizeButton.addEventListener("click", () => {
+        setSidebarMinimized(!sidebarIsMinimized());
+      });
+      els.libraryButton.addEventListener("click", () => {
+        expandSidebarForPanel();
+        toggleLibraryPanel();
+      });
       els.favoritesButton.addEventListener("click", () => {
         if (state.composeOpen) closeEntryDialog();
         applySearchMode("search");
@@ -7076,9 +7384,19 @@
         if (target.dataset.detailAction === "preview-doc") {
           openDocPreview(target.dataset.id);
         }
+        if (target.dataset.detailAction === "preview-image") {
+          openImageDialog(target.dataset.id);
+        }
+      });
+      els.entryDetailImage.addEventListener("click", (event) => {
+        const target = event.target.closest('[data-detail-action="preview-image"]');
+        if (target) openImageDialog(target.dataset.id);
       });
       els.csvButton.addEventListener("click", openCsvDialog);
-      els.exportButton.addEventListener("click", () => toggleExportPanel());
+      els.exportButton.addEventListener("click", () => {
+        expandSidebarForPanel();
+        toggleExportPanel();
+      });
       els.exportCsv.addEventListener("click", () => downloadExport("csv"));
       els.exportTxt.addEventListener("click", () => downloadExport("txt"));
       els.backfillButton.addEventListener("click", backfillEmbeddings);
@@ -7226,6 +7544,7 @@
       });
 
       els.tagsButton.addEventListener("click", () => {
+        expandSidebarForPanel();
         state.tagsOpen = !state.tagsOpen;
         renderTagRow();
       });
@@ -7369,6 +7688,10 @@
 
         if (target.dataset.action === "preview-image") {
           openImageDialog(target.dataset.id);
+        }
+
+        if (target.dataset.action === "open-entry") {
+          openEntryDetailDialog(target.dataset.id);
         }
 
         if (target.dataset.action === "tag") {
@@ -8165,6 +8488,8 @@
       applyTheme(savedTheme);
       state.favorites = loadFavorites();
       state.entries = loadLocalEntries();
+      prepareSidebarTooltips();
+      setSidebarMinimized(sidebarIsMinimized(), false);
       wireEvents();
       applySearchMode("search");
       // Replay the last snapshot from localStorage so the workspace is on screen
