@@ -15,7 +15,7 @@
  * Bump CACHE_VERSION to force old caches out on the next load.
  */
 
-const CACHE_VERSION = "promptvault-v3";
+const CACHE_VERSION = "promptvault-v4";
 const SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -25,11 +25,15 @@ const SHELL_ASSETS = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
-  "./post-it-app-v2-32.png",
-  "./post-it-app-v2-180.png",
-  "./post-it-app-v2-192.png",
-  "./post-it-app-v2-512.png",
-  "./post-it-app-v2-maskable-512.png",
+  "./favicon.ico",
+  "./post-it-app-v3.ico",
+  "./post-it-app-v3-32.png",
+  "./post-it-app-v3-48.png",
+  "./post-it-app-v3-128.png",
+  "./post-it-app-v3-180.png",
+  "./post-it-app-v3-192.png",
+  "./post-it-app-v3-512.png",
+  "./post-it-app-v3-maskable-512.png",
 ];
 
 // Cross-origin hosts we are willing to cache (fonts only). Firebase and the AI
