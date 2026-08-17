@@ -78,6 +78,8 @@
       --motion-fast: 140ms;
       --motion-mid: 220ms;
       --motion-slow: 420ms;
+      --sidebar-motion: 420ms;
+      --sidebar-ease: cubic-bezier(0.4, 0, 0.2, 1);
       --sidebar-w: 272px;
       --sidebar-minimized-w: 68px;
       --font-display: "Lora", "Iowan Old Style", Georgia, "Times New Roman", serif;
@@ -195,7 +197,7 @@
       z-index: 1;
       margin-left: var(--sidebar-w);
       min-height: 100vh;
-      transition: margin-left var(--motion-mid) var(--ease-out);
+      transition: margin-left var(--sidebar-motion) var(--sidebar-ease);
     }
 
     .app-shell {
@@ -220,23 +222,33 @@
       border-right: 1px solid var(--line);
       overflow-y: auto;
       overscroll-behavior: contain;
-      transition: width var(--motion-mid) var(--ease-out), padding var(--motion-mid) var(--ease-out), transform 240ms var(--ease-out);
+      transition: width var(--sidebar-motion) var(--sidebar-ease), padding var(--sidebar-motion) var(--sidebar-ease), transform 240ms var(--ease-out);
     }
 
     .sidebar-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
+      position: relative;
+      display: block;
+      min-height: 44px;
       padding: 2px 4px 12px;
+      transition: min-height var(--sidebar-motion) var(--sidebar-ease), padding var(--sidebar-motion) var(--sidebar-ease);
+    }
+
+    .sidebar-head .brand {
+      width: calc(100% - 36px);
+      height: 30px;
+      transition: width var(--sidebar-motion) var(--sidebar-ease), gap var(--sidebar-motion) var(--sidebar-ease);
     }
 
     .sidebar-minimize-button {
+      position: absolute;
+      top: 2px;
+      right: 4px;
       flex: 0 0 auto;
       width: 30px;
       height: 30px;
       border: 0;
       background: transparent;
+      transition: top var(--sidebar-motion) var(--sidebar-ease), right var(--sidebar-motion) var(--sidebar-ease);
     }
 
     .sidebar-minimize-button svg {
@@ -295,6 +307,22 @@
       white-space: nowrap;
     }
 
+    .brand-name,
+    .new-note > span:not(.new-note-plus),
+    .side-item > span,
+    .side-label {
+      max-width: 190px;
+      opacity: 1;
+      transform: translateX(0);
+      visibility: visible;
+      transition:
+        max-width var(--sidebar-motion) var(--sidebar-ease),
+        opacity 170ms ease 80ms,
+        transform 260ms var(--sidebar-ease),
+        padding var(--sidebar-motion) var(--sidebar-ease),
+        visibility 0s linear 0s;
+    }
+
     /* "New note" — modelled on Claude's New chat action. */
     .new-note {
       display: flex;
@@ -308,7 +336,7 @@
       color: var(--accent-ink);
       font-size: 1rem;
       font-weight: 600;
-      transition: background var(--motion-fast) ease;
+      transition: background var(--motion-fast) ease, gap var(--sidebar-motion) var(--sidebar-ease), padding var(--sidebar-motion) var(--sidebar-ease);
     }
 
     .new-note:hover {
@@ -367,7 +395,7 @@
       font-weight: 500;
       text-align: left;
       white-space: nowrap;
-      transition: background var(--motion-fast) ease, color var(--motion-fast) ease;
+      transition: background var(--motion-fast) ease, color var(--motion-fast) ease, gap var(--sidebar-motion) var(--sidebar-ease), padding var(--sidebar-motion) var(--sidebar-ease);
     }
 
     .side-item svg {
@@ -454,9 +482,7 @@
       }
 
       .sidebar-minimized .sidebar-head {
-        display: grid;
-        justify-items: center;
-        gap: 7px;
+        min-height: 82px;
         padding-inline: 0;
       }
 
@@ -469,14 +495,30 @@
       }
 
       .sidebar-minimized .sidebar-head .brand {
+        width: 100%;
         justify-content: center;
+        gap: 0;
       }
 
       .sidebar-minimized .brand-name,
       .sidebar-minimized .new-note > span:not(.new-note-plus),
       .sidebar-minimized .side-item > span,
       .sidebar-minimized .side-label {
-        display: none;
+        max-width: 0;
+        padding-inline: 0;
+        opacity: 0;
+        transform: translateX(-6px);
+        visibility: hidden;
+        transition-delay: 0s, 0s, 0s, 0s, var(--sidebar-motion);
+      }
+
+      .sidebar-minimized .sidebar-minimize-button {
+        top: 40px;
+        right: 10px;
+      }
+
+      .sidebar-minimized .sidebar-minimize-button svg {
+        transform: rotate(180deg);
       }
 
       .sidebar-minimized .new-note,
@@ -497,7 +539,8 @@
       }
 
       .sidebar-minimized .sidebar-foot {
-        flex-direction: column;
+        flex-wrap: wrap;
+        justify-content: center;
         gap: 3px;
       }
 
@@ -612,7 +655,11 @@
       background: transparent;
       color: var(--soft);
       opacity: 0.58;
-      transition: color var(--motion-fast) ease, opacity var(--motion-fast) ease;
+      transition:
+        top var(--sidebar-motion) var(--sidebar-ease),
+        right var(--sidebar-motion) var(--sidebar-ease),
+        color var(--motion-fast) ease,
+        opacity var(--motion-fast) ease;
     }
 
     .icon-button.sidebar-minimize-button:hover,
@@ -628,6 +675,7 @@
       width: 15px;
       height: 15px;
       stroke-width: 1.8;
+      transition: transform var(--sidebar-motion) var(--sidebar-ease);
     }
 
     .app-tooltip {
@@ -4715,8 +4763,6 @@
       if (!els.sidebarMinimizeTooltip.hidden) {
         els.sidebarMinimizeTooltip.textContent = sidebarAction;
       }
-      els.sidebarMinimizeButton.innerHTML = `<i data-lucide="${compact ? "chevron-right" : "chevron-left"}"></i>`;
-
       if (persist) {
         try {
           localStorage.setItem(SIDEBAR_MINIMIZED_KEY, String(compact));
