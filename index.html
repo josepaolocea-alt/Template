@@ -8186,6 +8186,14 @@
       persistTabsState();
       refreshIcons();
       render();
+
+      // Tab mode can hide the greeting midway through its typewriter reveal.
+      // Start from a clean animation state once Home is visible again instead
+      // of resuming the stale, partially completed animation.
+      window.requestAnimationFrame(() => {
+        if (state.tabMode || state.composeOpen || !els.heroTitle || !els.heroTitle.offsetParent) return;
+        if (typeof window.playHeroTypewriter === "function") window.playHeroTypewriter();
+      });
     }
 
     function toggleTabMode() {
