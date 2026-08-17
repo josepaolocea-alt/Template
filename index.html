@@ -630,6 +630,43 @@
       stroke-width: 1.8;
     }
 
+    .app-tooltip {
+      position: fixed;
+      z-index: 120;
+      max-width: min(240px, calc(100vw - 20px));
+      padding: 7px 10px;
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--panel-solid) 94%, transparent);
+      color: var(--text);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+      font-size: 0.76rem;
+      font-weight: 550;
+      line-height: 1.2;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+      pointer-events: none;
+      backdrop-filter: blur(12px);
+      animation: appTooltipIn 140ms var(--ease-out) both;
+    }
+
+    .app-tooltip[hidden] {
+      display: none;
+    }
+
+    .app-tooltip::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: -4px;
+      width: 7px;
+      height: 7px;
+      border-left: 1px solid var(--line-strong);
+      border-bottom: 1px solid var(--line-strong);
+      background: var(--panel-solid);
+      transform: translateY(-50%) rotate(45deg);
+    }
+
     .button svg,
     .icon-button svg {
       width: 17px;
@@ -3223,6 +3260,11 @@
       to { transform: translateX(100%); }
     }
 
+    @keyframes appTooltipIn {
+      from { opacity: 0; transform: translateX(-3px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
     /* Signed in: skip entrance animations so daily use feels instant. */
     .signed-in {
       --motion-slow: 200ms;
@@ -3541,7 +3583,7 @@
         <span class="brand-mark" id="brandMark"><i data-lucide="sparkles" class="brand-mark-icon"></i><span class="brand-mark-initial" id="brandInitial" aria-hidden="true"></span></span>
         <span class="brand-name">ChatJPGC</span>
       </a>
-      <button class="icon-button sidebar-minimize-button" id="sidebarMinimizeButton" type="button" aria-label="Collapse navigation" aria-pressed="false" title="Collapse navigation">
+      <button class="icon-button sidebar-minimize-button" id="sidebarMinimizeButton" type="button" aria-label="Collapse sidebar" aria-pressed="false" data-tooltip="Collapse sidebar">
         <i data-lucide="chevron-left"></i>
       </button>
     </div>
@@ -3647,6 +3689,8 @@
       </button>
     </div>
   </aside>
+
+  <div class="app-tooltip" id="sidebarMinimizeTooltip" role="tooltip" hidden>Collapse sidebar</div>
 
   <main>
     <section class="hero app-shell" aria-labelledby="heroTitle">
@@ -4187,6 +4231,7 @@
       heroTitle: document.querySelector("#heroTitle"),
       themeToggle: document.querySelector("#themeToggle"),
       sidebarMinimizeButton: document.querySelector("#sidebarMinimizeButton"),
+      sidebarMinimizeTooltip: document.querySelector("#sidebarMinimizeTooltip"),
       moreMenu: document.querySelector("#moreMenu"),
       menuPanel: document.querySelector("#menuPanel"),
       homeButton: document.querySelector("#homeButton"),
@@ -4611,12 +4656,37 @@
       return document.documentElement.classList.contains("sidebar-minimized");
     }
 
+    function positionSidebarMinimizeTooltip() {
+      if (els.sidebarMinimizeTooltip.hidden) return;
+      const targetRect = els.sidebarMinimizeButton.getBoundingClientRect();
+      const tooltipRect = els.sidebarMinimizeTooltip.getBoundingClientRect();
+      const gap = 10;
+      const edge = 8;
+      const left = Math.min(targetRect.right + gap, window.innerWidth - tooltipRect.width - edge);
+      const top = Math.max(edge, Math.min(
+        targetRect.top + ((targetRect.height - tooltipRect.height) / 2),
+        window.innerHeight - tooltipRect.height - edge
+      ));
+      els.sidebarMinimizeTooltip.style.left = `${Math.round(left)}px`;
+      els.sidebarMinimizeTooltip.style.top = `${Math.round(top)}px`;
+    }
+
+    function showSidebarMinimizeTooltip() {
+      els.sidebarMinimizeTooltip.textContent = els.sidebarMinimizeButton.dataset.tooltip;
+      els.sidebarMinimizeTooltip.hidden = false;
+      positionSidebarMinimizeTooltip();
+    }
+
+    function hideSidebarMinimizeTooltip() {
+      els.sidebarMinimizeTooltip.hidden = true;
+    }
+
     function prepareSidebarTooltips() {
       document.querySelectorAll("#appSidebar button").forEach((button) => {
         const label = button.getAttribute("aria-label") || button.textContent.trim().replace(/\s+/g, " ");
         if (!label) return;
         if (!button.hasAttribute("aria-label")) button.setAttribute("aria-label", label);
-        if (!button.hasAttribute("title")) button.setAttribute("title", label);
+        if (!button.dataset.tooltip && !button.hasAttribute("title")) button.setAttribute("title", label);
       });
     }
 
@@ -4639,8 +4709,12 @@
       }
 
       els.sidebarMinimizeButton.setAttribute("aria-pressed", String(compact));
-      els.sidebarMinimizeButton.setAttribute("aria-label", compact ? "Expand navigation" : "Collapse navigation");
-      els.sidebarMinimizeButton.setAttribute("title", compact ? "Expand navigation" : "Collapse navigation");
+      const sidebarAction = compact ? "Expand sidebar" : "Collapse sidebar";
+      els.sidebarMinimizeButton.setAttribute("aria-label", sidebarAction);
+      els.sidebarMinimizeButton.dataset.tooltip = sidebarAction;
+      if (!els.sidebarMinimizeTooltip.hidden) {
+        els.sidebarMinimizeTooltip.textContent = sidebarAction;
+      }
       els.sidebarMinimizeButton.innerHTML = `<i data-lucide="${compact ? "chevron-right" : "chevron-left"}"></i>`;
 
       if (persist) {
@@ -7293,8 +7367,14 @@
     }
 
     function wireEvents() {
+      els.sidebarMinimizeButton.addEventListener("pointerenter", showSidebarMinimizeTooltip);
+      els.sidebarMinimizeButton.addEventListener("pointerleave", hideSidebarMinimizeTooltip);
+      els.sidebarMinimizeButton.addEventListener("focus", showSidebarMinimizeTooltip);
+      els.sidebarMinimizeButton.addEventListener("blur", hideSidebarMinimizeTooltip);
+      window.addEventListener("resize", positionSidebarMinimizeTooltip);
       els.sidebarMinimizeButton.addEventListener("click", () => {
         setSidebarMinimized(!sidebarIsMinimized());
+        positionSidebarMinimizeTooltip();
       });
       els.libraryButton.addEventListener("click", () => {
         expandSidebarForPanel();
