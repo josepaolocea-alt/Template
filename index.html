@@ -1527,11 +1527,8 @@
       font-weight: 500;
     }
 
-    /* Chromium draws a native select's dropdown itself and ignores the option
-       colors we set below, so on Windows the list came out on a white popup our
-       light --text was unreadable against. The real <select> stays as the source
-       of truth but is hidden (same trick as #entryKind), and these rules draw the
-       popup on the app's own palette. */
+    /* Premium select shell. The native select remains the source of truth while
+       the visible control supplies a polished, theme-safe listbox experience. */
     .side-sort-menu {
       position: relative;
       min-width: 0;
@@ -1540,60 +1537,119 @@
     .sort-trigger {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 6px;
+      gap: 9px;
       width: 100%;
-      min-height: 30px;
-      padding: 0 8px;
-      border: 1px solid var(--line);
-      border-radius: var(--radius-sm);
-      background: transparent;
-      color: var(--muted);
+      min-height: 42px;
+      padding: 6px 7px 6px 8px;
+      border: 1px solid color-mix(in srgb, var(--line-strong) 88%, var(--accent));
+      border-radius: 11px;
+      background: linear-gradient(135deg, color-mix(in srgb, var(--panel-solid) 94%, var(--accent)) 0%, var(--panel-solid) 72%);
+      color: var(--text);
       font: inherit;
-      font-size: 0.82rem;
       text-align: left;
       cursor: pointer;
-      transition: color var(--motion-fast) ease, border-color var(--motion-fast) ease, background-color var(--motion-fast) ease;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 4px 14px rgba(0, 0, 0, 0.08);
+      transition: border-color var(--motion-fast) ease, background-color var(--motion-fast) ease, box-shadow var(--motion-fast) ease, transform var(--motion-fast) ease;
     }
 
     .sort-trigger:hover,
     .sort-trigger[aria-expanded="true"] {
-      color: var(--text);
-      border-color: var(--line-strong);
-      background: var(--hover);
+      border-color: color-mix(in srgb, var(--accent) 42%, var(--line-strong));
+      background: linear-gradient(135deg, color-mix(in srgb, var(--panel-solid) 88%, var(--accent)) 0%, var(--panel-solid) 74%);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14), 0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent);
+    }
+
+    .sort-trigger:active { transform: translateY(1px); }
+
+    .sort-trigger:focus-visible {
+      outline: none;
+      border-color: color-mix(in srgb, var(--accent) 58%, var(--line-strong));
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent), 0 8px 24px rgba(0, 0, 0, 0.14);
+    }
+
+    .sort-trigger-leading,
+    .sort-option-icon {
+      display: inline-grid;
+      place-items: center;
+      flex: 0 0 auto;
+      width: 27px;
+      height: 27px;
+      border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--line));
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--accent) 11%, var(--panel-solid));
+      color: var(--accent-ink);
+    }
+
+    .sort-trigger-leading svg,
+    .sort-option-icon svg {
+      width: 14px;
+      height: 14px;
     }
 
     .sort-trigger-value {
+      display: grid;
+      flex: 1 1 auto;
+      gap: 1px;
+      min-width: 0;
+    }
+
+    .sort-trigger-kicker {
+      color: var(--soft);
+      font-size: 0.65rem;
+      font-weight: 650;
+      letter-spacing: 0.06em;
+      line-height: 1;
+      text-transform: uppercase;
+    }
+
+    #sortTriggerValue {
       overflow: hidden;
+      color: var(--text);
+      font-size: 0.8rem;
+      font-weight: 650;
+      line-height: 1.2;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    .sort-trigger svg {
-      width: 14px;
-      height: 14px;
+    .sort-trigger-caret {
+      display: inline-grid;
+      place-items: center;
       flex: 0 0 auto;
-      color: var(--soft);
-      transition: transform var(--motion-fast) ease;
+      width: 24px;
+      height: 24px;
+      border-radius: 7px;
+      color: var(--muted);
+      transition: color var(--motion-fast) ease, transform var(--motion-fast) ease, background-color var(--motion-fast) ease;
     }
 
-    .sort-trigger[aria-expanded="true"] svg {
+    .sort-trigger-caret svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .sort-trigger[aria-expanded="true"] .sort-trigger-caret {
       transform: rotate(180deg);
+      background: color-mix(in srgb, var(--accent) 11%, transparent);
+      color: var(--accent-ink);
     }
 
     .sort-list {
       position: absolute;
-      z-index: 50;
-      top: calc(100% + 4px);
-      left: 0;
+      z-index: 80;
+      top: calc(100% + 7px);
       right: 0;
+      width: max(100%, 238px);
       display: grid;
-      gap: 1px;
-      padding: 4px;
-      border: 1px solid var(--line-strong);
-      border-radius: var(--radius-sm);
-      background: var(--panel-solid);
-      box-shadow: var(--shadow);
+      gap: 3px;
+      padding: 6px;
+      border: 1px solid color-mix(in srgb, var(--line-strong) 86%, var(--accent));
+      border-radius: 13px;
+      background: color-mix(in srgb, var(--panel-solid) 96%, transparent);
+      box-shadow: 0 22px 52px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.045);
+      backdrop-filter: blur(18px) saturate(125%);
+      transform-origin: top right;
+      animation: premiumMenuIn 150ms var(--ease-out) both;
     }
 
     /* display: grid above would otherwise override the hidden attribute. */
@@ -1602,29 +1658,90 @@
     }
 
     .sort-option {
-      display: flex;
+      display: grid;
+      grid-template-columns: 31px minmax(0, 1fr) 22px;
       align-items: center;
+      gap: 9px;
       width: 100%;
-      padding: 6px 8px;
+      min-height: 48px;
+      padding: 6px 8px 6px 7px;
       border: 0;
-      border-radius: calc(var(--radius-sm) - 2px);
+      border-radius: 9px;
       background: transparent;
       color: var(--muted);
       font: inherit;
-      font-size: 0.82rem;
       text-align: left;
       cursor: pointer;
+      transition: color var(--motion-fast) ease, background-color var(--motion-fast) ease, transform var(--motion-fast) ease;
     }
 
     .sort-option:hover,
     .sort-option:focus-visible {
-      background: var(--hover);
+      outline: none;
+      background: color-mix(in srgb, var(--accent) 9%, var(--hover));
       color: var(--text);
     }
 
     .sort-option[aria-selected="true"] {
+      background: color-mix(in srgb, var(--accent) 12%, transparent);
       color: var(--accent-ink);
-      font-weight: 600;
+    }
+
+    .sort-option[aria-selected="true"] .sort-option-icon {
+      border-color: color-mix(in srgb, var(--accent) 38%, var(--line));
+      background: color-mix(in srgb, var(--accent) 18%, var(--panel-solid));
+    }
+
+    .sort-option-copy {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .sort-option-copy strong {
+      color: var(--text);
+      font-size: 0.82rem;
+      font-weight: 650;
+      line-height: 1.2;
+    }
+
+    .sort-option-copy small {
+      overflow: hidden;
+      color: var(--soft);
+      font-size: 0.69rem;
+      font-weight: 500;
+      line-height: 1.2;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .sort-option-check {
+      display: inline-grid;
+      place-items: center;
+      width: 21px;
+      height: 21px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #171713;
+      opacity: 0;
+      transform: scale(0.72);
+      transition: opacity var(--motion-fast) ease, transform var(--motion-fast) ease;
+    }
+
+    .sort-option-check svg {
+      width: 13px;
+      height: 13px;
+      stroke-width: 2.6;
+    }
+
+    .sort-option[aria-selected="true"] .sort-option-check {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    @keyframes premiumMenuIn {
+      from { opacity: 0; transform: translateY(-5px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
     }
 
     .source-pill {
@@ -3716,13 +3833,29 @@
             <span id="sortLabel">Sort</span>
             <div class="side-sort-menu">
               <button class="sort-trigger" id="sortTrigger" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="sortListbox" aria-labelledby="sortLabel sortTrigger">
-                <span class="sort-trigger-value" id="sortTriggerValue">Relevance</span>
-                <i data-lucide="chevron-down"></i>
+                <span class="sort-trigger-leading" aria-hidden="true"><i data-lucide="sliders-horizontal"></i></span>
+                <span class="sort-trigger-value">
+                  <span class="sort-trigger-kicker">Sort by</span>
+                  <span id="sortTriggerValue">Relevance</span>
+                </span>
+                <span class="sort-trigger-caret" aria-hidden="true"><i data-lucide="chevron-down"></i></span>
               </button>
               <div class="sort-list" id="sortListbox" role="listbox" aria-labelledby="sortLabel" hidden>
-                <button class="sort-option" type="button" role="option" data-sort="relevance" aria-selected="true">Relevance</button>
-                <button class="sort-option" type="button" role="option" data-sort="newest" aria-selected="false">Newest</button>
-                <button class="sort-option" type="button" role="option" data-sort="title" aria-selected="false">Title</button>
+                <button class="sort-option" type="button" role="option" data-sort="relevance" aria-selected="true">
+                  <span class="sort-option-icon" aria-hidden="true"><i data-lucide="sparkles"></i></span>
+                  <span class="sort-option-copy"><strong>Relevance</strong><small>Best matches first</small></span>
+                  <span class="sort-option-check" aria-hidden="true"><i data-lucide="check"></i></span>
+                </button>
+                <button class="sort-option" type="button" role="option" data-sort="newest" aria-selected="false">
+                  <span class="sort-option-icon" aria-hidden="true"><i data-lucide="clock-3"></i></span>
+                  <span class="sort-option-copy"><strong>Newest</strong><small>Most recent first</small></span>
+                  <span class="sort-option-check" aria-hidden="true"><i data-lucide="check"></i></span>
+                </button>
+                <button class="sort-option" type="button" role="option" data-sort="title" aria-selected="false">
+                  <span class="sort-option-icon" aria-hidden="true"><i data-lucide="arrow-up-a-z"></i></span>
+                  <span class="sort-option-copy"><strong>Title</strong><small>Alphabetical order</small></span>
+                  <span class="sort-option-check" aria-hidden="true"><i data-lucide="check"></i></span>
+                </button>
               </div>
               <select id="sortSelect" class="visually-hidden" tabindex="-1" aria-hidden="true">
                 <option value="relevance">Relevance</option>
@@ -7918,7 +8051,8 @@
         const options = Array.from(els.sortOptions);
         const chosen = options.find((option) => option.dataset.sort === value);
         if (!chosen) return;
-        els.sortTriggerValue.textContent = chosen.textContent.trim();
+        const chosenLabel = chosen.querySelector("strong");
+        els.sortTriggerValue.textContent = chosenLabel ? chosenLabel.textContent.trim() : chosen.textContent.trim();
         options.forEach((option) => option.setAttribute("aria-selected", String(option === chosen)));
         if (els.sortSelect.value !== value) {
           els.sortSelect.value = value;
@@ -7950,6 +8084,9 @@
         if (event.key === "Escape") {
           setSortOpen(false);
           els.sortTrigger.focus();
+        } else if (event.key === "Home" || event.key === "End") {
+          event.preventDefault();
+          options[event.key === "Home" ? 0 : options.length - 1].focus();
         } else if (index > -1 && (event.key === "ArrowDown" || event.key === "ArrowUp")) {
           event.preventDefault();
           const step = event.key === "ArrowDown" ? 1 : -1;
