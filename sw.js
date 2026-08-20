@@ -15,7 +15,7 @@
  * Bump CACHE_VERSION to force old caches out on the next load.
  */
 
-const CACHE_VERSION = "promptvault-v6";
+const CACHE_VERSION = "promptvault-v7";
 const SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
