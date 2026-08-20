@@ -670,6 +670,7 @@
     /* This control should read as quiet layout chrome, not as a primary action.
        Its more-specific rule intentionally follows the shared icon-button skin. */
     .icon-button.sidebar-minimize-button {
+      position: absolute;
       width: 28px;
       height: 28px;
       border: 0;
@@ -3101,6 +3102,10 @@
       flex: 0 0 auto;
       border-color: transparent;
       color: var(--soft);
+    }
+
+    .tabmode-newtab {
+      margin-inline-end: 8px;
     }
 
     .tabmode-newtab:hover,
