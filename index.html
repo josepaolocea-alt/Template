@@ -439,16 +439,6 @@
       color: var(--accent-ink);
     }
 
-    /* These four drive the search view, which the tab workspace hides, so they
-       have nothing to act on while it is open. */
-    .tab-mode-active #tagsButton,
-    .tab-mode-active #libraryButton,
-    .tab-mode-active #favoritesButton,
-    .tab-mode-active #hiddenButton {
-      opacity: 0.4;
-      pointer-events: none;
-    }
-
     .sidebar-foot {
       margin-top: auto;
       padding-top: 14px;
@@ -6211,9 +6201,11 @@
     function applyTagFilter(tag) {
       const cleanTag = String(tag || "").trim();
       if (!cleanTag) return;
-      // A tag filters the library, so drop back to search mode and out of the
-      // composer if either is in the way of the results.
+      // Tag selection is a navigation action: leave Tabs (if open), return to
+      // Home, and render the matching search results immediately.
+      if (state.tabMode) leaveTabModeForBrowse();
       if (state.composeOpen) closeEntryDialog();
+      clearAiPanel();
       applySearchMode("search");
       els.searchInput.value = cleanTag;
       syncSearchClear();
@@ -6221,6 +6213,40 @@
       state.tagFilter = cleanTag.toLowerCase();
       state.kind = "all";
       state.browseMode = false;
+      state.tagsOpen = false;
+      toggleLibraryPanel(false);
+      syncFilterButtons();
+      renderResults();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function syncSortControl(value) {
+      const options = Array.from(els.sortOptions);
+      const chosen = options.find((option) => option.dataset.sort === value);
+      if (!chosen) return false;
+      const chosenLabel = chosen.querySelector("strong");
+      els.sortTriggerValue.textContent = chosenLabel ? chosenLabel.textContent.trim() : chosen.textContent.trim();
+      options.forEach((option) => option.setAttribute("aria-selected", String(option === chosen)));
+      els.sortSelect.value = value;
+      return true;
+    }
+
+    function openSearchResultsView(kind, newestFirst = false) {
+      if (state.tabMode) leaveTabModeForBrowse();
+      if (state.composeOpen) closeEntryDialog();
+      clearAiPanel();
+      applySearchMode("search");
+      state.kind = kind;
+      state.query = "";
+      state.tagFilter = "";
+      state.browseMode = true;
+      state.tagsOpen = false;
+      resetSearchInput();
+      toggleLibraryPanel(false);
+      if (newestFirst) {
+        state.sort = "newest";
+        syncSortControl("newest");
+      }
       syncFilterButtons();
       renderResults();
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -8579,29 +8605,11 @@
         toggleLibraryPanel();
       });
       els.favoritesButton.addEventListener("click", () => {
-        if (state.composeOpen) closeEntryDialog();
-        applySearchMode("search");
-        state.kind = "favorite";
-        state.query = "";
-        state.tagFilter = "";
-        state.browseMode = true;
-        resetSearchInput();
-        syncFilterButtons();
-        renderResults();
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        openSearchResultsView("favorite", true);
       });
       els.hiddenButton.addEventListener("click", () => {
         if (!state.isAdmin) return; // admin-only view
-        if (state.composeOpen) closeEntryDialog();
-        applySearchMode("search");
-        state.kind = "hidden";
-        state.query = "";
-        state.tagFilter = "";
-        state.browseMode = true;
-        resetSearchInput();
-        syncFilterButtons();
-        renderResults();
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        openSearchResultsView("hidden", true);
       });
       // Home: leave the tab workspace if it is open, clear any search or
       // browse state, and land back on the greeting screen.
@@ -8875,16 +8883,8 @@
 
       els.filterButtons.forEach((button) => {
         button.addEventListener("click", () => {
-          if (state.composeOpen) closeEntryDialog();
-          applySearchMode("search");
-          state.kind = button.dataset.kind;
-          state.query = "";
-          state.tagFilter = "";
-          state.browseMode = true;
-          resetSearchInput();
-          syncFilterButtons();
-          renderResults();
-          window.scrollTo({ top: 0, behavior: "smooth" });
+          const kind = button.dataset.kind;
+          openSearchResultsView(kind, kind === "all");
         });
       });
 
@@ -8927,14 +8927,9 @@
       };
 
       const chooseSort = (value) => {
-        const options = Array.from(els.sortOptions);
-        const chosen = options.find((option) => option.dataset.sort === value);
-        if (!chosen) return;
-        const chosenLabel = chosen.querySelector("strong");
-        els.sortTriggerValue.textContent = chosenLabel ? chosenLabel.textContent.trim() : chosen.textContent.trim();
-        options.forEach((option) => option.setAttribute("aria-selected", String(option === chosen)));
-        if (els.sortSelect.value !== value) {
-          els.sortSelect.value = value;
+        const previousValue = els.sortSelect.value;
+        if (!syncSortControl(value)) return;
+        if (previousValue !== value) {
           els.sortSelect.dispatchEvent(new Event("change"));
         }
       };
@@ -9172,16 +9167,15 @@
       tabContentSig = null;
     }
 
-    // Tags, Library, Favorites and Hidden entries only act on the search view,
-    // which the tab workspace hides. The dimming is CSS; this keeps them out of
-    // reach of the keyboard too, and folds away any list they had expanded.
-    function setSearchNavInert(inert) {
+    // These controls can navigate out of Tabs, so they stay enabled there. We
+    // only fold their nested lists when entering the workspace for a clean rail.
+    function prepareSearchNavForTabMode(entering) {
       [els.tagsButton, els.libraryButton, els.favoritesButton, els.hiddenButton]
         .forEach((button) => {
-          button.disabled = inert;
-          button.setAttribute("aria-disabled", String(inert));
+          button.disabled = false;
+          button.removeAttribute("aria-disabled");
         });
-      if (!inert) return;
+      if (!entering) return;
       state.tagsOpen = false;
       renderTagRow();
       toggleLibraryPanel(false);
@@ -9202,7 +9196,7 @@
       els.tabMode.hidden = false;
       els.modeToggle.classList.add("is-active");
       els.modeToggle.setAttribute("aria-pressed", "true");
-      setSearchNavInert(true);
+      prepareSearchNavForTabMode(true);
       resetTabSignatures();
       persistTabsState();
       renderTabMode();
@@ -9217,7 +9211,17 @@
       els.tabMode.hidden = true;
       els.modeToggle.classList.remove("is-active");
       els.modeToggle.setAttribute("aria-pressed", "false");
-      setSearchNavInert(false);
+      prepareSearchNavForTabMode(false);
+    }
+
+    // A sidebar browse action supplies its own state and render immediately,
+    // so this lean exit avoids an intermediate Home render and greeting replay.
+    function leaveTabModeForBrowse() {
+      if (!state.tabMode) return;
+      state.tabMode = false;
+      teardownTabModeUI();
+      persistTabsState();
+      refreshIcons();
     }
 
     function exitTabMode() {
