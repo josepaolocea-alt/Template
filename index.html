@@ -709,21 +709,28 @@
     .app-tooltip {
       position: fixed;
       z-index: 120;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 164px;
       max-width: min(240px, calc(100vw - 20px));
-      padding: 7px 10px;
-      border: 1px solid var(--line-strong);
-      border-radius: 8px;
-      background: color-mix(in srgb, var(--panel-solid) 94%, transparent);
+      padding: 8px 12px 8px 8px;
+      overflow: visible;
+      border: 1px solid var(--premium-border, var(--line-strong));
+      border-radius: 12px;
+      background:
+        linear-gradient(135deg, color-mix(in srgb, white 7%, transparent), transparent 48%),
+        color-mix(in srgb, var(--premium-surface, var(--panel-solid)) 94%, transparent);
       color: var(--text);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
-      font-size: 0.76rem;
-      font-weight: 550;
-      line-height: 1.2;
-      letter-spacing: 0.01em;
+      box-shadow:
+        0 18px 42px rgba(0, 0, 0, 0.30),
+        0 4px 12px rgba(0, 0, 0, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.09);
       white-space: nowrap;
       pointer-events: none;
-      backdrop-filter: blur(12px);
-      animation: appTooltipIn 140ms var(--ease-out) both;
+      isolation: isolate;
+      backdrop-filter: blur(20px) saturate(140%);
+      animation: appTooltipIn 180ms var(--ease-out) both;
     }
 
     .app-tooltip[hidden] {
@@ -734,13 +741,57 @@
       content: "";
       position: absolute;
       top: 50%;
-      left: -4px;
-      width: 7px;
-      height: 7px;
-      border-left: 1px solid var(--line-strong);
-      border-bottom: 1px solid var(--line-strong);
-      background: var(--panel-solid);
+      left: -5px;
+      z-index: -1;
+      width: 9px;
+      height: 9px;
+      border-left: 1px solid var(--premium-border, var(--line-strong));
+      border-bottom: 1px solid var(--premium-border, var(--line-strong));
+      background: var(--premium-surface, var(--panel-solid));
       transform: translateY(-50%) rotate(45deg);
+    }
+
+    .app-tooltip-icon {
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      flex: 0 0 auto;
+      border: 1px solid color-mix(in srgb, var(--accent) 36%, var(--line-strong));
+      border-radius: 9px;
+      background:
+        radial-gradient(circle at 35% 20%, color-mix(in srgb, white 16%, transparent), transparent 52%),
+        color-mix(in srgb, var(--accent) 14%, var(--panel-solid));
+      color: var(--accent-ink);
+      box-shadow: 0 5px 14px var(--premium-glow, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .app-tooltip-icon svg {
+      width: 15px;
+      height: 15px;
+      stroke-width: 1.9;
+    }
+
+    .app-tooltip-copy {
+      display: grid;
+      gap: 1px;
+      min-width: 0;
+    }
+
+    .app-tooltip-kicker {
+      color: var(--accent-ink);
+      font-size: 0.58rem;
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: 0.085em;
+      text-transform: uppercase;
+    }
+
+    .app-tooltip-label {
+      font-size: 0.76rem;
+      font-weight: 620;
+      line-height: 1.25;
+      letter-spacing: -0.005em;
     }
 
     .button svg,
@@ -3466,7 +3517,7 @@
     }
 
     @keyframes appTooltipIn {
-      from { opacity: 0; transform: translateX(-3px); }
+      from { opacity: 0; transform: translateX(-6px) scale(0.96); }
       to { opacity: 1; transform: translateX(0); }
     }
 
@@ -4607,7 +4658,7 @@
         <span class="brand-mark" id="brandMark"><i data-lucide="sparkles" class="brand-mark-icon"></i><span class="brand-mark-initial" id="brandInitial" aria-hidden="true"></span></span>
         <span class="brand-name">ChatJPGC</span>
       </a>
-      <button class="icon-button sidebar-minimize-button" id="sidebarMinimizeButton" type="button" aria-label="Collapse sidebar" aria-pressed="false" data-tooltip="Collapse sidebar">
+      <button class="icon-button sidebar-minimize-button" id="sidebarMinimizeButton" type="button" aria-label="Collapse sidebar" aria-describedby="sidebarMinimizeTooltip" aria-pressed="false" data-tooltip="Collapse sidebar">
         <i data-lucide="chevron-left"></i>
       </button>
     </div>
@@ -4738,7 +4789,13 @@
     </div>
   </aside>
 
-  <div class="app-tooltip" id="sidebarMinimizeTooltip" role="tooltip" hidden>Collapse sidebar</div>
+  <div class="app-tooltip" id="sidebarMinimizeTooltip" role="tooltip" hidden>
+    <span class="app-tooltip-icon" aria-hidden="true"><i data-lucide="panel-left"></i></span>
+    <span class="app-tooltip-copy">
+      <span class="app-tooltip-kicker">Workspace</span>
+      <span class="app-tooltip-label" id="sidebarMinimizeTooltipLabel">Collapse sidebar</span>
+    </span>
+  </div>
 
   <main>
     <section class="hero app-shell" aria-labelledby="heroTitle">
@@ -5300,6 +5357,7 @@
       sidebar: document.querySelector("#appSidebar"),
       sidebarMinimizeButton: document.querySelector("#sidebarMinimizeButton"),
       sidebarMinimizeTooltip: document.querySelector("#sidebarMinimizeTooltip"),
+      sidebarMinimizeTooltipLabel: document.querySelector("#sidebarMinimizeTooltipLabel"),
       moreMenu: document.querySelector("#moreMenu"),
       menuPanel: document.querySelector("#menuPanel"),
       homeButton: document.querySelector("#homeButton"),
@@ -5821,7 +5879,7 @@
     }
 
     function showSidebarMinimizeTooltip() {
-      els.sidebarMinimizeTooltip.textContent = els.sidebarMinimizeButton.dataset.tooltip;
+      els.sidebarMinimizeTooltipLabel.textContent = els.sidebarMinimizeButton.dataset.tooltip;
       els.sidebarMinimizeTooltip.hidden = false;
       positionSidebarMinimizeTooltip();
     }
@@ -5878,7 +5936,7 @@
       els.sidebarMinimizeButton.setAttribute("aria-label", sidebarAction);
       els.sidebarMinimizeButton.dataset.tooltip = sidebarAction;
       if (!els.sidebarMinimizeTooltip.hidden) {
-        els.sidebarMinimizeTooltip.textContent = sidebarAction;
+        els.sidebarMinimizeTooltipLabel.textContent = sidebarAction;
       }
       if (persist) {
         try {
