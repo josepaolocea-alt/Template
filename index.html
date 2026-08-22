@@ -243,15 +243,14 @@
     }
 
     .sidebar-minimize-button {
-      position: absolute;
-      top: 2px;
-      right: 4px;
+      position: fixed;
+      top: 16px;
+      left: calc(var(--sidebar-w) - 14px);
+      right: auto;
       flex: 0 0 auto;
       width: 30px;
       height: 30px;
-      border: 0;
-      background: transparent;
-      transition: top var(--sidebar-motion) var(--sidebar-ease), right var(--sidebar-motion) var(--sidebar-ease);
+      transition: left var(--sidebar-motion) var(--sidebar-ease);
     }
 
     .sidebar-minimize-button svg {
@@ -475,7 +474,7 @@
       }
 
       .sidebar-minimized .sidebar-head {
-        min-height: 82px;
+        min-height: 44px;
         padding-inline: 0;
       }
 
@@ -505,9 +504,8 @@
         transition-delay: 0s, 0s, 0s, 0s, var(--sidebar-motion);
       }
 
-      .sidebar-minimized .sidebar-minimize-button {
-        top: 40px;
-        right: 10px;
+      .sidebar-minimized .icon-button.sidebar-minimize-button {
+        left: calc(var(--sidebar-minimized-w) - 14px);
       }
 
       .sidebar-minimized .sidebar-minimize-button svg {
@@ -670,28 +668,35 @@
     /* This control should read as quiet layout chrome, not as a primary action.
        Its more-specific rule intentionally follows the shared icon-button skin. */
     .icon-button.sidebar-minimize-button {
-      position: absolute;
+      position: fixed;
+      top: 16px;
+      left: calc(var(--sidebar-w) - 14px);
+      right: auto;
+      z-index: 42;
       width: 28px;
       height: 28px;
-      border: 0;
-      border-radius: 6px;
-      background: transparent;
-      color: var(--soft);
-      opacity: 0.58;
+      border: 1px solid var(--line-strong);
+      border-radius: 999px;
+      background: var(--panel-solid);
+      color: var(--muted);
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.16);
+      opacity: 1;
       transition:
-        top var(--sidebar-motion) var(--sidebar-ease),
-        right var(--sidebar-motion) var(--sidebar-ease),
+        left var(--sidebar-motion) var(--sidebar-ease),
+        background var(--motion-fast) ease,
+        border-color var(--motion-fast) ease,
         color var(--motion-fast) ease,
-        opacity var(--motion-fast) ease;
+        box-shadow var(--motion-fast) ease;
     }
 
     .icon-button.sidebar-minimize-button:hover,
     .icon-button.sidebar-minimize-button:active,
     .icon-button.sidebar-minimize-button:focus-visible {
-      border: 0;
-      background: transparent;
+      border-color: color-mix(in srgb, var(--accent) 34%, var(--line-strong));
+      background: color-mix(in srgb, var(--panel-solid) 88%, var(--accent) 12%);
       color: var(--text);
-      opacity: 0.92;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2), 0 0 0 3px var(--premium-glow);
+      opacity: 1;
     }
 
     .icon-button.sidebar-minimize-button svg {
