@@ -712,8 +712,8 @@
       display: flex;
       align-items: center;
       gap: 9px;
-      min-width: 164px;
-      max-width: min(240px, calc(100vw - 20px));
+      min-width: 156px;
+      max-width: min(320px, calc(100vw - 20px));
       padding: 8px 12px 8px 8px;
       overflow: visible;
       border: 1px solid var(--premium-border, var(--line-strong));
@@ -745,10 +745,51 @@
       z-index: -1;
       width: 9px;
       height: 9px;
-      border-left: 1px solid var(--premium-border, var(--line-strong));
-      border-bottom: 1px solid var(--premium-border, var(--line-strong));
+      border: 1px solid var(--premium-border, var(--line-strong));
       background: var(--premium-surface, var(--panel-solid));
       transform: translateY(-50%) rotate(45deg);
+    }
+
+    .app-tooltip[data-placement="left"]::before {
+      right: -5px;
+      left: auto;
+    }
+
+    .app-tooltip[data-placement="top"]::before,
+    .app-tooltip[data-placement="bottom"]::before {
+      top: auto;
+      bottom: -5px;
+      left: 50%;
+      transform: translateX(-50%) rotate(45deg);
+    }
+
+    .app-tooltip[data-placement="bottom"]::before {
+      top: -5px;
+      bottom: auto;
+    }
+
+    .app-tooltip[data-placement="right"] {
+      transform-origin: left center;
+      --tooltip-enter-x: -6px;
+      --tooltip-enter-y: 0px;
+    }
+
+    .app-tooltip[data-placement="left"] {
+      transform-origin: right center;
+      --tooltip-enter-x: 6px;
+      --tooltip-enter-y: 0px;
+    }
+
+    .app-tooltip[data-placement="top"] {
+      transform-origin: center bottom;
+      --tooltip-enter-x: 0px;
+      --tooltip-enter-y: 5px;
+    }
+
+    .app-tooltip[data-placement="bottom"] {
+      transform-origin: center top;
+      --tooltip-enter-x: 0px;
+      --tooltip-enter-y: -5px;
     }
 
     .app-tooltip-icon {
@@ -788,10 +829,32 @@
     }
 
     .app-tooltip-label {
+      max-width: 230px;
       font-size: 0.76rem;
       font-weight: 620;
       line-height: 1.25;
       letter-spacing: -0.005em;
+      white-space: normal;
+      text-wrap: balance;
+    }
+
+    .app-tooltip-shortcut {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 27px;
+      min-height: 22px;
+      margin-left: 3px;
+      padding: 2px 6px;
+      border: 1px solid color-mix(in srgb, var(--line-strong) 76%, var(--accent) 24%);
+      border-radius: 6px;
+      background: color-mix(in srgb, var(--panel-solid) 82%, var(--accent) 18%);
+      color: var(--muted);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      font-family: var(--font-mono);
+      font-size: 0.61rem;
+      font-weight: 650;
+      line-height: 1;
     }
 
     .button svg,
@@ -3517,8 +3580,8 @@
     }
 
     @keyframes appTooltipIn {
-      from { opacity: 0; transform: translateX(-6px) scale(0.96); }
-      to { opacity: 1; transform: translateX(0); }
+      from { opacity: 0; transform: translate(var(--tooltip-enter-x, 0), var(--tooltip-enter-y, 4px)) scale(0.96); }
+      to { opacity: 1; transform: translate(0, 0) scale(1); }
     }
 
     /* Signed in: skip entrance animations so daily use feels instant. */
@@ -4658,7 +4721,7 @@
         <span class="brand-mark" id="brandMark"><i data-lucide="sparkles" class="brand-mark-icon"></i><span class="brand-mark-initial" id="brandInitial" aria-hidden="true"></span></span>
         <span class="brand-name">ChatJPGC</span>
       </a>
-      <button class="icon-button sidebar-minimize-button" id="sidebarMinimizeButton" type="button" aria-label="Collapse sidebar" aria-describedby="sidebarMinimizeTooltip" aria-pressed="false" data-tooltip="Collapse sidebar">
+      <button class="icon-button sidebar-minimize-button" id="sidebarMinimizeButton" type="button" aria-label="Collapse sidebar" aria-describedby="appTooltip" aria-pressed="false" data-tooltip="Collapse sidebar" data-tooltip-kicker="Workspace" data-tooltip-placement="right">
         <i data-lucide="chevron-left"></i>
       </button>
     </div>
@@ -4789,12 +4852,13 @@
     </div>
   </aside>
 
-  <div class="app-tooltip" id="sidebarMinimizeTooltip" role="tooltip" hidden>
-    <span class="app-tooltip-icon" aria-hidden="true"><i data-lucide="panel-left"></i></span>
+  <div class="app-tooltip" id="appTooltip" role="tooltip" data-placement="top" hidden>
+    <span class="app-tooltip-icon" aria-hidden="true"><i data-lucide="sparkles"></i></span>
     <span class="app-tooltip-copy">
-      <span class="app-tooltip-kicker">Workspace</span>
-      <span class="app-tooltip-label" id="sidebarMinimizeTooltipLabel">Collapse sidebar</span>
+      <span class="app-tooltip-kicker" id="appTooltipKicker">Quick action</span>
+      <span class="app-tooltip-label" id="appTooltipLabel">Collapse sidebar</span>
     </span>
+    <span class="app-tooltip-shortcut" id="appTooltipShortcut" hidden></span>
   </div>
 
   <main>
@@ -5356,8 +5420,10 @@
       themeToggle: document.querySelector("#themeToggle"),
       sidebar: document.querySelector("#appSidebar"),
       sidebarMinimizeButton: document.querySelector("#sidebarMinimizeButton"),
-      sidebarMinimizeTooltip: document.querySelector("#sidebarMinimizeTooltip"),
-      sidebarMinimizeTooltipLabel: document.querySelector("#sidebarMinimizeTooltipLabel"),
+      appTooltip: document.querySelector("#appTooltip"),
+      appTooltipKicker: document.querySelector("#appTooltipKicker"),
+      appTooltipLabel: document.querySelector("#appTooltipLabel"),
+      appTooltipShortcut: document.querySelector("#appTooltipShortcut"),
       moreMenu: document.querySelector("#moreMenu"),
       menuPanel: document.querySelector("#menuPanel"),
       homeButton: document.querySelector("#homeButton"),
@@ -5863,38 +5929,150 @@
       }, { once: true });
     }
 
-    function positionSidebarMinimizeTooltip() {
-      if (els.sidebarMinimizeTooltip.hidden) return;
-      const targetRect = els.sidebarMinimizeButton.getBoundingClientRect();
-      const tooltipRect = els.sidebarMinimizeTooltip.getBoundingClientRect();
-      const gap = 10;
+    let appTooltipTarget = null;
+    let appTooltipPendingTarget = null;
+    let appTooltipTimer = 0;
+    let appTooltipObserver = null;
+
+    function promotePremiumTooltip(element) {
+      if (!(element instanceof Element) || element === els.appTooltip || element.closest("#appTooltip")) return null;
+      const target = element.closest("[data-tooltip], [title]");
+      if (!target || target.matches("iframe")) return null;
+      const nativeTitle = target.getAttribute("title");
+      if (nativeTitle && !target.dataset.tooltip) target.dataset.tooltip = nativeTitle;
+      if (nativeTitle) target.removeAttribute("title");
+      return target.dataset.tooltip?.trim() ? target : null;
+    }
+
+    function premiumTooltipKicker(target) {
+      if (target.dataset.tooltipKicker) return target.dataset.tooltipKicker;
+      if (target.closest("#appSidebar")) return "Navigation";
+      if (target.matches(".format-button")) return "Formatting";
+      if (target.closest(".tabmode")) return "Workspace";
+      if (target.matches(".tag") || target.closest(".result-meta")) return "Entry details";
+      if (target.dataset.action) return "Entry action";
+      return "Quick action";
+    }
+
+    function premiumTooltipCopy(target) {
+      const raw = target.dataset.tooltip.trim();
+      const shortcutMatch = raw.match(/^(.*?)\s*\(([^()]+)\)$/);
+      const hasShortcut = shortcutMatch && /Ctrl|Control|Alt|Shift|Cmd|Command|Enter|Esc|⌘|⌥|⇧/i.test(shortcutMatch[2]);
+      return {
+        label: hasShortcut ? shortcutMatch[1].trim() : raw,
+        shortcut: target.dataset.tooltipShortcut || (hasShortcut ? shortcutMatch[2].trim() : "")
+      };
+    }
+
+    function renderPremiumTooltip(target) {
+      const copy = premiumTooltipCopy(target);
+      els.appTooltipKicker.textContent = premiumTooltipKicker(target);
+      els.appTooltipLabel.textContent = copy.label;
+      els.appTooltipShortcut.textContent = copy.shortcut;
+      els.appTooltipShortcut.hidden = !copy.shortcut;
+    }
+
+    function positionPremiumTooltip() {
+      if (els.appTooltip.hidden || !appTooltipTarget?.isConnected) return;
+      const targetRect = appTooltipTarget.getBoundingClientRect();
+      const tooltipRect = els.appTooltip.getBoundingClientRect();
+      const gap = 11;
       const edge = 8;
-      const left = Math.min(targetRect.right + gap, window.innerWidth - tooltipRect.width - edge);
-      const top = Math.max(edge, Math.min(
-        targetRect.top + ((targetRect.height - tooltipRect.height) / 2),
-        window.innerHeight - tooltipRect.height - edge
-      ));
-      els.sidebarMinimizeTooltip.style.left = `${Math.round(left)}px`;
-      els.sidebarMinimizeTooltip.style.top = `${Math.round(top)}px`;
+      const compactSidebarPlacement = isDesktopCompactSidebar() && appTooltipTarget.closest("#appSidebar") ? "right" : "";
+      const preferred = appTooltipTarget.dataset.tooltipPlacement || compactSidebarPlacement;
+      const placements = [...new Set([preferred, "top", "bottom", "right", "left"].filter(Boolean))];
+      const coordinates = {
+        top: () => ({ left: targetRect.left + ((targetRect.width - tooltipRect.width) / 2), top: targetRect.top - tooltipRect.height - gap }),
+        bottom: () => ({ left: targetRect.left + ((targetRect.width - tooltipRect.width) / 2), top: targetRect.bottom + gap }),
+        right: () => ({ left: targetRect.right + gap, top: targetRect.top + ((targetRect.height - tooltipRect.height) / 2) }),
+        left: () => ({ left: targetRect.left - tooltipRect.width - gap, top: targetRect.top + ((targetRect.height - tooltipRect.height) / 2) })
+      };
+      let placement = placements[0];
+      let point = coordinates[placement]();
+      for (const candidate of placements) {
+        const next = coordinates[candidate]();
+        const fits = next.left >= edge && next.top >= edge && next.left + tooltipRect.width <= window.innerWidth - edge && next.top + tooltipRect.height <= window.innerHeight - edge;
+        if (!fits) continue;
+        placement = candidate;
+        point = next;
+        break;
+      }
+      els.appTooltip.dataset.placement = placement;
+      els.appTooltip.style.left = `${Math.round(Math.max(edge, Math.min(point.left, window.innerWidth - tooltipRect.width - edge)))}px`;
+      els.appTooltip.style.top = `${Math.round(Math.max(edge, Math.min(point.top, window.innerHeight - tooltipRect.height - edge)))}px`;
     }
 
-    function showSidebarMinimizeTooltip() {
-      els.sidebarMinimizeTooltipLabel.textContent = els.sidebarMinimizeButton.dataset.tooltip;
-      els.sidebarMinimizeTooltip.hidden = false;
-      positionSidebarMinimizeTooltip();
+    function showPremiumTooltip(target, immediate = false) {
+      window.clearTimeout(appTooltipTimer);
+      appTooltipPendingTarget = target;
+      const reveal = () => {
+        if (!target?.isConnected || appTooltipPendingTarget !== target) return;
+        appTooltipTarget = target;
+        renderPremiumTooltip(target);
+        els.appTooltip.hidden = false;
+        positionPremiumTooltip();
+      };
+      if (immediate) reveal();
+      else appTooltipTimer = window.setTimeout(reveal, 220);
     }
 
-    function hideSidebarMinimizeTooltip() {
-      els.sidebarMinimizeTooltip.hidden = true;
+    function hidePremiumTooltip(target = null) {
+      if (target && target !== appTooltipTarget && target !== appTooltipPendingTarget) return;
+      window.clearTimeout(appTooltipTimer);
+      appTooltipPendingTarget = null;
+      appTooltipTarget = null;
+      els.appTooltip.hidden = true;
     }
 
-    function prepareSidebarTooltips() {
+    function preparePremiumTooltips() {
+      document.querySelectorAll("[title]:not(iframe)").forEach((element) => promotePremiumTooltip(element));
       document.querySelectorAll("#appSidebar button").forEach((button) => {
         const label = button.getAttribute("aria-label") || button.textContent.trim().replace(/\s+/g, " ");
         if (!label) return;
         if (!button.hasAttribute("aria-label")) button.setAttribute("aria-label", label);
-        if (!button.dataset.tooltip && !button.hasAttribute("title")) button.setAttribute("title", label);
+        if (!button.dataset.tooltip) button.dataset.tooltip = label;
       });
+      if (!appTooltipObserver) {
+        appTooltipObserver = new MutationObserver((records) => {
+          records.forEach((record) => {
+            if (record.type === "attributes") {
+              promotePremiumTooltip(record.target);
+              return;
+            }
+            record.addedNodes.forEach((node) => {
+              if (!(node instanceof Element)) return;
+              if (node.matches("[title]:not(iframe)")) promotePremiumTooltip(node);
+              node.querySelectorAll?.("[title]:not(iframe)").forEach((element) => promotePremiumTooltip(element));
+            });
+          });
+        });
+        appTooltipObserver.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["title"] });
+      }
+    }
+
+    function wirePremiumTooltips() {
+      document.addEventListener("pointerover", (event) => {
+        const target = promotePremiumTooltip(event.target);
+        if (!target || target.contains(event.relatedTarget)) return;
+        showPremiumTooltip(target);
+      });
+      document.addEventListener("pointerout", (event) => {
+        const target = promotePremiumTooltip(event.target);
+        if (!target || target.contains(event.relatedTarget)) return;
+        hidePremiumTooltip(target);
+      });
+      document.addEventListener("focusin", (event) => {
+        const target = promotePremiumTooltip(event.target);
+        if (target) showPremiumTooltip(target, true);
+      });
+      document.addEventListener("focusout", (event) => {
+        const target = promotePremiumTooltip(event.target);
+        if (target && !target.contains(event.relatedTarget)) hidePremiumTooltip(target);
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") hidePremiumTooltip();
+      });
+      document.addEventListener("scroll", () => hidePremiumTooltip(), true);
     }
 
     function setSidebarMinimized(minimized, persist = true) {
@@ -5935,8 +6113,8 @@
       const sidebarAction = compact ? "Expand sidebar" : "Collapse sidebar";
       els.sidebarMinimizeButton.setAttribute("aria-label", sidebarAction);
       els.sidebarMinimizeButton.dataset.tooltip = sidebarAction;
-      if (!els.sidebarMinimizeTooltip.hidden) {
-        els.sidebarMinimizeTooltipLabel.textContent = sidebarAction;
+      if (appTooltipTarget === els.sidebarMinimizeButton && !els.appTooltip.hidden) {
+        renderPremiumTooltip(els.sidebarMinimizeButton);
       }
       if (persist) {
         try {
@@ -8653,12 +8831,9 @@
     }
 
     function wireEvents() {
-      els.sidebarMinimizeButton.addEventListener("pointerenter", showSidebarMinimizeTooltip);
-      els.sidebarMinimizeButton.addEventListener("pointerleave", hideSidebarMinimizeTooltip);
-      els.sidebarMinimizeButton.addEventListener("focus", showSidebarMinimizeTooltip);
-      els.sidebarMinimizeButton.addEventListener("blur", hideSidebarMinimizeTooltip);
+      wirePremiumTooltips();
       window.addEventListener("resize", () => {
-        positionSidebarMinimizeTooltip();
+        positionPremiumTooltip();
         if (!isDesktopCompactSidebar()) {
           closeCompactSidebarPanels();
           return;
@@ -8669,7 +8844,7 @@
       });
       els.sidebarMinimizeButton.addEventListener("click", () => {
         setSidebarMinimized(!sidebarIsMinimized());
-        positionSidebarMinimizeTooltip();
+        positionPremiumTooltip();
       });
       els.libraryButton.addEventListener("click", () => {
         toggleLibraryPanel();
@@ -9933,7 +10108,7 @@
       applyTheme(savedTheme);
       state.favorites = loadFavorites();
       state.entries = loadLocalEntries();
-      prepareSidebarTooltips();
+      preparePremiumTooltips();
       setSidebarMinimized(sidebarIsMinimized(), false);
       wireEvents();
       applySearchMode("search");
