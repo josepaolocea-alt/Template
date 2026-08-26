@@ -22,7 +22,7 @@
   <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js" crossorigin />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&family=Lora:ital,wght@0,400..700;1,400..700&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400..700&display=swap" />
   <script src="https://unpkg.com/lucide@1.24.0/dist/umd/lucide.js" defer></script>
   <script>
     // Restore the browser-local desktop sidebar choice before first paint, so
@@ -4700,9 +4700,491 @@
         margin-inline: 16px;
       }
     }
+
+    /* ===================================================================
+       Editorial refinement — a quieter, more distinctive final design pass.
+       =================================================================== */
+    :root {
+      --sidebar-w: 260px;
+      --sidebar-minimized-w: 70px;
+      --font-display: "Newsreader", "Iowan Old Style", Georgia, serif;
+      --font-ui: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --accent-blue: var(--accent);
+      --accent-warm: var(--accent);
+      --accent-blue-ink: var(--accent-ink);
+      --accent-warm-ink: var(--accent-ink);
+      --shadow-directional: 0 24px 68px rgba(29, 23, 18, 0.24), 0 4px 16px rgba(29, 23, 18, 0.11);
+    }
+
+    [data-theme="light"] {
+      --bg: #f8f5ef;
+      --bg-2: #eee9e1;
+      --sidebar: #f0ebe3;
+      --panel: #fffdf9;
+      --panel-solid: #fffdf9;
+      --accent-blue: var(--accent);
+      --accent-warm: var(--accent);
+      --accent-blue-ink: var(--accent-ink);
+      --accent-warm-ink: var(--accent-ink);
+      --shadow-directional: 0 24px 64px rgba(82, 62, 45, 0.12), 0 4px 14px rgba(82, 62, 45, 0.06);
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      z-index: 0;
+      inset: 0;
+      background-image: radial-gradient(circle, color-mix(in srgb, var(--text) 28%, transparent) 0 0.45px, transparent 0.6px);
+      background-size: 7px 7px;
+      opacity: 0.035;
+      pointer-events: none;
+    }
+
+    main {
+      position: relative;
+      z-index: 1;
+      min-height: 100dvh;
+    }
+
+    .skip-link {
+      position: fixed;
+      z-index: 140;
+      top: 10px;
+      left: 12px;
+      padding: 9px 13px;
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      background: var(--panel-solid);
+      color: var(--text);
+      box-shadow: var(--shadow-directional);
+      font-size: 0.82rem;
+      font-weight: 700;
+      transform: translateY(-150%);
+      transition: transform var(--motion-fast) var(--ease-out);
+    }
+
+    .skip-link:focus {
+      transform: translateY(0);
+    }
+
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: color-mix(in srgb, var(--accent) 34%, var(--line-strong)) transparent;
+    }
+
+    ::-webkit-scrollbar {
+      display: block;
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      border: 2px solid transparent;
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--accent) 32%, var(--line-strong));
+      background-clip: padding-box;
+    }
+
+    .app-shell {
+      width: min(1120px, calc(100% - 64px));
+    }
+
+    .sidebar {
+      padding: 18px 14px 14px;
+      background: color-mix(in srgb, var(--sidebar) 97%, var(--accent) 3%);
+      border-right-color: color-mix(in srgb, var(--line-strong) 80%, var(--accent) 20%);
+      box-shadow: 18px 0 54px rgba(28, 22, 18, 0.10);
+    }
+
+    .sidebar-head {
+      min-height: 54px;
+      padding: 1px 3px 17px;
+    }
+
+    .brand {
+      gap: 11px;
+      font-size: 1.08rem;
+      font-weight: 570;
+      letter-spacing: -0.018em;
+    }
+
+    .brand-mark,
+    .new-note-plus {
+      border-radius: 9px;
+      background: var(--accent);
+      box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 20%, transparent), inset 0 1px 0 rgba(255,255,255,0.22);
+    }
+
+    .side-nav,
+    .side-group {
+      gap: 3px;
+    }
+
+    .side-item {
+      min-height: 39px;
+      padding: 8px 9px;
+      border-radius: 9px;
+      font-size: 0.91rem;
+    }
+
+    .side-item::after,
+    .side-sub-item::after {
+      display: none;
+    }
+
+    .side-item:hover,
+    .side-sub-item:hover {
+      transform: none;
+    }
+
+    html:not(.tab-mode-active) #homeButton,
+    #modeToggle.is-active {
+      background: color-mix(in srgb, var(--accent) 9%, transparent);
+      box-shadow: inset 2px 0 0 var(--accent);
+      font-weight: 650;
+    }
+
+    .sidebar-foot {
+      padding-top: 16px;
+      border-top-color: color-mix(in srgb, var(--line-strong) 74%, var(--accent) 26%);
+    }
+
+    .hero {
+      min-height: min(590px, calc(100dvh - 92px));
+      padding: 78px 0 112px;
+    }
+
+    .hero-content {
+      width: min(820px, 100%);
+      margin: 0 auto;
+      text-align: left;
+    }
+
+    .hero-eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 13px;
+      color: var(--accent-ink);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .hero-eyebrow > span {
+      width: 28px;
+      height: 1px;
+      background: var(--accent);
+    }
+
+    h1 {
+      max-width: 720px;
+      font-size: clamp(3.2rem, 5.5vw, 4.8rem);
+      line-height: 0.98;
+      letter-spacing: -0.044em;
+      font-weight: 470;
+      text-shadow: none;
+    }
+
+    #heroTitle {
+      margin-inline: 0;
+    }
+
+    #heroTitle.typewriter-animation {
+      width: fit-content;
+      overflow: visible;
+      border-right: 0;
+      white-space: normal;
+      animation: editorialHeroIn 720ms var(--ease-out) 90ms both;
+    }
+
+    #heroTitle[class*="greeting-motion-"] {
+      animation: none !important;
+    }
+
+    @keyframes editorialHeroIn {
+      from { opacity: 0; transform: translateY(14px); filter: blur(5px); }
+      to { opacity: 1; transform: translateY(0); filter: blur(0); }
+    }
+
+    .hero-copy {
+      margin: 20px 0 0;
+    }
+
+    .hero-clock {
+      justify-content: flex-start;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      color: var(--soft);
+      font-size: 0.82rem;
+      font-weight: 550;
+      letter-spacing: 0.018em;
+      backdrop-filter: none;
+    }
+
+    .search-card {
+      width: min(780px, 100%);
+      margin: 36px 0 0;
+      border-color: color-mix(in srgb, var(--line-strong) 82%, var(--accent) 18%);
+      border-radius: 18px;
+      background: color-mix(in srgb, var(--panel) 94%, transparent);
+      box-shadow: var(--shadow-directional), inset 0 1px 0 rgba(255,255,255,0.055);
+    }
+
+    .search-card::before {
+      background: linear-gradient(100deg, color-mix(in srgb, var(--accent) 54%, transparent), transparent 29%, color-mix(in srgb, white 8%, transparent));
+    }
+
+    .search-card:focus-within {
+      box-shadow: var(--shadow-directional), 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+    }
+
+    .promptbar {
+      min-height: 72px;
+    }
+
+    .promptbar input {
+      font-size: 1.08rem;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+    }
+
+    .search-caption {
+      display: flex;
+      justify-content: space-between;
+      width: min(780px, 100%);
+      margin: 12px 0 0;
+      color: var(--soft);
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.035em;
+    }
+
+    .search-caption span:first-child {
+      color: color-mix(in srgb, var(--muted) 86%, var(--accent));
+    }
+
+    main:has(#workspace:not([hidden])) .hero,
+    main:has(#aiPanel:not([hidden])) .hero {
+      padding: 32px 0 20px;
+    }
+
+    main:has(#workspace:not([hidden])) .hero-content,
+    main:has(#aiPanel:not([hidden])) .hero-content {
+      width: min(820px, 100%);
+    }
+
+    main:has(#workspace:not([hidden])) .hero-eyebrow,
+    main:has(#aiPanel:not([hidden])) .hero-eyebrow,
+    main:has(#workspace:not([hidden])) .search-caption,
+    main:has(#aiPanel:not([hidden])) .search-caption {
+      display: none;
+    }
+
+    main:has(#workspace:not([hidden])) h1,
+    main:has(#aiPanel:not([hidden])) h1 {
+      font-size: clamp(2.2rem, 4vw, 3rem);
+      line-height: 1;
+    }
+
+    main:has(#workspace:not([hidden])) .hero-clock,
+    main:has(#aiPanel:not([hidden])) .hero-clock {
+      margin-top: 10px;
+    }
+
+    main:has(#workspace:not([hidden])) .search-card,
+    main:has(#aiPanel:not([hidden])) .search-card {
+      margin-top: 22px;
+    }
+
+    .results-meta-line,
+    .results-stack {
+      width: min(820px, 100%);
+    }
+
+    .results-meta-line {
+      margin-bottom: 16px;
+    }
+
+    .clear-results {
+      border-radius: 8px;
+    }
+
+    .result-card {
+      gap: 16px;
+      padding: 22px 24px 24px;
+      border: 0;
+      border-radius: 14px;
+      background: color-mix(in srgb, var(--panel) 90%, transparent);
+      box-shadow: inset 0 0 0 1px var(--line), 0 14px 36px rgba(29, 23, 18, 0.07);
+    }
+
+    .result-card:hover {
+      border-color: transparent;
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--line-strong) 74%, var(--accent) 26%), 0 20px 48px rgba(29, 23, 18, 0.12);
+      transform: translateY(-2px);
+    }
+
+    .result-head h2 {
+      font-family: var(--font-display);
+      font-size: 1.34rem;
+      font-weight: 560;
+      line-height: 1.18;
+      letter-spacing: -0.018em;
+      text-wrap: pretty;
+    }
+
+    .result-text {
+      display: -webkit-box;
+      max-width: 68ch;
+      overflow: hidden;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 8;
+      line-clamp: 8;
+      color: color-mix(in srgb, var(--text) 78%, var(--muted));
+      font-size: 0.98rem;
+      line-height: 1.68;
+      white-space: pre-line;
+    }
+
+    .tag {
+      min-height: 24px;
+      border-radius: 6px;
+      font-size: 0.7rem;
+    }
+
+    .tag.time,
+    .tag.edited {
+      padding-inline: 2px;
+      border-color: transparent;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .tag.kind {
+      border-color: color-mix(in srgb, var(--accent) 28%, var(--line));
+      border-radius: 5px;
+      background: color-mix(in srgb, var(--accent) 8%, transparent);
+      color: var(--accent-ink);
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.065em;
+      text-transform: uppercase;
+    }
+
+    .result-open-row {
+      justify-content: flex-start;
+      margin-top: 5px;
+    }
+
+    .result-open-button,
+    .result-open-button:hover {
+      min-height: 28px;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      color: var(--accent-ink);
+      box-shadow: none;
+      font-size: 0.76rem;
+      font-weight: 700;
+      transform: none;
+    }
+
+    .result-open-button:hover {
+      gap: 9px;
+    }
+
+    button:active:not(:disabled),
+    [role="button"]:active:not([aria-disabled="true"]) {
+      transform: translateY(1px) scale(0.985);
+    }
+
+    @media (max-width: 920px) {
+      .app-shell {
+        width: min(100% - 36px, 1120px);
+      }
+
+      .hero {
+        min-height: min(560px, calc(100dvh - 56px));
+        padding: 64px 0 92px;
+      }
+
+      .hero-content {
+        width: min(760px, 100%);
+      }
+
+      h1 {
+        font-size: clamp(3rem, 10vw, 4.4rem);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .app-shell {
+        width: min(100% - 28px, 1120px);
+      }
+
+      .hero {
+        align-items: start;
+        min-height: calc(100dvh - 56px);
+        padding: 84px 0 70px;
+      }
+
+      .hero-eyebrow {
+        margin-bottom: 11px;
+        font-size: 0.62rem;
+      }
+
+      h1 {
+        font-size: clamp(2.75rem, 14vw, 3.7rem);
+      }
+
+      .hero-clock {
+        font-size: 0.73rem;
+      }
+
+      .search-card {
+        margin-top: 30px;
+        border-radius: 15px;
+      }
+
+      .promptbar {
+        grid-template-columns: 46px minmax(0, 1fr) auto 49px;
+        min-height: 62px;
+      }
+
+      .promptbar input {
+        font-size: 1rem;
+      }
+
+      .search-caption span:last-child {
+        display: none;
+      }
+
+      .result-card {
+        padding: 18px;
+      }
+
+      .result-head h2 {
+        font-size: 1.2rem;
+      }
+    }
   </style>
 </head>
 <body>
+  <a class="skip-link" href="#mainContent">Skip to content</a>
   <div class="sidebar-scrim" id="sidebarScrim" hidden></div>
 
   <header class="mobile-bar">
@@ -4861,9 +5343,10 @@
     <span class="app-tooltip-shortcut" id="appTooltipShortcut" hidden></span>
   </div>
 
-  <main>
+  <main id="mainContent">
     <section class="hero app-shell" aria-labelledby="heroTitle">
       <div class="hero-content">
+        <p class="hero-eyebrow"><span aria-hidden="true"></span>Knowledge workspace</p>
         <h1 id="heroTitle">What are you up to?</h1>
         <p class="hero-copy hero-clock" id="heroClock" aria-live="polite">
           <span id="clockDate">&nbsp;</span>
@@ -4880,7 +5363,7 @@
             <button class="icon-hold mode-cycle" id="searchModeButton" type="button">
               <i data-lucide="search"></i>
             </button>
-            <input id="searchInput" type="search" autocomplete="off" placeholder="Ask for a note, template, image, or phrase..." />
+            <input id="searchInput" type="search" autocomplete="off" placeholder="Search your saved knowledge..." />
             <button class="icon-button search-clear" id="searchClearButton" type="button" aria-label="Clear search" hidden>
               <i data-lucide="x"></i>
             </button>
@@ -4889,6 +5372,7 @@
             </button>
           </form>
         </div>
+        <p class="search-caption"><span>Search · Generate · Ask</span><span>Switch modes from the leading icon</span></p>
       </div>
     </section>
 
@@ -6654,14 +7138,14 @@
         ` : "";
 
         const body = entry.body ? `<p class="result-text">${renderBodyHtml(entry.body)}</p>` : `<p class="result-text">Image reference saved without text.</p>`;
-        const openEntryButton = entry.imageUrl ? `
+        const openEntryButton = `
           <div class="result-open-row">
             <button class="button ghost result-open-button" type="button" data-action="open-entry" data-id="${escapeHtml(entry.id)}">
               <i data-lucide="panel-right-open"></i>
               <span>Open entry</span>
             </button>
           </div>
-        ` : "";
+        `;
 
         return `
           <article class="result-card ${entry.imageUrl ? "has-image" : ""}${entry.hidden ? " is-hidden" : ""}" data-kind="${escapeHtml(entry.kind || "note")}" style="--i:${Math.min(index, 10)}">
@@ -7131,21 +7615,21 @@
         icon: "search",
         label: "Search",
         next: "generate",
-        placeholder: "Ask for a note, template, image, or phrase...",
+        placeholder: "Search your saved knowledge...",
         submitLabel: "Search"
       },
       generate: {
         icon: "sparkles",
         label: "AI Generate",
         next: "ask",
-        placeholder: "Generate results from AI — describe the text you want written...",
+        placeholder: "Describe what you want written...",
         submitLabel: "Generate with AI"
       },
       ask: {
         icon: "brain",
         label: "Ask AI",
         next: "search",
-        placeholder: "Ask AI a question — answered from your saved notes...",
+        placeholder: "Ask a question about your notes...",
         submitLabel: "Ask AI"
       }
     };
