@@ -7610,6 +7610,117 @@
       transform: none;
     }
 
+    .file-picker-field {
+      display: grid;
+      gap: 9px;
+    }
+
+    .file-picker-control {
+      position: relative;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: center;
+      gap: 12px;
+      min-height: 64px;
+      padding: 7px;
+      border: 1px solid var(--line-strong);
+      border-radius: 10px;
+      background: var(--panel);
+      cursor: pointer;
+      transition: border-color var(--motion-fast) ease, background var(--motion-fast) ease, box-shadow var(--motion-fast) ease;
+    }
+
+    .file-picker-control:hover {
+      border-color: var(--compose-accent-line);
+      background: color-mix(in srgb, var(--panel) 82%, var(--compose-accent-soft));
+    }
+
+    .file-picker-control:focus-within {
+      border-color: var(--compose-accent-line);
+      box-shadow: var(--compose-focus);
+    }
+
+    .compose-more-body .file-picker-input,
+    .compose-more-body .file-picker-input:hover,
+    .compose-more-body .file-picker-input:focus,
+    .compose-more-body .file-picker-input:focus-visible {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      border-radius: inherit;
+      background: transparent;
+      box-shadow: none;
+      opacity: 0;
+      cursor: pointer;
+      transform: none;
+    }
+
+    .file-picker-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 48px;
+      padding: 0 14px;
+      border: 1px solid var(--compose-accent-line);
+      border-radius: 8px;
+      background: var(--compose-accent-soft);
+      color: var(--text);
+      font-size: .8rem;
+      font-weight: 700;
+      white-space: nowrap;
+      transition: background var(--motion-fast) ease, transform var(--motion-fast) ease;
+    }
+
+    .file-picker-action svg {
+      width: 17px;
+      height: 17px;
+      color: var(--compose-accent);
+      stroke-width: 1.8;
+    }
+
+    .file-picker-control:active .file-picker-action {
+      transform: translateY(1px);
+    }
+
+    .file-picker-copy {
+      display: grid;
+      min-width: 0;
+      gap: 3px;
+      padding-right: 8px;
+      pointer-events: none;
+    }
+
+    .file-picker-name {
+      overflow: hidden;
+      color: var(--muted);
+      font-size: .8rem;
+      font-weight: 650;
+      line-height: 1.25;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .file-picker-meta {
+      overflow: hidden;
+      color: var(--soft);
+      font-size: .72rem;
+      font-weight: 500;
+      line-height: 1.3;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .file-picker-control.has-file .file-picker-name {
+      color: var(--text);
+    }
+
     .compose-more .image-preview,
     .compose-more .source-pill {
       border: 1px dashed var(--line-strong);
@@ -7839,6 +7950,20 @@
 
       .compose-more {
         padding: 0;
+      }
+
+      .file-picker-control {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 7px;
+        padding: 8px;
+      }
+
+      .file-picker-action {
+        width: 100%;
+      }
+
+      .file-picker-copy {
+        padding: 4px 5px 3px;
       }
 
       .compose-field input,
@@ -8194,9 +8319,19 @@
                 Image URL
                 <input id="entryImageUrl" name="imageUrl" type="text" inputmode="url" placeholder="https://... or saved image data" />
               </label>
-              <label>
-                Image file
-                <input id="entryImageFile" name="imageFile" type="file" accept="image/*" />
+              <label class="file-picker-field">
+                <span>Image file</span>
+                <span class="file-picker-control" id="entryImageFileControl">
+                  <input class="file-picker-input" id="entryImageFile" name="imageFile" type="file" accept="image/*" aria-label="Choose an image file" />
+                  <span class="file-picker-action" aria-hidden="true">
+                    <i data-lucide="file-up"></i>
+                    <span id="entryImageFileActionLabel">Choose image</span>
+                  </span>
+                  <span class="file-picker-copy">
+                    <span class="file-picker-name" id="entryImageFileName" aria-live="polite">No file selected</span>
+                    <span class="file-picker-meta" id="entryImageFileMeta">PNG, JPG, WEBP and other image formats</span>
+                  </span>
+                </span>
               </label>
             </div>
 
@@ -8696,6 +8831,10 @@
       entryTags: document.querySelector("#entryTags"),
       entryImageUrl: document.querySelector("#entryImageUrl"),
       entryImageFile: document.querySelector("#entryImageFile"),
+      entryImageFileControl: document.querySelector("#entryImageFileControl"),
+      entryImageFileActionLabel: document.querySelector("#entryImageFileActionLabel"),
+      entryImageFileName: document.querySelector("#entryImageFileName"),
+      entryImageFileMeta: document.querySelector("#entryImageFileMeta"),
       imagePreview: document.querySelector("#imagePreview"),
       entryAttachmentUrl: document.querySelector("#entryAttachmentUrl"),
       attachmentPreview: document.querySelector("#attachmentPreview"),
@@ -11099,9 +11238,25 @@
       els.entryForm.reset();
       els.entryBody.style.height = "";
       els.entryBody.style.overflowY = "hidden";
+      renderImageFileState(null);
       renderImagePreview("");
       renderAttachmentPreview(null);
       window.requestAnimationFrame(resizeEntryBody);
+    }
+
+    function renderImageFileState(file) {
+      const hasFile = Boolean(file);
+      const format = file && file.type.includes("/")
+        ? file.type.split("/").pop().toUpperCase()
+        : "Image";
+      const details = file
+        ? [formatBytes(file.size), format].filter(Boolean).join(", ")
+        : "PNG, JPG, WEBP and other image formats";
+
+      els.entryImageFileControl.classList.toggle("has-file", hasFile);
+      els.entryImageFileActionLabel.textContent = hasFile ? "Replace image" : "Choose image";
+      els.entryImageFileName.textContent = hasFile ? file.name : "No file selected";
+      els.entryImageFileMeta.textContent = details;
     }
 
     function renderImagePreview(url) {
@@ -12611,6 +12766,7 @@
 
       els.entryImageFile.addEventListener("change", async () => {
         const file = els.entryImageFile.files[0];
+        renderImageFileState(file || null);
         if (!file) {
           renderImagePreview(els.entryImageUrl.value.trim());
           return;
