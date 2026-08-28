@@ -7355,9 +7355,9 @@
     }
 
     /* ===================================================================
-       Compose sidebar - current app controls
-       Preserves the paper writing surface while bringing the supporting form
-       controls into the same neutral + olive system as the tab workspace.
+       Compose view - current app controls
+       Removes the former memo-paper surface and keeps the whole editor inside
+       the same neutral + olive system as the current application.
        =================================================================== */
     .compose {
       --compose-accent: #5f7614;
@@ -7624,6 +7624,150 @@
       padding: 13px 15px;
     }
 
+    /* Retire the legacy paper editor completely. The form remains structurally
+       identical, but every field now participates in one flat app surface. */
+    .compose {
+      width: min(980px, calc(100% - 48px));
+      min-height: 100dvh;
+      padding: 0 0 64px;
+      background: var(--bg);
+    }
+
+    .compose-bar {
+      width: 100%;
+      max-width: 980px;
+      margin-inline: auto;
+    }
+
+    .compose-form {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: none;
+      gap: 16px;
+      width: min(820px, 100%);
+      max-width: 820px;
+      min-height: 0;
+      margin: 0 auto;
+      padding: 28px 0 48px;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .compose-form::before {
+      display: none;
+      content: none;
+    }
+
+    .compose-title {
+      grid-column: 1;
+      grid-row: auto;
+      width: 100%;
+      margin: 0;
+      padding: 0 0 16px;
+      border: 0;
+      border-bottom: 1px solid var(--line-strong);
+      border-radius: 0;
+      background: transparent;
+      color: var(--text);
+      font-family: var(--font-ui);
+      font-size: clamp(2.15rem, 5vw, 3.35rem);
+      font-weight: 600;
+      letter-spacing: -.045em;
+      line-height: 1.08;
+      box-shadow: none;
+    }
+
+    .compose-title::placeholder {
+      color: var(--soft);
+    }
+
+    .compose-kind {
+      grid-column: 1;
+      grid-row: auto;
+      align-self: stretch;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      width: 100%;
+    }
+
+    .compose-body {
+      grid-column: 1;
+      grid-row: auto;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      min-height: 340px;
+      margin: 0;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+      box-shadow: none;
+      overflow: hidden;
+    }
+
+    .compose-body:focus-within {
+      border: 1px solid var(--compose-accent-line);
+      box-shadow: var(--compose-focus);
+    }
+
+    .compose-body textarea {
+      order: 1;
+      flex: 1;
+      min-height: 290px;
+      padding: 18px;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      color: var(--text);
+      font-family: var(--font-ui);
+      font-size: 1rem;
+      font-weight: 400;
+      letter-spacing: -.008em;
+      line-height: 1.65;
+      resize: vertical;
+    }
+
+    .compose-body textarea::placeholder {
+      color: var(--soft);
+    }
+
+    .compose-toolbar {
+      order: 2;
+      min-height: 48px;
+      margin: 0;
+      padding: 7px 10px;
+      border: 0;
+      border-top: 1px solid var(--line);
+      border-bottom: 0;
+      background: color-mix(in srgb, var(--bg) 38%, transparent);
+    }
+
+    .format-button {
+      min-width: 34px;
+      min-height: 34px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+    }
+
+    .format-button:hover,
+    .format-button:focus-visible {
+      border-color: var(--line-strong);
+      background: var(--hover);
+      color: var(--text);
+      transform: none;
+    }
+
+    .compose-field,
+    .compose-more,
+    .hidden-field {
+      grid-column: 1;
+      grid-row: auto;
+      align-self: stretch;
+      width: 100%;
+    }
+
     @media (max-width: 700px) {
       .compose-bar {
         grid-template-columns: 40px minmax(0, 1fr) auto;
@@ -7639,6 +7783,17 @@
 
       .compose-form::before {
         display: none;
+      }
+
+      .compose {
+        width: 100%;
+        padding: 0 16px 40px;
+      }
+
+      .compose-form {
+        display: grid;
+        width: 100%;
+        padding: 20px 0 40px;
       }
 
       .compose-title {
@@ -7664,15 +7819,22 @@
       .compose-field,
       .compose-more,
       .hidden-field {
-        margin: 16px 0 0;
-        padding-left: 14px;
-        border-left: 1px solid var(--line);
+        margin: 0;
         color: var(--text);
       }
 
       .compose-kind {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         padding: 8px;
+      }
+
+      .compose-body {
+        min-height: 300px;
+      }
+
+      .compose-body textarea {
+        min-height: 250px;
+        padding: 16px;
       }
 
       .compose-more {
