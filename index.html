@@ -5926,7 +5926,10 @@
       cursor: pointer;
       transition: transform 260ms cubic-bezier(.2,.8,.2,1), box-shadow 260ms ease;
       isolation: isolate;
-      animation: paper-arrive 520ms cubic-bezier(.2,.8,.2,1) both;
+      /* Hold the entrance start pose during the staggered delay, then release
+         transform so the card's hover lift/rotation can take over. `both`
+         kept the final keyframe transform active forever and blocked :hover. */
+      animation: paper-arrive 520ms cubic-bezier(.2,.8,.2,1) backwards;
       animation-delay: calc(var(--i, 0) * 45ms);
     }
 
