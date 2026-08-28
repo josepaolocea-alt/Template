@@ -1933,11 +1933,28 @@
     /* The entry detail opens as a centred modal (UA showModal keeps it centred)
        that scales and fades up from the middle, rather than a side drawer. */
     .modal.entry-modal {
+      --text: #171713;
+      --muted: rgba(23, 23, 19, 0.68);
+      --soft: rgba(23, 23, 19, 0.56);
+      --line: rgba(23, 23, 19, 0.11);
+      --line-strong: rgba(23, 23, 19, 0.18);
+      --hover: rgba(23, 23, 19, 0.08);
+      --active: rgba(23, 23, 19, 0.12);
+      --bg-2: rgba(255, 255, 255, 0.28);
+      --panel-solid: color-mix(in srgb, var(--entry-paper, #ffb488) 88%, white);
+      --premium-border: rgba(23, 23, 19, 0.14);
+      --premium-glow: rgba(23, 23, 19, 0.09);
       width: min(640px, calc(100% - 32px));
       max-width: min(640px, calc(100% - 32px));
       max-height: min(82vh, 760px);
       flex-direction: column;
       overflow: hidden;
+      border-color: rgba(23, 23, 19, 0.16);
+      background-color: var(--entry-paper, #ffb488);
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.06'/%3E%3C/svg%3E");
+      background-blend-mode: soft-light;
+      color: var(--text);
+      box-shadow: 0 24px 70px rgba(58, 48, 32, 0.28), 0 5px 18px rgba(58, 48, 32, 0.14);
     }
 
     .modal.entry-modal[open] {
@@ -1955,6 +1972,13 @@
 
     .modal.entry-modal .modal-head {
       flex: 0 0 auto;
+      border-bottom-color: var(--line);
+      background: color-mix(in srgb, var(--entry-paper, #ffb488) 91%, white);
+    }
+
+    .modal.entry-modal .drawer-body,
+    .modal.entry-modal .modal-foot {
+      background: transparent;
     }
 
     .modal.entry-modal.entry-detail-has-image {
@@ -3232,8 +3256,28 @@
     .tabmode-tab.is-active::after { transform: scaleX(1); }
 
     .tabmode-tab.is-dragging {
-      opacity: 0.45;
+      z-index: 2;
+      opacity: 1;
+      border-radius: 7px;
+      background: var(--panel-solid);
+      box-shadow: 0 8px 22px rgba(28, 22, 18, 0.16), inset 0 0 0 1px var(--line-strong);
+      color: var(--text);
       cursor: grabbing;
+    }
+
+    /* Native drag previews preserve transparent pixels from the source tab.
+       This clone gives the tab a solid paper surface while it is in motion. */
+    .tabmode-tab-drag-ghost {
+      position: fixed !important;
+      top: -1000px !important;
+      left: -1000px !important;
+      z-index: 100;
+      opacity: 1 !important;
+      border-radius: 7px !important;
+      background: var(--panel-solid) !important;
+      box-shadow: 0 10px 28px rgba(28, 22, 18, 0.24), inset 0 0 0 1px var(--line-strong) !important;
+      color: var(--text) !important;
+      pointer-events: none;
     }
 
     .tabmode-tab.drop-before::before,
@@ -4554,6 +4598,13 @@
       transform: scaleX(1);
     }
 
+    /* Keep the source tab itself opaque too. This follows the premium active
+       and hover rules so neither can restore a transparent background mid-drag. */
+    .tabmode-tab.is-dragging {
+      background: var(--panel-solid);
+      box-shadow: 0 8px 22px rgba(28, 22, 18, 0.16), inset 0 0 0 1px var(--line-strong);
+    }
+
     /* Premium sign-in */
     #authDialog {
       width: min(460px, calc(100% - 24px));
@@ -4939,25 +4990,14 @@
     }
 
     * {
-      scrollbar-width: thin;
-      scrollbar-color: color-mix(in srgb, var(--accent) 34%, var(--line-strong)) transparent;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
     }
 
     ::-webkit-scrollbar {
-      display: block;
-      width: 8px;
-      height: 8px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    ::-webkit-scrollbar-thumb {
-      border: 2px solid transparent;
-      border-radius: 10px;
-      background: color-mix(in srgb, var(--accent) 32%, var(--line-strong));
-      background-clip: padding-box;
+      display: none;
+      width: 0;
+      height: 0;
     }
 
     .app-shell {
@@ -5582,6 +5622,8 @@
       content: "";
       position: absolute;
       top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
       width: 13px;
       height: 1px;
       background: var(--line-strong);
@@ -5682,6 +5724,19 @@
       font-size: 0.9rem;
       font-weight: 400;
       letter-spacing: -.015em;
+      /* The outer pill is the only frame; drop the shared form-field box so the
+         input doesn't paint a second rounded box inside it (esp. on focus). */
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+    }
+
+    .promptbar input:hover,
+    .promptbar input:focus,
+    .promptbar input:focus-visible {
+      border: 0;
+      box-shadow: none;
+      outline: none;
     }
 
     .promptbar input::placeholder { color: var(--muted); opacity: .78; }
@@ -7081,6 +7136,21 @@
       tabSidebarCollapsed: true
     };
 
+    const ENTRY_PAPER_COLORS = Object.freeze({
+      note: "#ffb488",
+      template: "#f5ca68",
+      process: "#b196f2",
+      image: "#ffffff"
+    });
+
+    function entryKindKey(kind) {
+      return String(kind || "note").toLowerCase().replace(/[^a-z0-9-]/g, "") || "note";
+    }
+
+    function entryPaperColor(kind) {
+      return ENTRY_PAPER_COLORS[entryKindKey(kind)] || ENTRY_PAPER_COLORS.note;
+    }
+
     const els = {
       brandInitial: document.querySelector("#brandInitial"),
       heroTitle: document.querySelector("#heroTitle"),
@@ -8287,11 +8357,10 @@
 
       els.resultsList.innerHTML = rows.map(({ entry }, index) => {
         const tags = normalizeTags(entry.tags);
-        const kindClass = String(entry.kind || "note").toLowerCase().replace(/[^a-z0-9-]/g, "");
+        const kindClass = entryKindKey(entry.kind);
         // Card colour is decided by the note's type, so the "All notes" view
         // reads as a mix (rainbow) while a filtered view is one solid colour.
-        const kindPaper = { note: "#ffb488", template: "#f5ca68", process: "#b196f2", image: "#ffffff" };
-        const paperColor = kindPaper[kindClass] || kindPaper.note;
+        const paperColor = entryPaperColor(entry.kind);
         const favorited = isFavorite(entry.id);
         const favoriteButton = `
           <button class="icon-button tiny-button favorite-button${favorited ? " is-favorite" : ""}" type="button" data-action="favorite" data-id="${escapeHtml(entry.id)}" aria-pressed="${favorited}" aria-label="${favorited ? "Remove from favorites" : "Add to favorites"}" title="${favorited ? "Remove from favorites" : "Add to favorites"}">
@@ -9194,10 +9263,13 @@
       }
 
       const tags = normalizeTags(entry.tags);
+      const kindClass = entryKindKey(entry.kind);
       els.entryDetailDialog.classList.toggle("entry-detail-has-image", Boolean(entry.imageUrl));
+      els.entryDetailDialog.dataset.kind = kindClass;
+      els.entryDetailDialog.style.setProperty("--entry-paper", entryPaperColor(entry.kind));
       els.entryDetailTitle.textContent = entry.title || "Untitled";
       els.entryDetailMeta.innerHTML = `
-        <span class="tag kind kind-${escapeHtml(String(entry.kind || "note").toLowerCase().replace(/[^a-z0-9-]/g, ""))}">${escapeHtml(entry.kind || "note")}</span>
+        <span class="tag kind kind-${escapeHtml(kindClass)}">${escapeHtml(entry.kind || "note")}</span>
         ${entryTimeTags(entry)}
         ${entry.hidden ? `<span class="tag hidden-tag">Hidden</span>` : ""}
         ${tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}
@@ -11302,6 +11374,7 @@
     /* --- Reordering: tabs can be dragged (or moved with Ctrl/Alt+Arrows) to
        any position in the strip. Order is saved per-user like everything else. */
     let tabDragId = null;
+    let tabDragGhost = null;
 
     function tabIndexOf(id) {
       return state.tabs.findIndex((tab) => tab.id === id);
@@ -11311,6 +11384,12 @@
       els.tabTabs.querySelectorAll(".drop-before, .drop-after").forEach((el) => {
         el.classList.remove("drop-before", "drop-after");
       });
+    }
+
+    function clearTabDragGhost() {
+      if (!tabDragGhost) return;
+      tabDragGhost.remove();
+      tabDragGhost = null;
     }
 
     // Move the dragged tab to just before/after the tab it was dropped on.
@@ -11721,11 +11800,23 @@
       els.tabTabs.addEventListener("dragstart", (event) => {
         const tab = event.target.closest(".tabmode-tab");
         if (!tab) return;
+        clearTabDragGhost();
         tabDragId = tab.dataset.tabId;
         tab.classList.add("is-dragging");
         if (event.dataTransfer) {
           event.dataTransfer.effectAllowed = "move";
           try { event.dataTransfer.setData("text/plain", tabDragId); } catch (e) {}
+          const rect = tab.getBoundingClientRect();
+          const dragGhost = tab.cloneNode(true);
+          dragGhost.classList.remove("is-dragging", "drop-before", "drop-after");
+          dragGhost.classList.add("tabmode-tab-drag-ghost");
+          dragGhost.setAttribute("aria-hidden", "true");
+          dragGhost.style.width = `${rect.width}px`;
+          document.body.append(dragGhost);
+          tabDragGhost = dragGhost;
+          const offsetX = Math.max(0, Math.min(rect.width, event.clientX - rect.left));
+          const offsetY = Math.max(0, Math.min(rect.height, event.clientY - rect.top));
+          try { event.dataTransfer.setDragImage(dragGhost, offsetX, offsetY); } catch (e) {}
         }
       });
 
@@ -11751,6 +11842,7 @@
           const after = event.clientX > rect.left + rect.width / 2;
           moveTab(tabDragId, over.dataset.tabId, after);
         }
+        clearTabDragGhost();
         tabDragId = null;
       });
 
@@ -11758,6 +11850,7 @@
         clearTabDropMarkers();
         const dragging = els.tabTabs.querySelector(".is-dragging");
         if (dragging) dragging.classList.remove("is-dragging");
+        clearTabDragGhost();
         tabDragId = null;
       });
 
