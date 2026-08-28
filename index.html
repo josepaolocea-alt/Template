@@ -7979,6 +7979,146 @@
         backdrop-filter: none;
       }
     }
+
+    /* ===================================================================
+       Coral editorial unification — new entry + tab workspace
+       Brings the compose view and the tab workspace onto the same dark
+       editorial system as the home library (screenshot reference):
+       Manrope display, coral (--accent) chrome accent, kind-coloured
+       cards/tabs, and underline-style active indicators. Repairs the
+       previously-undefined --lime* tokens that left every tab-mode active
+       state accent-less with near-black (invisible) text, and retunes the
+       compose editor off its olive accent onto coral. CSS only: DOM, JS
+       hooks and information architecture are unchanged.
+       =================================================================== */
+
+    /* --- Tab workspace: move the whole workspace off its lime identity onto
+       the home's coral accent. The earlier `.tabmode` block hijacks --accent
+       (and the --lime* aliases the chrome references) to green, so these
+       redefinitions must match its specificity and win on source order. --- */
+    .tabmode,
+    [data-theme="dark"] .tabmode {
+      --accent: #ff956f;
+      --accent-ink: #ff956f;
+      --hover: rgba(255, 255, 255, 0.06);
+      --active: rgba(255, 255, 255, 0.10);
+      --focus: 0 0 0 3px color-mix(in srgb, #ff956f 26%, transparent);
+      --lime: #ff956f;
+      --lime-soft: color-mix(in srgb, #ff956f 15%, transparent);
+      --lime-line: color-mix(in srgb, #ff956f 46%, var(--line-strong));
+    }
+
+    /* Active filter chip / landing + blank icons used var(--accent-ink),
+       which resolves to near-black on the dark surface and disappeared.
+       Make the ink legible and coral-forward. */
+    .tabmode-side-filters .chip.active {
+      border-color: var(--lime-line);
+      background: var(--lime-soft);
+      color: var(--text);
+    }
+    .tabmode-side-filters .chip.active svg { color: var(--accent); }
+    .tabmode-landing-head .landing-icon,
+    .tabmode-blank svg { color: var(--accent); }
+
+    /* Open-note list: a coral wash for the active row, and each row keeps
+       its own kind colour as the left mark, echoing the card palette. */
+    .tabmode-side-item .tabmode-side-item-mark {
+      background: color-mix(in srgb, var(--tab-paper, var(--line-strong)) 58%, transparent);
+    }
+    .tabmode-side-item:hover .tabmode-side-item-mark {
+      background: color-mix(in srgb, var(--tab-paper, var(--line-strong)) 80%, transparent);
+    }
+    .tabmode-side-item.is-active {
+      border-color: var(--lime-line);
+      background: var(--lime-soft);
+      color: var(--text);
+    }
+    .tabmode-side-item.is-active .tabmode-side-item-mark {
+      background: var(--tab-paper, var(--accent));
+    }
+
+    /* Tab strip: keep the movable-tab affordance, but read like the home
+       underline tabs — cream label, a 2px underline in the note's own
+       kind colour, no heavy pill. */
+    .tabmode-tab:hover {
+      border-color: transparent;
+      background: var(--hover);
+      color: var(--text);
+    }
+    .tabmode-tab.is-active {
+      border-color: transparent;
+      background: color-mix(in srgb, var(--tab-paper, var(--accent)) 13%, transparent);
+      color: var(--text);
+      box-shadow: inset 0 -2px 0 var(--tab-paper, var(--accent));
+    }
+    .tabmode-tab.is-active > svg { color: var(--tab-paper, var(--accent)); }
+
+    /* New-tab landing grid: colour the cards by kind exactly like the home
+       library cards — colour fill, ink-dark text, gently irregular radius. */
+    .tabmode-open-card,
+    .tabmode-open-card:nth-child(n) {
+      border: 1px solid rgba(23, 23, 19, 0.16);
+      border-radius: 13px 16px 11px 14px;
+      background: var(--tab-paper, #ffb488);
+      color: #171713;
+      box-shadow: 0 10px 22px rgba(0, 0, 0, 0.20);
+    }
+    .tabmode-open-card:hover {
+      border-color: rgba(23, 23, 19, 0.26);
+      background: var(--tab-paper, #ffb488);
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.28);
+      transform: translateY(-3px);
+    }
+    .tabmode-open-card-kicker {
+      color: rgba(23, 23, 19, 0.58);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-size: 0.66rem;
+    }
+    .tabmode-open-card-title { color: #171713; }
+    .tabmode-open-card-snippet { color: rgba(23, 23, 19, 0.70); }
+
+    /* Landing head scaled toward the editorial home hero. */
+    .tabmode-landing-head h2 {
+      font-size: clamp(1.7rem, 3.4vw, 2.6rem);
+      letter-spacing: -0.03em;
+    }
+    .tabmode-landing-search:focus-within {
+      border-color: var(--lime-line);
+      box-shadow: var(--focus);
+    }
+
+    /* Reading view: a small kind-coloured marker above the note title,
+       echoing the home "— your collected thinking" eyebrow dash. */
+    .tabmode-doc::before {
+      content: "";
+      display: block;
+      width: 34px;
+      height: 3px;
+      border-radius: 3px;
+      background: var(--tab-paper, var(--accent));
+    }
+
+    /* --- New entry (compose): retune the editor from olive onto the same
+       coral accent, and add the editorial eyebrow dash above the title. --- */
+    .compose,
+    [data-theme="dark"] .compose {
+      --compose-accent: var(--accent);
+      --compose-accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
+      --compose-accent-line: color-mix(in srgb, var(--accent) 46%, var(--line-strong));
+      --compose-accent-text: #211a15;
+      --compose-focus: 0 0 0 3px color-mix(in srgb, var(--accent) 24%, transparent);
+    }
+
+    .compose-form::before {
+      content: "";
+      display: block;
+      width: 34px;
+      height: 2px;
+      margin-bottom: -4px;
+      border-radius: 2px;
+      background: var(--accent);
+    }
   </style>
 </head>
 <body>
