@@ -9296,11 +9296,8 @@
           } else if (!user && pendingLibraryKind) {
             showToast("Sign in to view notes, processes, and images.");
           }
-          if (user && !state.userName) {
-            // Let the sign-in dialog finish closing before opening the required
-            // one-time, browser-local name prompt.
-            window.setTimeout(openUserNameDialog, 0);
-          }
+          // New users are no longer prompted for a browser-local display name on
+          // sign-in; the name dialog stays available but is never auto-opened.
         });
 
       } catch (error) {
