@@ -6966,7 +6966,7 @@
     </button>
 
     <div class="rail-colors" id="railColors" aria-label="Filter library by type and open the tab workspace">
-      <button class="rail-color rail-all is-active" type="button" data-rail-kind="all" aria-label="All notes" title="All notes"></button>
+      <button class="rail-color rail-all is-active" type="button" data-rail-kind="all" aria-label="All files" title="All files"></button>
       <button class="rail-color" type="button" data-rail-kind="note" aria-label="Notes" title="Notes"></button>
       <button class="rail-color" type="button" data-rail-kind="template" aria-label="Templates" title="Templates"></button>
       <button class="rail-color" type="button" data-rail-kind="process" aria-label="Processes" title="Processes"></button>
@@ -7132,7 +7132,8 @@
     <section class="workspace app-shell" id="workspace" aria-label="Notes library">
       <div class="library-toolbar">
         <div class="library-tabs" id="libraryTabs" role="tablist" aria-label="Library views">
-          <button class="library-tab is-active" type="button" role="tab" data-library-kind="all" aria-selected="true"><i data-lucide="sticky-note"></i><span>All notes</span></button>
+          <button class="library-tab is-active" type="button" role="tab" data-library-kind="all" aria-selected="true"><i data-lucide="layout-grid"></i><span>All files</span></button>
+          <button class="library-tab" type="button" role="tab" data-library-kind="note" aria-selected="false"><i data-lucide="sticky-note"></i><span>Notes</span></button>
           <button class="library-tab" type="button" role="tab" data-library-kind="template" aria-selected="false"><i data-lucide="copy-check"></i><span>Templates</span></button>
           <button class="library-tab" type="button" role="tab" data-library-kind="process" aria-selected="false"><i data-lucide="workflow"></i><span>Processes</span></button>
           <button class="library-tab" type="button" role="tab" data-library-kind="image" aria-selected="false"><i data-lucide="image"></i><span>Images</span></button>
@@ -8850,7 +8851,7 @@
             ? "Hidden entries"
             : `${state.kind.charAt(0).toUpperCase()}${state.kind.slice(1)}`;
       } else {
-        els.resultsHeading.textContent = "All notes";
+        els.resultsHeading.textContent = "All files";
       }
       els.resultsMeta.textContent = `${rows.length} ${kindLabel}`;
 
