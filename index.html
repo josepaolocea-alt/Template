@@ -3505,6 +3505,89 @@
     }
 
     /* ===================================================================
+       Tab workspace — lime accent over the paper surfaces
+       The workspace reuses the app's paper tones but swaps the accent to
+       lime green so it reads as its own space. Only accent tokens change;
+       every surface still tracks the light/dark theme.
+       =================================================================== */
+    .tabmode {
+      --accent: #7f9a1e;
+      --accent-ink: #3f4d0d;
+      --hover: rgba(140, 170, 40, 0.10);
+      --active: rgba(140, 170, 40, 0.16);
+      --focus: 0 0 0 3px rgba(140, 170, 40, 0.30);
+      --lime: #93b02a;
+      --lime-soft: rgba(140, 170, 40, 0.14);
+      --lime-line: rgba(140, 170, 40, 0.42);
+    }
+    [data-theme="dark"] .tabmode {
+      --accent: #c4df58;
+      --accent-ink: #d9ee8c;
+      --hover: rgba(196, 223, 88, 0.10);
+      --active: rgba(196, 223, 88, 0.16);
+      --focus: 0 0 0 3px rgba(196, 223, 88, 0.28);
+      --lime: #c4df58;
+      --lime-soft: rgba(196, 223, 88, 0.15);
+      --lime-line: rgba(196, 223, 88, 0.44);
+    }
+
+    /* Sidebar reads as a paper panel with a lime title mark. */
+    .tabmode-sidebar {
+      background: var(--panel);
+      box-shadow: var(--shadow-sm);
+    }
+    .tabmode-side-title svg { color: var(--lime); }
+
+    /* Active note in the list gets a lime spine + soft wash. */
+    .tabmode-side-item.is-active {
+      background: var(--lime-soft);
+      box-shadow: inset 3px 0 0 var(--lime);
+    }
+
+    /* Active tab: paper card lifted by a lime top rule. */
+    .tabmode-tab.is-active {
+      border-color: var(--line);
+      background: var(--panel);
+      box-shadow: inset 0 2px 0 var(--lime), var(--shadow-sm);
+    }
+    .tabmode-newtab:hover { color: var(--lime); }
+
+    /* Opened note becomes a paper sheet with a lime edge, echoing the cards. */
+    .tabmode-doc {
+      padding: 30px clamp(20px, 3vw, 40px);
+      border: 1px solid var(--line);
+      border-top: 3px solid var(--lime);
+      border-radius: 4px 4px 14px 14px;
+      background: var(--panel);
+      box-shadow: var(--shadow-sm);
+    }
+    .tabmode-doc-head h2 {
+      position: relative;
+      padding-bottom: 12px;
+    }
+    .tabmode-doc-head h2::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 46px;
+      height: 3px;
+      border-radius: 3px;
+      background: var(--lime);
+    }
+
+    /* Landing quick-open cards pick up the lime accent on hover. */
+    .tabmode-landing-head .landing-icon {
+      background: var(--lime-soft);
+      color: var(--accent-ink);
+    }
+    .tabmode-open-card:hover {
+      border-color: var(--lime-line);
+      background: var(--lime-soft);
+    }
+    .tabmode-open-card-title svg { color: var(--lime); }
+
+    /* ===================================================================
        Motion
        =================================================================== */
     @keyframes fadeOut {
@@ -5391,15 +5474,43 @@
       padding: 0;
       border: 0;
       border-radius: 50%;
-      background: #ff956f;
+      background: #ffb488;
       box-shadow: inset 0 0 0 1px rgba(23,23,19,.05);
       transition: transform 180ms ease, box-shadow 180ms ease;
+      cursor: pointer;
     }
 
-    .rail-color:nth-child(2) { background: #f5c968; }
-    .rail-color:nth-child(3) { background: #aa8cf0; }
-    .rail-color:nth-child(4) { background: #45c6d4; }
-    .rail-color:nth-child(5) { background: #dce873; }
+    /* All notes = a mix of every type's colour (rainbow). */
+    .rail-color.rail-all {
+      background: conic-gradient(from 210deg, #ffb488, #f5ca68, #b196f2, #57cdda, #dce873, #ffb488);
+    }
+    .rail-color:nth-child(2) { background: #ffb488; }  /* Notes — peach */
+    .rail-color:nth-child(3) { background: #f5ca68; }  /* Templates — yellow */
+    .rail-color:nth-child(4) { background: #b196f2; }  /* Processes — violet */
+    .rail-color:nth-child(5) { background: #57cdda; }  /* Images — cyan */
+
+    /* Tab workspace lives at the foot of the rail as a lime action dot. */
+    .rail-color.rail-tabmode {
+      display: grid;
+      place-items: center;
+      margin-top: 8px;
+      background: #cfe06a;
+    }
+    .rail-color.rail-tabmode::before {
+      content: "";
+      position: absolute;
+      top: -6px;
+      width: 12px;
+      height: 1px;
+      background: var(--line-strong);
+    }
+    .rail-color.rail-tabmode svg,
+    .rail-color.rail-tabmode i {
+      width: 12px;
+      height: 12px;
+      color: rgba(23,23,19,.6);
+    }
+
     .rail-color:hover { transform: scale(1.18); }
     .rail-color.is-active { box-shadow: 0 0 0 3px var(--sidebar), 0 0 0 4px var(--text); }
 
@@ -5413,15 +5524,17 @@
       gap: 12px;
       padding: 0;
       border: 0;
+      justify-content: space-between;
     }
 
     .sidebar-foot .side-item,
     .sidebar-foot .icon-button {
       display: grid;
+      flex: 0 0 auto;
       width: 42px;
       height: 42px;
       min-height: 42px;
-      margin-inline: auto;
+      margin-inline: 0;
       padding: 0;
       place-items: center;
       border: 0;
@@ -5672,6 +5785,7 @@
       background-blend-mode: soft-light;
       box-shadow: 0 2px 3px rgba(58,48,32,.10), 0 8px 20px rgba(58,48,32,.07);
       color: #171713;
+      cursor: pointer;
       transition: transform 260ms cubic-bezier(.2,.8,.2,1), box-shadow 260ms ease;
       isolation: isolate;
       animation: paper-arrive 520ms cubic-bezier(.2,.8,.2,1) both;
@@ -6180,12 +6294,13 @@
       <span>New note</span>
     </button>
 
-    <div class="rail-colors" id="railColors" aria-label="Filter library by type">
-      <button class="rail-color is-active" type="button" data-rail-kind="all" aria-label="All notes" title="All notes"></button>
-      <button class="rail-color" type="button" data-rail-kind="template" aria-label="Templates" title="Templates"></button>
+    <div class="rail-colors" id="railColors" aria-label="Filter library by type and open the tab workspace">
+      <button class="rail-color rail-all is-active" type="button" data-rail-kind="all" aria-label="All notes" title="All notes"></button>
       <button class="rail-color" type="button" data-rail-kind="note" aria-label="Notes" title="Notes"></button>
+      <button class="rail-color" type="button" data-rail-kind="template" aria-label="Templates" title="Templates"></button>
       <button class="rail-color" type="button" data-rail-kind="process" aria-label="Processes" title="Processes"></button>
       <button class="rail-color" type="button" data-rail-kind="image" aria-label="Images" title="Images"></button>
+      <button class="rail-color rail-tabmode" type="button" data-rail-action="tabmode" aria-label="Tab workspace" title="Tab workspace"><i data-lucide="layout-grid"></i></button>
     </div>
 
     <nav class="side-nav" aria-label="Views">
@@ -6295,6 +6410,9 @@
     </div>
 
     <div class="sidebar-foot">
+      <button class="icon-button" id="themeToggle" type="button" aria-label="Toggle color theme">
+        <i data-lucide="sun"></i>
+      </button>
       <button class="side-item" id="signInButton" type="button" aria-label="Sign in">
         <i data-lucide="log-in"></i>
         <span>Sign in</span>
@@ -6302,9 +6420,6 @@
       <button class="side-item" id="signOutButton" type="button" aria-label="Sign out" hidden>
         <i data-lucide="log-out"></i>
         <span>Sign out</span>
-      </button>
-      <button class="icon-button" id="themeToggle" type="button" aria-label="Toggle color theme">
-        <i data-lucide="sun"></i>
       </button>
     </div>
   </aside>
@@ -8090,8 +8205,10 @@
       els.resultsList.innerHTML = rows.map(({ entry }, index) => {
         const tags = normalizeTags(entry.tags);
         const kindClass = String(entry.kind || "note").toLowerCase().replace(/[^a-z0-9-]/g, "");
-        const paperSequence = ["#f5ca68", "#ff956f", "#45c6d4", "#aa8cf0", "#dce873"];
-        const paperColor = kindClass === "image" ? "#f0eadf" : paperSequence[index % paperSequence.length];
+        // Card colour is decided by the note's type, so the "All notes" view
+        // reads as a mix (rainbow) while a filtered view is one solid colour.
+        const kindPaper = { note: "#ffb488", template: "#f5ca68", process: "#b196f2", image: "#57cdda" };
+        const paperColor = kindPaper[kindClass] || kindPaper.note;
         const favorited = isFavorite(entry.id);
         const favoriteButton = `
           <button class="icon-button tiny-button favorite-button${favorited ? " is-favorite" : ""}" type="button" data-action="favorite" data-id="${escapeHtml(entry.id)}" aria-pressed="${favorited}" aria-label="${favorited ? "Remove from favorites" : "Add to favorites"}" title="${favorited ? "Remove from favorites" : "Add to favorites"}">
@@ -8143,7 +8260,7 @@
         `;
 
         return `
-          <article class="result-card ${entry.imageUrl ? "has-image" : ""}${entry.hidden ? " is-hidden" : ""}" data-kind="${escapeHtml(entry.kind || "note")}" style="--i:${Math.min(index, 10)};--paper:${paperColor}">
+          <article class="result-card ${entry.imageUrl ? "has-image" : ""}${entry.hidden ? " is-hidden" : ""}" data-kind="${escapeHtml(entry.kind || "note")}" data-open-card="${escapeHtml(entry.id)}" style="--i:${Math.min(index, 10)};--paper:${paperColor}">
             <div class="result-head">
               <div>
                 <h2>${highlightMatches(entry.title)}</h2>
@@ -10360,6 +10477,15 @@
       });
 
       els.railColors.addEventListener("click", (event) => {
+        // The lime dot is an action (open/close the tab workspace), not a filter.
+        const action = event.target.closest("[data-rail-action]");
+        if (action) {
+          if (action.dataset.railAction === "tabmode") {
+            if (state.tabMode) exitTabMode();
+            else enterTabMode();
+          }
+          return;
+        }
         const target = event.target.closest("[data-rail-kind]");
         if (target) openLibraryKind(target.dataset.railKind);
       });
@@ -10727,7 +10853,15 @@
 
       els.resultsList.addEventListener("click", (event) => {
         const target = event.target.closest("[data-action]");
-        if (!target) return;
+        if (!target) {
+          // Clicking anywhere on a card (outside its action buttons) opens it.
+          // Skip if the user is selecting text so copying isn't interrupted.
+          const card = event.target.closest("[data-open-card]");
+          if (card && !String(window.getSelection())) {
+            openEntryDetailDialog(card.dataset.openCard);
+          }
+          return;
+        }
 
         if (target.dataset.action === "edit") {
           openEntryDialog(target.dataset.id);
@@ -10909,6 +11043,8 @@
       els.tabMode.hidden = false;
       els.modeToggle.classList.add("is-active");
       els.modeToggle.setAttribute("aria-pressed", "true");
+      const enterDot = els.railColors.querySelector('[data-rail-action="tabmode"]');
+      if (enterDot) enterDot.classList.add("is-active");
       prepareSearchNavForTabMode(true);
       resetTabSignatures();
       persistTabsState();
@@ -10924,6 +11060,8 @@
       els.tabMode.hidden = true;
       els.modeToggle.classList.remove("is-active");
       els.modeToggle.setAttribute("aria-pressed", "false");
+      const leaveDot = els.railColors.querySelector('[data-rail-action="tabmode"]');
+      if (leaveDot) leaveDot.classList.remove("is-active");
       prepareSearchNavForTabMode(false);
     }
 
