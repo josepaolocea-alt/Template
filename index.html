@@ -1508,6 +1508,65 @@
       background: color-mix(in srgb, var(--danger) 12%, transparent);
     }
 
+    /* Action icons in the entry-detail modal head: favorite, hide, edit, delete,
+       copy — the same set the cards carry, so both surfaces act the same. The
+       colour rules are scoped under .modal-head so they beat the generic
+       `.modal-head .icon-button` skin (and keep the favorite/hide active tints). */
+    .entry-detail-head-tools {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex: 0 0 auto;
+    }
+
+    .entry-detail-tools {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .entry-detail-tools .icon-button {
+      width: 34px;
+      height: 34px;
+      min-height: 34px;
+      border: 0;
+      border-radius: 50%;
+      background: transparent;
+    }
+
+    .modal-head .entry-detail-tools .icon-button {
+      color: var(--soft);
+    }
+
+    .modal-head .entry-detail-tools .icon-button:hover {
+      background: rgba(23, 23, 19, 0.10);
+      color: var(--text);
+    }
+
+    .modal-head .entry-detail-tools .favorite-button.is-favorite {
+      color: var(--accent-warm-ink);
+    }
+
+    .modal-head .entry-detail-tools .hide-button.is-hidden-on {
+      color: var(--danger);
+    }
+
+    .entry-detail-tools svg {
+      width: 17px;
+      height: 17px;
+      stroke-width: 1.7;
+    }
+
+    /* With the action cluster now sharing the head, a long entry title must
+       truncate rather than shove the tools and close button off the edge. */
+    .modal.entry-modal .modal-title,
+    .image-dialog .modal-title {
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
     .empty-state {
       min-height: 240px;
       display: grid;
@@ -2464,47 +2523,122 @@
       color: var(--text);
     }
 
+    /* The full-image lightbox wears the same paper treatment as the entry
+       detail modal — tinted to the entry's kind colour, noise texture, and the
+       same scale-up/scale-down animation — so it reads as part of this redesign
+       rather than the old flat panel. */
     .image-dialog {
+      --text: #171713;
+      --muted: rgba(23, 23, 19, 0.68);
+      --soft: rgba(23, 23, 19, 0.56);
+      --line: rgba(23, 23, 19, 0.11);
       width: min(960px, calc(100% - 24px));
+      max-width: min(960px, calc(100% - 24px));
+      max-height: min(90vh, 920px);
+      flex-direction: column;
+      overflow: hidden;
+      border-color: rgba(23, 23, 19, 0.16);
+      background-color: var(--entry-paper, #ffb488);
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.06'/%3E%3C/svg%3E");
+      background-blend-mode: soft-light;
+      color: var(--text);
+      box-shadow: 0 24px 70px rgba(58, 48, 32, 0.28), 0 5px 18px rgba(58, 48, 32, 0.14);
+    }
+
+    .image-dialog[open] {
+      display: flex;
+      animation: entryModalIn 300ms cubic-bezier(0.34, 1.4, 0.5, 1) both;
+    }
+
+    .image-dialog.is-closing {
+      animation: entryModalOut 180ms ease both;
+    }
+
+    .image-dialog.is-closing::backdrop {
+      animation: fadeOut 180ms ease both;
+    }
+
+    .image-dialog .modal-head {
+      flex: 0 0 auto;
+      border-bottom-color: var(--line);
+      background: color-mix(in srgb, var(--entry-paper, #ffb488) 91%, white);
     }
 
     .image-dialog-body {
-      padding: 14px;
-      background: var(--bg);
-      border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+      flex: 1 1 auto;
+      overflow: auto;
+      padding: 16px;
+      background: transparent;
     }
 
     .image-dialog-body img {
       width: 100%;
-      max-height: 78vh;
+      max-height: 74vh;
       display: block;
       object-fit: contain;
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      background: #000;
+      border: 1px solid rgba(23, 23, 19, 0.16);
+      border-radius: 12px;
+      background: #0d0d0d;
     }
 
     .image-dialog-text {
       margin-top: 14px;
     }
 
+    /* The document preview shares the entry detail / image lightbox paper
+       treatment — same kind-tinted surface, noise, and scale animation — so
+       every entry-content viewer reads as one redesigned family. */
     .doc-dialog {
+      --text: #171713;
+      --muted: rgba(23, 23, 19, 0.68);
+      --soft: rgba(23, 23, 19, 0.56);
+      --line: rgba(23, 23, 19, 0.11);
       width: min(1020px, calc(100% - 24px));
+      max-width: min(1020px, calc(100% - 24px));
+      max-height: min(92vh, 940px);
+      flex-direction: column;
+      overflow: hidden;
+      border-color: rgba(23, 23, 19, 0.16);
+      background-color: var(--entry-paper, #ffb488);
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.06'/%3E%3C/svg%3E");
+      background-blend-mode: soft-light;
+      color: var(--text);
+      box-shadow: 0 24px 70px rgba(58, 48, 32, 0.28), 0 5px 18px rgba(58, 48, 32, 0.14);
+    }
+
+    .doc-dialog[open] {
+      display: flex;
+      animation: entryModalIn 300ms cubic-bezier(0.34, 1.4, 0.5, 1) both;
+    }
+
+    .doc-dialog.is-closing {
+      animation: entryModalOut 180ms ease both;
+    }
+
+    .doc-dialog.is-closing::backdrop {
+      animation: fadeOut 180ms ease both;
+    }
+
+    .doc-dialog .modal-head {
+      flex: 0 0 auto;
+      border-bottom-color: var(--line);
+      background: color-mix(in srgb, var(--entry-paper, #ffb488) 91%, white);
     }
 
     .doc-dialog-body {
-      padding: 12px;
-      background: var(--bg);
-      border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+      flex: 1 1 auto;
+      overflow: auto;
+      padding: 16px;
+      background: transparent;
     }
 
     .doc-frame {
       width: 100%;
-      height: min(76vh, 900px);
+      height: min(74vh, 900px);
       display: block;
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      background: var(--panel-solid);
+      border: 1px solid rgba(23, 23, 19, 0.16);
+      border-radius: 12px;
+      background: #ffffff;
     }
 
     .doc-dialog-foot {
@@ -7161,6 +7295,7 @@
           <button class="library-tab" type="button" role="tab" data-library-kind="process" aria-selected="false"><i data-lucide="workflow"></i><span>Processes</span></button>
           <button class="library-tab" type="button" role="tab" data-library-kind="image" aria-selected="false"><i data-lucide="image"></i><span>Images</span></button>
           <button class="library-tab" type="button" role="tab" data-library-kind="favorite" aria-selected="false"><i data-lucide="star"></i><span>Favorites</span></button>
+          <button class="library-tab" type="button" role="tab" data-library-kind="hidden" aria-selected="false" hidden><i data-lucide="eye-off"></i><span>Hidden</span></button>
         </div>
         <label class="library-sort">
           <span class="visually-hidden">Sort notes</span>
@@ -7330,9 +7465,12 @@
   <dialog class="modal entry-modal" id="entryDetailDialog">
     <div class="modal-head">
       <h2 class="modal-title" id="entryDetailTitle">Entry details</h2>
-      <button class="icon-button" type="button" id="closeEntryDetailDialog" aria-label="Close entry details">
-        <i data-lucide="x"></i>
-      </button>
+      <div class="entry-detail-head-tools">
+        <div class="entry-detail-tools" id="entryDetailTools" aria-label="Entry actions"></div>
+        <button class="icon-button" type="button" id="closeEntryDetailDialog" aria-label="Close entry details">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
     </div>
     <div class="entry-form drawer-body">
       <div class="tag-row" id="entryDetailMeta"></div>
@@ -7786,6 +7924,7 @@
       closeEntryDetailDialog: document.querySelector("#closeEntryDetailDialog"),
       entryDetailTitle: document.querySelector("#entryDetailTitle"),
       entryDetailMeta: document.querySelector("#entryDetailMeta"),
+      entryDetailTools: document.querySelector("#entryDetailTools"),
       entryDetailImage: document.querySelector("#entryDetailImage"),
       entryDetailText: document.querySelector("#entryDetailText"),
       entryDetailActions: document.querySelector("#entryDetailActions"),
@@ -8703,6 +8842,8 @@
         // "all" must not also light up — only the matching tab should.
         const active = kind === state.kind
           || (kind === "all" && state.kind === "favorite" && Boolean(button.dataset.railKind));
+        // The Hidden view is admin-only, so its tab only exists for admins.
+        if (kind === "hidden") button.hidden = !state.isAdmin;
         const requiresSignIn = !canSeeAll && ["note", "process", "image"].includes(kind);
         button.classList.toggle("is-active", active);
         button.classList.toggle("requires-sign-in", requiresSignIn);
@@ -8843,6 +8984,8 @@
 
     function renderResults(animate = false) {
       renderTagRow();
+      // Keep an open entry-detail modal in step with the latest data.
+      refreshOpenEntryDetail();
       const rows = getVisibleEntries();
       const hasQuery = Boolean(state.query.trim());
       const hasKindFilter = state.kind && state.kind !== "all";
@@ -9859,6 +10002,57 @@
       }
     }
 
+    // The id of the entry whose detail modal is open, so state changes elsewhere
+    // (favoriting, hiding, edits landing over the wire) can refresh it in place.
+    let openDetailEntryId = null;
+
+    // The same action set the cards carry — favorite, hide (admin), edit/delete
+    // (when the viewer can manage the entry), and copy — rendered for the detail
+    // modal head. Kept as one builder so the card and modal never drift apart.
+    function renderEntryDetailTools(entry) {
+      const favorited = isFavorite(entry.id);
+      const id = escapeHtml(entry.id);
+      const favorite = `
+        <button class="icon-button tiny-button favorite-button${favorited ? " is-favorite" : ""}" type="button" data-detail-action="favorite" data-id="${id}" aria-pressed="${favorited}" aria-label="${favorited ? "Remove from favorites" : "Add to favorites"}" title="${favorited ? "Remove from favorites" : "Add to favorites"}">
+          <i data-lucide="star"></i>
+        </button>`;
+      const hide = state.isAdmin ? `
+        <button class="icon-button tiny-button hide-button${entry.hidden ? " is-hidden-on" : ""}" type="button" data-detail-action="toggle-hidden" data-id="${id}" aria-pressed="${entry.hidden ? "true" : "false"}" aria-label="${entry.hidden ? "Make visible to everyone" : "Hide from other users"}" title="${entry.hidden ? "Hidden from others — click to make visible" : "Visible to everyone — click to hide"}">
+          <i data-lucide="${entry.hidden ? "eye-off" : "eye"}"></i>
+        </button>` : "";
+      const manage = canManageEntry(entry) ? `
+        <button class="icon-button tiny-button" type="button" data-detail-action="edit" data-id="${id}" aria-label="Edit entry" title="Edit entry">
+          <i data-lucide="pencil"></i>
+        </button>
+        <button class="icon-button tiny-button" type="button" data-detail-action="delete" data-id="${id}" aria-label="Delete entry" title="Delete entry">
+          <i data-lucide="trash-2"></i>
+        </button>` : "";
+      const copy = `
+        <button class="icon-button tiny-button" type="button" data-detail-action="copy" data-id="${id}" aria-label="Copy text" title="Copy text">
+          <i data-lucide="copy"></i>
+        </button>`;
+      return `${favorite}${hide}${manage}${copy}`;
+    }
+
+    // Repaint the open detail modal's tools and meta from the latest entry data.
+    // Called from renderResults, so a favorite/hide toggle (or a snapshot edit)
+    // is reflected without closing and reopening the modal.
+    function refreshOpenEntryDetail() {
+      if (!openDetailEntryId || !els.entryDetailDialog.open) return;
+      const entry = state.entries.find((item) => item.id === openDetailEntryId);
+      if (!entry) return;
+      const tags = normalizeTags(entry.tags);
+      const kindClass = entryKindKey(entry.kind);
+      els.entryDetailMeta.innerHTML = `
+        <span class="tag kind kind-${escapeHtml(kindClass)}">${escapeHtml(entry.kind || "note")}</span>
+        ${entryTimeTags(entry)}
+        ${entry.hidden ? `<span class="tag hidden-tag">Hidden</span>` : ""}
+        ${tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}
+      `;
+      els.entryDetailTools.innerHTML = renderEntryDetailTools(entry);
+      refreshIcons();
+    }
+
     function openEntryDetailDialog(entryId) {
       const entry = state.entries.find((item) => item.id === entryId);
       if (!entry) {
@@ -9866,6 +10060,7 @@
         return;
       }
 
+      openDetailEntryId = entry.id;
       const tags = normalizeTags(entry.tags);
       const kindClass = entryKindKey(entry.kind);
       els.entryDetailDialog.classList.toggle("entry-detail-has-image", Boolean(entry.imageUrl));
@@ -9878,6 +10073,7 @@
         ${entry.hidden ? `<span class="tag hidden-tag">Hidden</span>` : ""}
         ${tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}
       `;
+      els.entryDetailTools.innerHTML = renderEntryDetailTools(entry);
       els.entryDetailText.innerHTML = entry.body ? renderBodyHtml(entry.body) : "No text saved for this entry.";
 
       if (entry.imageUrl) {
@@ -9964,6 +10160,7 @@
     }
 
     function closeEntryDetailDialog() {
+      openDetailEntryId = null;
       closeDrawerDialog(els.entryDetailDialog, undefined, "entryModalOut");
       // Drop the #entry/<id> deep link so a later refresh doesn't reopen it.
       if (entryIdFromHash()) {
@@ -10685,6 +10882,9 @@
       els.imageDialogTitle.textContent = entry.title || "Image preview";
       els.imageDialogImg.src = entry.imageUrl;
       els.imageDialogImg.alt = entry.title || "Image preview";
+      // Tint the lightbox to the entry's kind colour, matching the entry modal.
+      els.imageDialog.dataset.kind = entryKindKey(entry.kind);
+      els.imageDialog.style.setProperty("--entry-paper", entryPaperColor(entry.kind));
 
       if (entry.body) {
         els.imageDialogText.hidden = false;
@@ -10694,19 +10894,17 @@
         els.imageDialogText.innerHTML = "";
       }
 
-      if (typeof els.imageDialog.showModal === "function") {
-        els.imageDialog.showModal();
-      } else {
-        els.imageDialog.setAttribute("open", "");
-      }
+      openDrawerDialog(els.imageDialog);
     }
 
     function closeImageDialog() {
-      els.imageDialog.close();
-      els.imageDialogImg.src = "";
-      els.imageDialogImg.alt = "";
-      els.imageDialogText.hidden = true;
-      els.imageDialogText.innerHTML = "";
+      // Play the same scale-down close as the entry modal, then clear the image.
+      closeDrawerDialog(els.imageDialog, () => {
+        els.imageDialogImg.src = "";
+        els.imageDialogImg.alt = "";
+        els.imageDialogText.hidden = true;
+        els.imageDialogText.innerHTML = "";
+      }, "entryModalOut");
     }
 
     async function importCsvEntries(event) {
@@ -11091,17 +11289,16 @@
       els.docPreviewTitle.textContent = entry.title || "Document preview";
       els.docPreviewFrame.src = embedUrl;
       els.docPreviewOpen.href = entry.attachmentUrl;
-      if (typeof els.docPreviewDialog.showModal === "function") {
-        els.docPreviewDialog.showModal();
-      } else {
-        els.docPreviewDialog.setAttribute("open", "");
-      }
+      // Tint the paper surface to the entry's kind colour, matching the entry modal.
+      els.docPreviewDialog.dataset.kind = entryKindKey(entry.kind);
+      els.docPreviewDialog.style.setProperty("--entry-paper", entryPaperColor(entry.kind));
+      openDrawerDialog(els.docPreviewDialog);
     }
 
     function closeDocPreview() {
-      els.docPreviewDialog.close();
-      // Stop the embedded file loading/playing once the dialog is closed.
-      els.docPreviewFrame.src = "about:blank";
+      // Play the shared scale-down close; the dialog's `close` handler clears
+      // the iframe once it actually closes.
+      closeDrawerDialog(els.docPreviewDialog, undefined, "entryModalOut");
     }
 
     async function downloadAttachment(id) {
@@ -11325,6 +11522,34 @@
         const target = event.target.closest('[data-detail-action="preview-image"]');
         if (target) openImageDialog(target.dataset.id);
       });
+      // The favorite/hide/edit/delete/copy cluster in the detail modal head.
+      els.entryDetailTools.addEventListener("click", (event) => {
+        const target = event.target.closest("[data-detail-action]");
+        if (!target) return;
+        const id = target.dataset.id;
+        switch (target.dataset.detailAction) {
+          case "favorite":
+            // renderResults() (via toggleFavorite) refreshes the modal's tools.
+            toggleFavorite(id);
+            break;
+          case "toggle-hidden":
+            // Async write; the snapshot re-render refreshes the modal in place.
+            toggleHidden(id);
+            break;
+          case "copy":
+            copyEntry(id);
+            break;
+          case "edit":
+            // Editing and deleting swap modals, so close the detail view first.
+            closeEntryDetailDialog();
+            openEntryDialog(id);
+            break;
+          case "delete":
+            closeEntryDetailDialog();
+            openDeleteDialog(id);
+            break;
+        }
+      });
       els.csvButton.addEventListener("click", openCsvDialog);
       els.exportButton.addEventListener("click", () => {
         toggleExportPanel();
@@ -11387,6 +11612,11 @@
           closeImageDialog();
         }
       });
+      // Escape would close instantly; route it through the scale-down animation.
+      els.imageDialog.addEventListener("cancel", (event) => {
+        event.preventDefault();
+        closeImageDialog();
+      });
       els.closeDocPreviewDialog.addEventListener("click", closeDocPreview);
       els.docPreviewDialog.addEventListener("click", (event) => {
         if (event.target === els.docPreviewDialog) {
@@ -11395,6 +11625,11 @@
       });
       els.docPreviewDialog.addEventListener("close", () => {
         els.docPreviewFrame.src = "about:blank";
+      });
+      // Escape would close instantly; route it through the scale-down animation.
+      els.docPreviewDialog.addEventListener("cancel", (event) => {
+        event.preventDefault();
+        closeDocPreview();
       });
       els.closeDeleteDialog.addEventListener("click", closeDeleteDialog);
       els.cancelDelete.addEventListener("click", closeDeleteDialog);
