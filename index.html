@@ -1930,6 +1930,45 @@
       flex: 0 0 auto;
     }
 
+    /* The entry detail opens as a centred modal (UA showModal keeps it centred)
+       that scales and fades up from the middle, rather than a side drawer. */
+    .modal.entry-modal {
+      width: min(640px, calc(100% - 32px));
+      max-width: min(640px, calc(100% - 32px));
+      max-height: min(82vh, 760px);
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .modal.entry-modal[open] {
+      display: flex;
+      animation: entryModalIn 300ms cubic-bezier(0.34, 1.4, 0.5, 1) both;
+    }
+
+    .modal.entry-modal.is-closing {
+      animation: entryModalOut 180ms ease both;
+    }
+
+    .modal.entry-modal.is-closing::backdrop {
+      animation: fadeOut 180ms ease both;
+    }
+
+    .modal.entry-modal .modal-head {
+      flex: 0 0 auto;
+    }
+
+    .modal.entry-modal.entry-detail-has-image {
+      width: min(760px, calc(100% - 32px));
+      max-width: min(760px, calc(100% - 32px));
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .modal.entry-modal[open],
+      .modal.entry-modal.is-closing {
+        animation-duration: 1ms;
+      }
+    }
+
     .modal::backdrop {
       background: rgba(0, 0, 0, 0.55);
       backdrop-filter: blur(3px);
@@ -2109,10 +2148,6 @@
       display: block;
       object-fit: cover;
       border-radius: var(--radius-sm);
-    }
-
-    .modal.drawer.entry-detail-has-image {
-      width: min(720px, 100%);
     }
 
     #entryDetailImage {
@@ -3122,16 +3157,18 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      padding: 8px 0;
+      padding: 8px 0 0;
+      border-bottom: 1px solid var(--line);
       background: var(--bg);
     }
 
     .tabmode-tabs {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: clamp(16px, 2.2vw, 30px);
       flex: 1;
       min-width: 0;
+      height: 46px;
       overflow-x: auto;
       scrollbar-width: none;
     }
@@ -3144,29 +3181,55 @@
       position: relative;
       display: inline-flex;
       align-items: center;
-      gap: 7px;
+      gap: 8px;
       flex: 0 0 auto;
       max-width: 220px;
-      padding: 7px 8px 7px 12px;
-      border: 1px solid transparent;
-      border-radius: 10px;
+      height: 46px;
+      padding: 0 2px;
+      border: 0;
+      border-radius: 0;
       background: transparent;
       color: var(--muted);
+      font-family: var(--font-ui);
+      font-size: 0.92rem;
+      font-weight: 500;
+      letter-spacing: -0.02em;
       cursor: grab;
-      transition: background var(--motion-fast) ease, color var(--motion-fast) ease, border-color var(--motion-fast) ease, opacity var(--motion-fast) ease;
+      transition: color var(--motion-fast) ease, opacity var(--motion-fast) ease;
+    }
+
+    .tabmode-tab > svg {
+      width: 17px;
+      height: 17px;
+      stroke-width: 1.5;
+      flex: 0 0 auto;
+    }
+
+    /* Underline indicator — same treatment as the notes-view library tabs. */
+    .tabmode-tab::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      bottom: -1px;
+      left: 0;
+      height: 2px;
+      background: var(--lime);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 220ms ease;
     }
 
     .tabmode-tab:hover {
       color: var(--text);
-      background: var(--hover);
+      background: transparent;
     }
 
     .tabmode-tab.is-active {
       color: var(--text);
-      border-color: var(--line);
-      background: var(--panel);
-      box-shadow: var(--shadow-sm);
+      background: transparent;
     }
+
+    .tabmode-tab.is-active::after { transform: scaleX(1); }
 
     .tabmode-tab.is-dragging {
       opacity: 0.45;
@@ -3207,7 +3270,15 @@
       color: var(--soft);
       cursor: pointer;
       flex: 0 0 auto;
-      transition: background var(--motion-fast) ease, color var(--motion-fast) ease;
+      opacity: 0;
+      transition: background var(--motion-fast) ease, color var(--motion-fast) ease, opacity var(--motion-fast) ease;
+    }
+
+    /* Keep tabs clean; reveal the close control on hover or when active. */
+    .tabmode-tab:hover .tabmode-tab-close,
+    .tabmode-tab.is-active .tabmode-tab-close,
+    .tabmode-tab-close:focus-visible {
+      opacity: 1;
     }
 
     .tabmode-tab-close:hover {
@@ -3544,12 +3615,6 @@
       box-shadow: inset 3px 0 0 var(--lime);
     }
 
-    /* Active tab: paper card lifted by a lime top rule. */
-    .tabmode-tab.is-active {
-      border-color: var(--line);
-      background: var(--panel);
-      box-shadow: inset 0 2px 0 var(--lime), var(--shadow-sm);
-    }
     .tabmode-newtab:hover { color: var(--lime); }
 
     /* Opened note becomes a paper sheet with a lime edge, echoing the cards. */
@@ -3665,6 +3730,16 @@
     @keyframes drawerOut {
       from { transform: translateX(0); }
       to { transform: translateX(100%); }
+    }
+
+    @keyframes entryModalIn {
+      from { opacity: 0; transform: translateY(10px) scale(0.92); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes entryModalOut {
+      from { opacity: 1; transform: translateY(0) scale(1); }
+      to { opacity: 0; transform: translateY(6px) scale(0.97); }
     }
 
     @keyframes appTooltipIn {
@@ -4447,32 +4522,36 @@
       box-shadow: 0 7px 18px rgba(0, 0, 0, 0.06);
     }
 
+    /* Underline tabs (match the notes-view library tabs) — no card border or
+       fill; the lime rule under the active tab is the only indicator. */
     .tabmode-tab {
-      border: 1px solid transparent;
-      transition: background var(--motion-fast) ease, border-color var(--motion-fast) ease, color var(--motion-fast) ease, transform var(--motion-fast) ease, box-shadow var(--motion-fast) ease;
+      border: 0;
+      transition: color var(--motion-fast) ease, opacity var(--motion-fast) ease;
     }
 
     .tabmode-tab:hover {
-      transform: translateY(-1px);
-      border-color: var(--line);
+      transform: none;
+      border-color: transparent;
+      background: transparent;
     }
 
     .tabmode-tab.is-active {
-      border-color: color-mix(in srgb, var(--accent) 30%, var(--line-strong));
-      background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 13%, var(--panel-solid)), var(--panel-solid));
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      border-color: transparent;
+      background: transparent;
+      box-shadow: none;
     }
 
     .tabmode-tab.is-active::after {
       content: "";
       position: absolute;
-      right: 12px;
+      right: 0;
       bottom: -1px;
-      left: 12px;
+      left: 0;
       height: 2px;
-      border-radius: 999px;
-      background: var(--accent);
-      box-shadow: 0 0 10px var(--premium-glow);
+      border-radius: 0;
+      background: var(--lime);
+      box-shadow: none;
+      transform: scaleX(1);
     }
 
     /* Premium sign-in */
@@ -5482,33 +5561,30 @@
 
     /* All notes = a mix of every type's colour (rainbow). */
     .rail-color.rail-all {
-      background: conic-gradient(from 210deg, #ffb488, #f5ca68, #b196f2, #57cdda, #dce873, #ffb488);
+      background: conic-gradient(from 210deg, #ffb488, #f5ca68, #b196f2, #ffffff, #dce873, #ffb488);
     }
     .rail-color:nth-child(2) { background: #ffb488; }  /* Notes — peach */
     .rail-color:nth-child(3) { background: #f5ca68; }  /* Templates — yellow */
     .rail-color:nth-child(4) { background: #b196f2; }  /* Processes — violet */
-    .rail-color:nth-child(5) { background: #57cdda; }  /* Images — cyan */
+    /* Images — white (needs a firmer ring to read against the sidebar). */
+    .rail-color:nth-child(5) {
+      background: #ffffff;
+      box-shadow: inset 0 0 0 1px var(--line-strong);
+    }
 
-    /* Tab workspace lives at the foot of the rail as a lime action dot. */
+    /* Tab workspace lives at the foot of the rail as a plain lime action dot,
+       set apart by a short separator with breathing room above and below. */
     .rail-color.rail-tabmode {
-      display: grid;
-      place-items: center;
-      margin-top: 8px;
+      margin-top: 22px;
       background: #cfe06a;
     }
     .rail-color.rail-tabmode::before {
       content: "";
       position: absolute;
-      top: -6px;
-      width: 12px;
+      top: -12px;
+      width: 13px;
       height: 1px;
       background: var(--line-strong);
-    }
-    .rail-color.rail-tabmode svg,
-    .rail-color.rail-tabmode i {
-      width: 12px;
-      height: 12px;
-      color: rgba(23,23,19,.6);
     }
 
     .rail-color:hover { transform: scale(1.18); }
@@ -5573,6 +5649,13 @@
       border-radius: 19px;
       background: transparent;
       box-shadow: none;
+    }
+
+    /* Drop the earlier theme's coral gradient border ring — it left a doubled
+       outline and an orange smudge over this flat redesigned search field. */
+    .search-card::before {
+      content: none;
+      display: none;
     }
 
     .search-card:focus-within {
@@ -6300,7 +6383,7 @@
       <button class="rail-color" type="button" data-rail-kind="template" aria-label="Templates" title="Templates"></button>
       <button class="rail-color" type="button" data-rail-kind="process" aria-label="Processes" title="Processes"></button>
       <button class="rail-color" type="button" data-rail-kind="image" aria-label="Images" title="Images"></button>
-      <button class="rail-color rail-tabmode" type="button" data-rail-action="tabmode" aria-label="Tab workspace" title="Tab workspace"><i data-lucide="layout-grid"></i></button>
+      <button class="rail-color rail-tabmode" type="button" data-rail-action="tabmode" aria-label="Tab workspace" title="Tab workspace"></button>
     </div>
 
     <nav class="side-nav" aria-label="Views">
@@ -6628,7 +6711,7 @@
     </section>
   </main>
 
-  <dialog class="modal drawer" id="entryDetailDialog">
+  <dialog class="modal entry-modal" id="entryDetailDialog">
     <div class="modal-head">
       <h2 class="modal-title" id="entryDetailTitle">Entry details</h2>
       <button class="icon-button" type="button" id="closeEntryDetailDialog" aria-label="Close entry details">
@@ -8207,7 +8290,7 @@
         const kindClass = String(entry.kind || "note").toLowerCase().replace(/[^a-z0-9-]/g, "");
         // Card colour is decided by the note's type, so the "All notes" view
         // reads as a mix (rainbow) while a filtered view is one solid colour.
-        const kindPaper = { note: "#ffb488", template: "#f5ca68", process: "#b196f2", image: "#57cdda" };
+        const kindPaper = { note: "#ffb488", template: "#f5ca68", process: "#b196f2", image: "#ffffff" };
         const paperColor = kindPaper[kindClass] || kindPaper.note;
         const favorited = isFavorite(entry.id);
         const favoriteButton = `
@@ -9169,9 +9252,11 @@
       window.history.replaceState(null, "", `#entry/${encodeURIComponent(entryId)}`);
     }
 
-    // <dialog> has no exit transition of its own, so a drawer slides back out
-    // under a class and only really closes once that animation ends.
-    function closeDrawerDialog(drawer, onClosed) {
+    // <dialog> has no exit transition of its own, so a drawer/modal plays its
+    // close animation under a class and only really closes once it ends. The
+    // closing animation name varies (drawer slides out, the entry modal scales
+    // down), so callers can name the one to wait for.
+    function closeDrawerDialog(drawer, onClosed, closeAnimation = "drawerOut") {
       if (!drawer.open || drawer.classList.contains("is-closing")) return;
 
       const finish = () => {
@@ -9181,10 +9266,10 @@
         drawer.close();
         if (onClosed) onClosed();
       };
-      // Animations on the backdrop and on anything inside the drawer bubble up
-      // here too, so only the slide-out itself may end the close.
+      // Animations on the backdrop and on anything inside the dialog bubble up
+      // here too, so only the dialog's own close animation may end the close.
       const onEnd = (event) => {
-        if (event.animationName === "drawerOut") finish();
+        if (event.target === drawer && event.animationName === closeAnimation) finish();
       };
       // Backstop: if the animation never fires, the drawer still closes.
       const closeTimer = window.setTimeout(finish, 400);
@@ -9203,7 +9288,7 @@
     }
 
     function closeEntryDetailDialog() {
-      closeDrawerDialog(els.entryDetailDialog);
+      closeDrawerDialog(els.entryDetailDialog, undefined, "entryModalOut");
       // Drop the #entry/<id> deep link so a later refresh doesn't reopen it.
       if (entryIdFromHash()) {
         window.history.replaceState(null, "", window.location.pathname + window.location.search);
@@ -11292,6 +11377,7 @@
         const isActive = tab.id === state.activeTabId;
         return `
           <div class="tabmode-tab${isActive ? " is-active" : ""}" role="tab" tabindex="0" draggable="true" data-tab-action="focus" data-tab-id="${escapeHtml(tab.id)}" aria-selected="${isActive}" title="${escapeHtml(title)}">
+            <i data-lucide="${entry ? "file-text" : "file-plus"}"></i>
             <span class="tabmode-tab-label">${escapeHtml(title)}</span>
             <button class="tabmode-tab-close" type="button" data-tab-action="close" data-tab-id="${escapeHtml(tab.id)}" aria-label="Close ${escapeHtml(title)}">
               <i data-lucide="x"></i>
