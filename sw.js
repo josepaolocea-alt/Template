@@ -9,13 +9,13 @@
  *  - Same-origin static assets (icons, manifest): stale-while-revalidate — fast
  *    from cache, refreshed in the background.
  *  - Google Fonts: cached at runtime so the UI keeps its typography offline.
- *  - Everything else cross-origin (Firebase SDK, Firestore, the AI Worker) is
- *    left untouched — the SW must never sit between the app and its live data.
+ *  - Everything else cross-origin (Firebase SDK and Firestore) is left
+ *    untouched — the SW must never sit between the app and its live data.
  *
  * Bump CACHE_VERSION to force old caches out on the next load.
  */
 
-const CACHE_VERSION = "promptvault-v8";
+const CACHE_VERSION = "promptvault-v9";
 const SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -35,8 +35,8 @@ const SHELL_ASSETS = [
   "./post-it-app-v4-512.png",
 ];
 
-// Cross-origin hosts we are willing to cache (fonts only). Firebase and the AI
-// Worker are deliberately absent.
+// Cross-origin hosts we are willing to cache (fonts only). Firebase is
+// deliberately absent.
 const FONT_HOSTS = ["fonts.googleapis.com", "fonts.gstatic.com"];
 
 self.addEventListener("install", (event) => {
@@ -126,6 +126,6 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Anything else (Firebase, Firestore, the AI Worker, unpkg, etc.) is left to
+  // Anything else (Firebase, Firestore, unpkg, etc.) is left to
   // the network as normal.
 });

@@ -1,13 +1,13 @@
 {
   "name": "PromptVault",
   "short_name": "PromptVault",
-  "description": "A private notes and templates search app with admin-managed entries.",
+  "description": "A tactile private library for notes, templates, processes, and references.",
   "id": "/chatjpgc-post-it-app-v4",
   "start_url": "/?source=post-it-app-v4",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#07090d",
-  "theme_color": "#07090d",
+  "background_color": "#f5f2eb",
+  "theme_color": "#f5f2eb",
   "icons": [
     {
       "src": "post-it-app-v4-192.png",
