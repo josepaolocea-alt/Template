@@ -6004,18 +6004,43 @@
       line-height: 1.08;
     }
 
-    .result-head .tag-row {
+    /* The card head's tag-row only carried metadata that this redesign already
+       hides (kind/attachment/hidden), so keep it out of the flow entirely. */
+    .result-head .tag-row { display: none; }
+
+    /* The foot is one flex bar pinned to the card bottom: the timestamp takes
+       whatever room is left and truncates, while the action cluster keeps its
+       natural width. This is what stops the long "Created …" stamp from sliding
+       under the star/pencil/trash/copy icons on narrow masonry cards. */
+    .result-foot {
       position: absolute;
-      bottom: 24px;
       left: 28px;
+      right: 18px;
+      bottom: 16px;
+      z-index: 2;
       display: flex;
-      max-width: calc(100% - 130px);
-      gap: 7px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
     }
 
-    .result-head .tag:not(.time):not(.edited) { display: none; }
-    .result-head .tag.time,
-    .result-head .tag.edited {
+    .result-foot-time {
+      display: flex;
+      min-width: 0;
+      gap: 10px;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .result-foot-time .tag {
+      min-width: 0;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .result-foot-time .tag:not(.time):not(.edited) { display: none; }
+    .result-foot-time .tag.time,
+    .result-foot-time .tag.edited {
       min-height: 0;
       padding: 0;
       border: 0;
@@ -6029,10 +6054,8 @@
     }
 
     .result-actions {
-      position: absolute;
-      right: 18px;
-      bottom: 16px;
-      z-index: 2;
+      position: static;
+      flex: 0 0 auto;
       display: flex;
       gap: 1px;
       opacity: .72;
@@ -7137,6 +7160,7 @@
           <button class="library-tab" type="button" role="tab" data-library-kind="template" aria-selected="false"><i data-lucide="copy-check"></i><span>Templates</span></button>
           <button class="library-tab" type="button" role="tab" data-library-kind="process" aria-selected="false"><i data-lucide="workflow"></i><span>Processes</span></button>
           <button class="library-tab" type="button" role="tab" data-library-kind="image" aria-selected="false"><i data-lucide="image"></i><span>Images</span></button>
+          <button class="library-tab" type="button" role="tab" data-library-kind="favorite" aria-selected="false"><i data-lucide="star"></i><span>Favorites</span></button>
         </div>
         <label class="library-sort">
           <span class="visually-hidden">Sort notes</span>
@@ -8674,7 +8698,11 @@
 
       document.querySelectorAll("[data-library-kind], [data-rail-kind]").forEach((button) => {
         const kind = button.dataset.libraryKind || button.dataset.railKind;
-        const active = kind === state.kind || (kind === "all" && state.kind === "favorite");
+        // The rail has no Favorites dot, so its "all" dot stands in for the
+        // favorites view. The library tab bar DOES have a Favorites tab, so there
+        // "all" must not also light up — only the matching tab should.
+        const active = kind === state.kind
+          || (kind === "all" && state.kind === "favorite" && Boolean(button.dataset.railKind));
         const requiresSignIn = !canSeeAll && ["note", "process", "image"].includes(kind);
         button.classList.toggle("is-active", active);
         button.classList.toggle("requires-sign-in", requiresSignIn);
@@ -8978,19 +9006,9 @@
                 <h2>${highlightMatches(entry.title)}</h2>
                 <div class="tag-row" aria-label="Entry metadata">
                   <span class="tag kind kind-${escapeHtml(kindClass)}">${escapeHtml(entry.kind || "note")}</span>
-                  ${entryTimeTags(entry)}
                   ${attachmentTag}
                   ${entry.hidden ? `<span class="tag hidden-tag"><i data-lucide="eye-off"></i>Hidden</span>` : ""}
                 </div>
-              </div>
-              <div class="result-actions">
-                ${favoriteButton}
-                ${hideToggle}
-                ${adminActions}
-                ${attachmentActions}
-                <button class="icon-button tiny-button" type="button" data-action="copy" data-id="${escapeHtml(entry.id)}" aria-label="Copy text">
-                  <i data-lucide="copy"></i>
-                </button>
               </div>
             </div>
             <div class="result-content">
@@ -9001,6 +9019,18 @@
                   ${tags.map((tag) => `<button class="tag" type="button" data-action="tag" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`).join("")}
                 </div>
                 ${openEntryButton}
+              </div>
+            </div>
+            <div class="result-foot">
+              <div class="result-foot-time">${entryTimeTags(entry)}</div>
+              <div class="result-actions">
+                ${favoriteButton}
+                ${hideToggle}
+                ${adminActions}
+                ${attachmentActions}
+                <button class="icon-button tiny-button" type="button" data-action="copy" data-id="${escapeHtml(entry.id)}" aria-label="Copy text">
+                  <i data-lucide="copy"></i>
+                </button>
               </div>
             </div>
           </article>
