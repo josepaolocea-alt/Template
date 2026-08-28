@@ -12,7 +12,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="post-it-app-v4-192.png" />
   <link rel="icon" type="image/png" sizes="512x512" href="post-it-app-v4-512.png" />
   <link rel="shortcut icon" type="image/x-icon" href="post-it-app-v4.ico" />
-  <meta name="theme-color" content="#f5f2eb" />
+  <meta name="theme-color" content="#e9edf8" />
   <link rel="preconnect" href="https://images.unsplash.com" />
   <!-- Start the Firebase SDK download while the page is still parsing, rather
        than when initFirebase() first imports it. Live entries arrive sooner. -->
@@ -45,33 +45,33 @@
        =================================================================== */
     :root {
       color-scheme: dark;
-      --bg: #262624;
-      --bg-2: #1f1e1d;
-      --sidebar: #1f1e1d;
-      --panel: #2b2a28;
-      --panel-solid: #30302e;
-      --text: #f5f4ef;
-      --muted: #b8b5aa;
-      /* Lifted to clear 4.5:1 on every surface it lands on, --panel included
-         (.format-hint sits there at 11.2px); the old #918e84 managed it on
-         --bg but fell to 4.37 on --panel. */
-      --soft: #9a978e;
-      --line: rgba(255, 255, 255, 0.07);
-      --line-strong: rgba(255, 255, 255, 0.13);
-      --accent: #d97757;
-      --accent-strong: #b35636;
-      --accent-blue: #c98a6b;
-      --accent-warm: #e0a05c;
+      /* Flat design — dark navy variant of the periwinkle/violet system. */
+      --bg: #14151f;
+      --bg-2: #0f101a;
+      --sidebar: #101019;
+      --panel: #1d1f2c;
+      --panel-solid: #232534;
+      --text: #eceefb;
+      --muted: #a3a8c0;
+      /* Kept >= 4.5:1 on every surface it lands on (--panel included). */
+      --soft: #8c91ab;
+      --line: rgba(255, 255, 255, 0.08);
+      --line-strong: rgba(255, 255, 255, 0.15);
+      --accent: #8b7bff;
+      --accent-strong: #6f5cf0;
+      --accent-blue: #4fc4e0;
+      --accent-warm: #ffb072;
       /* Accent shades tuned for use as small text (WCAG AA on --bg). */
-      --accent-ink: #d97757;
-      --accent-blue-ink: #c98a6b;
-      --accent-warm-ink: #e0a05c;
+      --accent-ink: #a89aff;
+      --accent-blue-ink: #6fd0e8;
+      --accent-warm-ink: #ffbe86;
       --danger: #ff7987;
-      --hover: rgba(255, 255, 255, 0.055);
-      --active: rgba(255, 255, 255, 0.09);
-      --shadow: 0 18px 50px rgba(0, 0, 0, 0.38);
-      --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.18);
-      --focus: 0 0 0 3px rgba(217, 119, 87, 0.30);
+      --hover: rgba(255, 255, 255, 0.06);
+      --active: rgba(255, 255, 255, 0.10);
+      /* Flat: cards carry no shadow; only true overlays get a soft one. */
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.40);
+      --shadow-sm: none;
+      --focus: 0 0 0 3px rgba(139, 123, 255, 0.35);
       --radius-sm: 8px;
       --radius: 12px;
       --radius-lg: 16px;
@@ -97,32 +97,34 @@
 
     [data-theme="light"] {
       color-scheme: light;
-      --bg: #faf9f5;
-      --bg-2: #f0eee6;
-      --sidebar: #f2f0e9;
+      /* Flat design — light periwinkle page, white cards, flat violet accent.
+         Palette sampled from the reference: periwinkle #e6ecf6 ground, white
+         panels, and a saturated multi-colour set for the kinds. */
+      --bg: #e9edf8;
+      --bg-2: #dfe4f3;
+      --sidebar: #e2e7f5;
       --panel: #ffffff;
       --panel-solid: #ffffff;
-      --text: #1f1e1d;
-      --muted: #6b6862;
-      /* Dark's --soft clears AA on its own; light needs this darker to stay
-         >= 4.5:1 for the small text that uses it (.side-label, .format-hint). */
-      --soft: #6f6c63;
-      --line: rgba(31, 30, 29, 0.09);
-      --line-strong: rgba(31, 30, 29, 0.15);
-      --accent: #cc785c;
-      --accent-strong: #a84f2e;
-      --accent-blue: #b5826a;
-      --accent-warm: #c77b33;
+      --text: #1b1d2a;
+      --muted: #565c73;
+      /* Kept >= 4.5:1 for the small text that uses it (.side-label, .format-hint). */
+      --soft: #676d86;
+      --line: rgba(27, 29, 42, 0.10);
+      --line-strong: rgba(27, 29, 42, 0.16);
+      --accent: #6c5ce7;
+      --accent-strong: #573fd6;
+      --accent-blue: #1aa5c4;
+      --accent-warm: #e07a4e;
       /* Darker accent shades for small text (AA >= 4.5:1 on --bg). */
-      --accent-ink: #a24528;
-      --accent-blue-ink: #825e48;
-      --accent-warm-ink: #8a5716;
-      --danger: #cc3345;
-      --hover: rgba(31, 30, 29, 0.05);
-      --active: rgba(31, 30, 29, 0.08);
-      --shadow: 0 18px 44px rgba(60, 55, 45, 0.12);
-      --shadow-sm: 0 2px 10px rgba(60, 55, 45, 0.07);
-      --focus: 0 0 0 3px rgba(204, 120, 92, 0.24);
+      --accent-ink: #5334cc;
+      --accent-blue-ink: #0f7f99;
+      --accent-warm-ink: #b8592c;
+      --danger: #d83a44;
+      --hover: rgba(27, 29, 42, 0.05);
+      --active: rgba(27, 29, 42, 0.08);
+      --shadow: 0 10px 30px rgba(40, 44, 80, 0.12);
+      --shadow-sm: none;
+      --focus: 0 0 0 3px rgba(108, 92, 231, 0.28);
     }
 
     * {
@@ -4712,29 +4714,36 @@
       }
     }
     /* ===================================================================
-       PromptVault paper desk — video-led interface system
+       PromptVault flat design — periwinkle ground, white panels, violet
+       accent, saturated multi-colour kinds. (Replaced the warm "paper desk"
+       system on 2026-08-29.) This is the authoritative token set.
        =================================================================== */
     :root,
     [data-theme="light"] {
       color-scheme: light;
-      --bg: #f5f2eb;
-      --bg-2: #eee9df;
-      --sidebar: #faf8f2;
-      --panel: #f8f5ee;
-      --panel-solid: #fffdf8;
-      --text: #171713;
-      --muted: #6f6b62;
-      --soft: #817b70;
-      --line: rgba(23, 23, 19, 0.13);
-      --line-strong: rgba(23, 23, 19, 0.23);
-      --accent: #ff956f;
-      --accent-strong: #171713;
-      --accent-ink: #171713;
-      --hover: rgba(23, 23, 19, 0.045);
-      --active: rgba(23, 23, 19, 0.08);
-      --shadow: 0 20px 50px rgba(58, 48, 32, 0.12);
-      --shadow-sm: 0 3px 10px rgba(58, 48, 32, 0.12);
-      --focus: 0 0 0 3px rgba(23, 23, 19, 0.18);
+      --bg: #e9edf8;
+      --bg-2: #dfe4f3;
+      --sidebar: #e2e7f5;
+      --panel: #ffffff;
+      --panel-solid: #ffffff;
+      --text: #1b1d2a;
+      --muted: #565c73;
+      --soft: #676d86;
+      --line: rgba(27, 29, 42, 0.10);
+      --line-strong: rgba(27, 29, 42, 0.18);
+      --accent: #6c5ce7;
+      --accent-strong: #573fd6;
+      --accent-ink: #5334cc;
+      --accent-blue: #1aa5c4;
+      --accent-blue-ink: #0f7f99;
+      --accent-warm: #e07a4e;
+      --accent-warm-ink: #b8592c;
+      --danger: #d83a44;
+      --hover: rgba(27, 29, 42, 0.05);
+      --active: rgba(27, 29, 42, 0.08);
+      --shadow: 0 10px 30px rgba(40, 44, 80, 0.12);
+      --shadow-sm: none;
+      --focus: 0 0 0 3px rgba(108, 92, 231, 0.28);
       --sidebar-w: 128px;
       --sidebar-minimized-w: 128px;
       --font-display: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -4743,18 +4752,29 @@
 
     [data-theme="dark"] {
       color-scheme: dark;
-      --bg: #1c1b18;
-      --bg-2: #24221e;
-      --sidebar: #151512;
-      --panel: #22211d;
-      --panel-solid: #27251f;
-      --text: #f4f0e7;
-      --muted: #aaa397;
-      --soft: #8f897f;
-      --line: rgba(244, 240, 231, 0.13);
-      --line-strong: rgba(244, 240, 231, 0.24);
+      --bg: #14151f;
+      --bg-2: #0f101a;
+      --sidebar: #101019;
+      --panel: #1d1f2c;
+      --panel-solid: #232534;
+      --text: #eceefb;
+      --muted: #a3a8c0;
+      --soft: #8c91ab;
+      --line: rgba(236, 238, 251, 0.10);
+      --line-strong: rgba(236, 238, 251, 0.18);
+      --accent: #8b7bff;
+      --accent-strong: #6f5cf0;
+      --accent-ink: #a89aff;
+      --accent-blue: #4fc4e0;
+      --accent-blue-ink: #6fd0e8;
+      --accent-warm: #ffb072;
+      --accent-warm-ink: #ffbe86;
+      --danger: #ff7987;
       --hover: rgba(255, 255, 255, 0.06);
       --active: rgba(255, 255, 255, 0.1);
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.40);
+      --shadow-sm: none;
+      --focus: 0 0 0 3px rgba(139, 123, 255, 0.35);
     }
 
     html {
@@ -4868,12 +4888,12 @@
       margin: 26px auto 0;
       padding: 0;
       place-items: center;
-      border: 1px solid #11110f;
+      border: 1px solid var(--accent-strong);
       border-radius: 50%;
-      background: #171713;
-      color: #fffdf8;
+      background: var(--accent);
+      color: #ffffff;
       box-shadow: none;
-      transition: transform 220ms cubic-bezier(.2,.8,.2,1), border-radius 220ms cubic-bezier(.2,.8,.2,1);
+      transition: transform 220ms cubic-bezier(.2,.8,.2,1), border-radius 220ms cubic-bezier(.2,.8,.2,1), background 160ms ease;
     }
 
     .new-note[hidden] {
@@ -4882,7 +4902,7 @@
 
     .new-note:hover {
       border-radius: 18px;
-      background: #171713;
+      background: var(--accent-strong);
       transform: rotate(4deg) scale(1.05);
     }
 
@@ -4937,13 +4957,13 @@
 
     /* All notes = a mix of every type's colour (rainbow). */
     .rail-color.rail-all::after {
-      background: conic-gradient(from 210deg, #ffb488, #f5ca68, #b196f2, #ffffff, #dce873, #ffb488);
+      background: conic-gradient(from 210deg, #ff9b72, #ffc861, #b693fd, #4dc9e6, #dbe86f, #ff9b72);
     }
-    .rail-color:nth-child(2) { --rail-paint: #ffb488; }  /* Notes — peach */
-    .rail-color:nth-child(3) { --rail-paint: #f5ca68; }  /* Templates — yellow */
-    .rail-color:nth-child(4) { --rail-paint: #b196f2; }  /* Processes — violet */
-    /* Images — white (needs a firmer ring to read against the sidebar). */
-    .rail-color:nth-child(5) { --rail-paint: #ffffff; }
+    .rail-color:nth-child(2) { --rail-paint: #ff9b72; }  /* Notes — orange */
+    .rail-color:nth-child(3) { --rail-paint: #ffc861; }  /* Templates — amber */
+    .rail-color:nth-child(4) { --rail-paint: #b693fd; }  /* Processes — violet */
+    /* Images — cyan. */
+    .rail-color:nth-child(5) { --rail-paint: #4dc9e6; }
     .rail-color:nth-child(5)::after {
       box-shadow: inset 0 0 0 1px var(--line-strong);
     }
@@ -5252,12 +5272,10 @@
       min-height: 260px;
       padding: 28px 28px 62px;
       overflow: hidden;
-      border: 1px solid rgba(23,23,19,.12);
-      border-radius: 14px 17px 12px 15px;
-      background-color: var(--paper, #f5ca68);
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.075'/%3E%3C/svg%3E");
-      background-blend-mode: soft-light;
-      box-shadow: 0 2px 3px rgba(58,48,32,.10), 0 8px 20px rgba(58,48,32,.07);
+      border: 1px solid rgba(23,23,19,.10);
+      border-radius: 16px;
+      background-color: var(--paper, #ffc861);
+      box-shadow: none;
       color: #171713;
       cursor: pointer;
       transition: transform 260ms cubic-bezier(.2,.8,.2,1), box-shadow 260ms ease;
@@ -5291,12 +5309,12 @@
 
     .result-card:hover {
       z-index: 2;
-      border-color: rgba(23,23,19,.18);
-      box-shadow: 0 4px 5px rgba(58,48,32,.10), 0 18px 34px rgba(58,48,32,.14);
-      transform: translateY(-5px) rotate(-.35deg);
+      border-color: rgba(23,23,19,.30);
+      box-shadow: none;
+      transform: translateY(-3px);
     }
 
-    .result-card:nth-child(even):hover { transform: translateY(-5px) rotate(.35deg); }
+    .result-card:nth-child(even):hover { transform: translateY(-3px); }
 
     .result-head { display: block; }
     .result-head > div:first-child { min-width: 0; }
@@ -5435,8 +5453,8 @@
     .search-highlight { padding: 0 .08em; background: #fff1a8; color: #171713; }
 
     @keyframes paper-arrive {
-      from { opacity: 0; transform: translateY(20px) rotate(.8deg); }
-      to { opacity: 1; transform: translateY(0) rotate(0); }
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     /* Full-page paper editor */
@@ -6427,6 +6445,174 @@
       border-radius: 2px;
       background: var(--accent);
     }
+
+    /* ===================================================================
+       FLAT REDESIGN LAYER (2026-08-29)
+       Replaces the Claude-app aesthetic with a flat design: no frosted
+       glass, no grain/paper texture, no soft depth shadows. Palette lives
+       in the :root / [data-theme="light"] tokens above. This block sits
+       last so it wins the cascade over the older layered rules.
+       =================================================================== */
+
+    /* 1 — Kill the frosted glass everywhere. Surfaces already carry a solid
+       token background, so removing the blur just makes them flat. */
+    .sidebar,
+    .topbar,
+    .mobile-bar,
+    .modal,
+    .modal-head,
+    .modal-foot,
+    .drawer,
+    .more-menu,
+    .menu,
+    .app-tooltip,
+    .result-image,
+    .compose-toolbar,
+    [class*="-menu"],
+    [class*="glass"] {
+      -webkit-backdrop-filter: none !important;
+      backdrop-filter: none !important;
+    }
+
+    /* Flat scrim behind dialogs — a plain wash, no blur. */
+    .modal::backdrop {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      background: rgba(20, 21, 31, 0.45);
+    }
+
+    /* 2 — Strip the grain/paper texture from the tinted detail modals and
+       flatten their warm drop shadow. The kind colour tint stays. */
+    .modal {
+      background-image: none !important;
+      background-blend-mode: normal !important;
+    }
+    .modal.entry-modal {
+      box-shadow: var(--shadow) !important;
+    }
+
+    /* 3 — Flat primary buttons: white label on the violet accent. */
+    .compose {
+      --compose-accent-text: #ffffff;
+    }
+
+    /* ===================================================================
+       New-entry type picker → COLOR-SWATCH CARDS
+       Each kind is a flat card carrying its own colour swatch (icon inside
+       a solid rounded chip). Selected = the card fills with a tint of that
+       colour and takes a matching border. Manrope throughout.
+       =================================================================== */
+    .compose-kind {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin: 4px 0 2px;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .compose-kind .kind-pill {
+      --sw: var(--muted);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: flex-start;
+      gap: 12px;
+      min-height: 98px;
+      padding: 14px 14px 12px;
+      border: 1.5px solid var(--line-strong);
+      border-radius: 14px;
+      background: var(--panel);
+      color: var(--text);
+      text-align: left;
+      text-decoration: none;
+      box-shadow: none;
+      transition:
+        border-color var(--motion-fast) ease,
+        background var(--motion-fast) ease,
+        transform var(--motion-fast) ease;
+    }
+
+    /* The swatch: the kind's colour as a solid rounded chip holding the icon. */
+    .compose-kind .kind-pill svg {
+      box-sizing: border-box;
+      width: 38px;
+      height: 38px;
+      padding: 9px;
+      border-radius: 11px;
+      background: var(--sw);
+      color: #17131f;
+      flex: 0 0 auto;
+    }
+
+    .compose-kind .kind-pill > span {
+      max-width: none;
+      font-family: var(--font-ui);
+      font-size: 0.92rem;
+      font-weight: 600;
+      letter-spacing: -0.006em;
+      line-height: 1.1;
+      color: var(--text);
+    }
+
+    .compose-kind .kind-pill:hover,
+    .compose-kind .kind-pill:focus-visible {
+      border-color: color-mix(in srgb, var(--sw) 62%, var(--line-strong));
+      background: color-mix(in srgb, var(--sw) 7%, var(--panel));
+      color: var(--text);
+      box-shadow: none;
+      transform: translateY(-2px);
+    }
+
+    .compose-kind .kind-pill.active,
+    .compose-kind .kind-pill.active:hover,
+    .compose-kind .kind-pill.active:focus-visible {
+      border-color: var(--sw);
+      background: color-mix(in srgb, var(--sw) 16%, var(--panel));
+      color: var(--text);
+      box-shadow: none;
+      text-decoration: none;
+    }
+
+    /* Selected tick in the corner, filled with the kind colour. */
+    .compose-kind .kind-pill.active::after {
+      content: "";
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background:
+        var(--sw)
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2317131f' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E")
+        center / 11px 11px no-repeat;
+    }
+
+    .compose-kind .kind-pill.active svg {
+      color: #17131f;
+    }
+
+    .compose-kind .kind-pill:active {
+      transform: translateY(0);
+    }
+
+    /* Per-kind swatch colours — the flat reference palette, matched to
+       ENTRY_PAPER_COLORS so cards, modals and this picker read as one set. */
+    .compose-kind .kind-pill[data-compose-kind="note"]     { --sw: #ff9b72; }
+    .compose-kind .kind-pill[data-compose-kind="template"] { --sw: #ffc861; }
+    .compose-kind .kind-pill[data-compose-kind="process"]  { --sw: #b693fd; }
+    .compose-kind .kind-pill[data-compose-kind="image"]    { --sw: #4dc9e6; }
+
+    @media (max-width: 560px) {
+      .compose-kind {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
   </style>
 </head>
 <body>
@@ -7129,11 +7315,14 @@
       restoredUser: ""
     };
 
+    // Flat-design kind colours (sampled from the reference): a saturated,
+    // shadow-free set. Shared by result cards, detail modals, and the
+    // compose color-swatch cards so the whole app reads as one system.
     const ENTRY_PAPER_COLORS = Object.freeze({
-      note: "#ffb488",
-      template: "#f5ca68",
-      process: "#b196f2",
-      image: "#ffffff"
+      note: "#ff9b72",
+      template: "#ffc861",
+      process: "#b693fd",
+      image: "#4dc9e6"
     });
 
     function entryKindKey(kind) {
