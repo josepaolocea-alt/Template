@@ -6444,8 +6444,494 @@
       .compose-more { color: #171713; }
     }
 
+    /* ===================================================================
+       Tab workspace — editorial paper system
+       =================================================================== */
+    .tabmode.app-shell {
+      width: min(1420px, calc(100% - 48px));
+    }
+
+    .tabmode {
+      --tab-ink: #1b1a17;
+      --tab-muted: #68635b;
+      --tab-line: rgba(27, 26, 23, 0.16);
+      --tab-panel: #eee8dc;
+      --tab-panel-raised: #f8f3e9;
+      grid-template-columns: minmax(220px, 252px) minmax(0, 1fr);
+      gap: clamp(18px, 2.4vw, 34px);
+      align-items: start;
+      padding: 24px 0 64px;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+      backdrop-filter: none;
+    }
+
+    .tabmode-sidebar {
+      top: 24px;
+      gap: 16px;
+      max-height: calc(100vh - 48px);
+      padding: 20px 14px 14px;
+      border: 1px solid rgba(27, 26, 23, 0.12);
+      border-radius: 18px 18px 10px 10px;
+      background: linear-gradient(rgba(27, 26, 23, 0.025) 1px, transparent 1px), var(--tab-panel);
+      background-size: 100% 28px;
+      color: var(--tab-ink);
+      box-shadow: 0 16px 38px rgba(28, 22, 18, 0.10), inset 0 1px rgba(255, 255, 255, 0.55);
+    }
+
+    .tabmode-side-head {
+      min-height: 42px;
+      padding: 0 4px 12px;
+      border-bottom: 1px solid var(--tab-line);
+    }
+
+    .tabmode-side-title {
+      align-items: flex-start;
+      gap: 10px;
+      color: var(--tab-ink);
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.08;
+    }
+
+    .tabmode-side-title > span { display: grid; gap: 3px; }
+
+    .tabmode-side-title small {
+      color: var(--tab-muted);
+      font-family: var(--font-ui);
+      font-size: 0.61rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      line-height: 1;
+      text-transform: uppercase;
+    }
+
+    .tabmode-side-title svg {
+      width: 18px;
+      height: 18px;
+      margin-top: 12px;
+      color: var(--tab-ink);
+      stroke-width: 1.6;
+    }
+
+    .tabmode-sidebar .icon-button { color: var(--tab-muted); border-color: transparent; }
+    .tabmode-sidebar .icon-button:hover { color: var(--tab-ink); background: rgba(27, 26, 23, 0.08); }
+
+    .tabmode-side-search {
+      min-height: 42px;
+      padding: 0 11px;
+      border: 1px solid var(--tab-line);
+      border-radius: 8px;
+      background: rgba(255, 252, 245, 0.58);
+      box-shadow: inset 0 1px rgba(255, 255, 255, 0.46);
+    }
+
+    .tabmode-side-search:focus-within {
+      border-color: rgba(27, 26, 23, 0.5);
+      box-shadow: 0 0 0 3px rgba(27, 26, 23, 0.10);
+    }
+
+    .tabmode-side-search svg { color: var(--tab-muted); }
+    .tabmode-side-search input { color: var(--tab-ink); font-size: 0.88rem; }
+    .tabmode-side-search input::placeholder { color: #777168; }
+
+    .tabmode-side-filters {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 4px;
+    }
+
+    .tabmode-side-filters .chip {
+      justify-content: flex-start;
+      min-height: 36px;
+      padding: 0 9px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--tab-muted);
+      font-size: 0.75rem;
+      font-weight: 600;
+      box-shadow: none;
+    }
+
+    .tabmode-side-filters .chip:hover { background: rgba(27, 26, 23, 0.07); color: var(--tab-ink); }
+
+    .tabmode-side-filters .chip.active {
+      background: var(--tab-ink);
+      color: #fffaf0;
+      box-shadow: 0 5px 12px rgba(27, 26, 23, 0.16);
+    }
+
+    .tabmode-side-list { gap: 5px; margin: 0 -4px; padding: 2px 4px 8px; }
+
+    .tabmode-side-item {
+      position: relative;
+      min-height: 42px;
+      gap: 10px;
+      padding: 8px 10px 8px 8px;
+      border: 1px solid transparent;
+      border-radius: 7px;
+      color: var(--tab-muted);
+      transition: transform 160ms ease, background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+    }
+
+    .tabmode-side-item-mark {
+      width: 6px;
+      height: 24px;
+      flex: 0 0 auto;
+      border-radius: 2px;
+      background: var(--tab-paper, #ffb488);
+      box-shadow: inset 0 0 0 1px rgba(27, 26, 23, 0.08);
+    }
+
+    .tabmode-side-item:hover { transform: translateX(2px); background: rgba(255, 252, 245, 0.55); color: var(--tab-ink); }
+    .tabmode-side-item.is-open { color: var(--tab-ink); }
+
+    .tabmode-side-item.is-active {
+      background: var(--tab-paper, #ffb488);
+      color: var(--tab-ink);
+      font-weight: 650;
+      box-shadow: 0 6px 14px rgba(28, 22, 18, 0.12), inset 0 0 0 1px rgba(27, 26, 23, 0.08);
+    }
+
+    .tabmode-side-item.is-active .tabmode-side-item-mark { background: var(--tab-ink); }
+
+    .tabmode-side-empty {
+      color: var(--tab-muted);
+      border-color: var(--tab-line);
+      background: rgba(255, 252, 245, 0.42);
+    }
+
+    .tabmode-main { gap: 0; min-height: calc(100vh - 48px); }
+
+    .tabmode-tabstrip {
+      top: 0;
+      min-height: 55px;
+      align-items: flex-end;
+      gap: 5px;
+      padding: 6px 4px 0;
+      border-bottom: 1px solid rgba(128, 120, 108, 0.42);
+      background: var(--bg);
+      box-shadow: none;
+      backdrop-filter: none;
+    }
+
+    .tabmode-tabs { align-items: flex-end; gap: 5px; height: 49px; }
+
+    .tabmode-tab {
+      max-width: 240px;
+      height: 44px;
+      gap: 8px;
+      padding: 0 10px 0 12px;
+      border: 1px solid rgba(27, 26, 23, 0.13);
+      border-bottom: 0;
+      border-radius: 10px 10px 0 0;
+      background: color-mix(in srgb, var(--tab-paper, #f7f1e5) 50%, var(--bg));
+      color: color-mix(in srgb, var(--text) 66%, var(--muted));
+      opacity: 0.72;
+      transform: translateY(5px);
+      transition: transform 180ms ease, opacity 180ms ease, background 180ms ease, box-shadow 180ms ease, color 180ms ease;
+    }
+
+    .tabmode-tab::after { display: none; }
+
+    .tabmode-tab:hover {
+      transform: translateY(2px);
+      border-color: rgba(27, 26, 23, 0.17);
+      background: color-mix(in srgb, var(--tab-paper, #f7f1e5) 72%, var(--bg));
+      color: var(--text);
+      opacity: 0.9;
+    }
+
+    .tabmode-tab.is-active {
+      z-index: 1;
+      height: 49px;
+      transform: translateY(1px);
+      border-color: rgba(27, 26, 23, 0.20);
+      background: var(--tab-paper, #f7f1e5);
+      color: var(--tab-ink);
+      opacity: 1;
+      box-shadow: 0 -8px 18px rgba(28, 22, 18, 0.08), inset 0 2px rgba(255, 255, 255, 0.28);
+    }
+
+    .tabmode-tab.is-active::after { display: none; }
+    .tabmode-tab > svg { width: 16px; height: 16px; stroke-width: 1.7; }
+    .tabmode-tab-label { font-size: 0.86rem; font-weight: 650; }
+
+    .tabmode-tab-close { width: 26px; height: 26px; color: currentColor; }
+    .tabmode-tab-close:hover { background: rgba(27, 26, 23, 0.10); color: var(--tab-ink); }
+
+    .tabmode-tab.is-dragging,
+    .tabmode-tab-drag-ghost {
+      border: 1px solid rgba(27, 26, 23, 0.20) !important;
+      border-radius: 10px 10px 4px 4px !important;
+      background: var(--tab-paper, #f7f1e5) !important;
+      color: var(--tab-ink) !important;
+      opacity: 1 !important;
+      transform: none !important;
+      box-shadow: 0 14px 34px rgba(28, 22, 18, 0.24) !important;
+    }
+
+    .tabmode-tab.drop-before::before,
+    .tabmode-tab.drop-after::after {
+      display: block;
+      top: 5px;
+      bottom: 4px;
+      width: 3px;
+      background: var(--text);
+    }
+
+    .tabmode-newtab,
+    .tabmode-side-toggle,
+    .tabmode-scroll {
+      width: 40px;
+      height: 40px;
+      margin-bottom: 4px;
+      color: var(--muted);
+    }
+
+    .tabmode-newtab:hover,
+    .tabmode-side-toggle:hover,
+    .tabmode-scroll:hover:not(:disabled) { color: var(--text); background: var(--hover); }
+
+    .tabmode-content { padding: clamp(22px, 3vw, 40px) 0 0; background: transparent; }
+
+    .tabmode-doc {
+      --text: var(--tab-ink);
+      --muted: #5f5a52;
+      --soft: #736d63;
+      --line: rgba(27, 26, 23, 0.15);
+      --line-strong: rgba(27, 26, 23, 0.26);
+      --hover: rgba(27, 26, 23, 0.07);
+      --active: rgba(27, 26, 23, 0.11);
+      max-width: 900px;
+      gap: 20px;
+      padding: clamp(32px, 5vw, 66px) clamp(24px, 6vw, 78px) clamp(40px, 6vw, 78px);
+      border: 1px solid rgba(27, 26, 23, 0.17);
+      border-top: 1px solid rgba(27, 26, 23, 0.17);
+      border-radius: 18px 18px 12px 12px;
+      background:
+        linear-gradient(90deg, transparent 0, transparent 42px, rgba(27, 26, 23, 0.06) 43px, transparent 44px),
+        linear-gradient(rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.07)),
+        var(--tab-paper, #ffb488);
+      color: var(--tab-ink);
+      box-shadow: 0 24px 60px rgba(28, 22, 18, 0.16), inset 0 1px rgba(255, 255, 255, 0.34);
+    }
+
+    .tabmode-doc-head { gap: 24px; }
+
+    .tabmode-doc-head h2 {
+      padding: 0;
+      max-width: 720px;
+      color: var(--tab-ink);
+      font-size: clamp(2rem, 4.4vw, 4rem);
+      font-weight: 560;
+      line-height: 0.98;
+      letter-spacing: -0.045em;
+    }
+
+    .tabmode-doc-head h2::after { display: none; }
+
+    .tabmode-doc-actions {
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid rgba(27, 26, 23, 0.14);
+      border-radius: 10px;
+      background: rgba(255, 252, 245, 0.30);
+    }
+
+    .tabmode-doc-actions .icon-button { color: var(--tab-ink); border-color: transparent; }
+    .tabmode-doc-actions .icon-button:hover { background: rgba(27, 26, 23, 0.09); }
+    .tabmode-doc .tag-row { padding-bottom: 18px; border-bottom: 1px solid rgba(27, 26, 23, 0.15); }
+
+    .tabmode-doc .tag {
+      border-color: rgba(27, 26, 23, 0.18);
+      background: rgba(255, 252, 245, 0.28);
+      color: var(--tab-ink);
+    }
+
+    .tabmode-doc-image { border-color: rgba(27, 26, 23, 0.16); border-radius: 10px; background: rgba(255, 252, 245, 0.24); }
+    .tabmode-doc-image img { background: rgba(255, 252, 245, 0.18); }
+
+    .tabmode-doc-body {
+      max-width: 68ch;
+      color: rgba(27, 26, 23, 0.84);
+      font-size: clamp(1.02rem, 1.3vw, 1.14rem);
+      line-height: 1.78;
+    }
+
+    .tabmode-doc-body strong { color: var(--tab-ink); }
+    .tabmode-doc-tags { border-top-color: rgba(27, 26, 23, 0.15); }
+
+    .tabmode-landing { max-width: 1040px; gap: 28px; }
+
+    .tabmode-landing-head {
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: center;
+      gap: 4px 14px;
+      padding: 8px 0 2px;
+      text-align: left;
+    }
+
+    .tabmode-landing-head .landing-icon {
+      grid-row: 1 / 3;
+      width: 54px;
+      height: 54px;
+      margin: 0;
+      border: 1px solid rgba(27, 26, 23, 0.14);
+      border-radius: 12px;
+      background: #f5ca68;
+      color: var(--tab-ink);
+      box-shadow: 0 8px 18px rgba(28, 22, 18, 0.10);
+    }
+
+    .tabmode-landing-head h2 {
+      align-self: end;
+      color: var(--text);
+      font-size: clamp(1.65rem, 3vw, 2.45rem);
+      font-weight: 560;
+      letter-spacing: -0.035em;
+      line-height: 1;
+    }
+
+    .tabmode-landing-search {
+      align-self: start;
+      width: min(620px, 100%);
+      min-height: 44px;
+      margin: 8px 0 0;
+      padding: 0 12px;
+      border-color: var(--line-strong);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .tabmode-landing-search:focus-within {
+      border-color: var(--text);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--text) 12%, transparent);
+    }
+
+    .tabmode-landing-grid { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 14px; }
+
+    .tabmode-open-card {
+      position: relative;
+      grid-column: span 4;
+      align-content: start;
+      gap: 12px;
+      min-height: 176px;
+      padding: 20px;
+      border: 1px solid rgba(27, 26, 23, 0.16);
+      border-radius: 12px 14px 9px 13px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), transparent 54%), var(--tab-paper, #ffb488);
+      color: var(--tab-ink);
+      box-shadow: 0 10px 24px rgba(28, 22, 18, 0.10), inset 0 1px rgba(255, 255, 255, 0.28);
+      transform: translateY(0) rotate(0deg);
+      transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+    }
+
+    .tabmode-open-card:nth-child(6n + 2),
+    .tabmode-open-card:nth-child(6n + 5) { grid-column: span 5; }
+    .tabmode-open-card:nth-child(6n + 3),
+    .tabmode-open-card:nth-child(6n + 4) { grid-column: span 3; }
+
+    .tabmode-open-card:hover {
+      transform: translateY(-4px) rotate(-0.35deg);
+      border-color: rgba(27, 26, 23, 0.2);
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.17), transparent 54%), var(--tab-paper, #ffb488);
+      box-shadow: 0 18px 34px rgba(28, 22, 18, 0.16), inset 0 1px rgba(255, 255, 255, 0.32);
+    }
+
+    .tabmode-open-card:active { transform: translateY(-1px) scale(0.99); transition-duration: 70ms; }
+
+    .tabmode-open-card-kicker {
+      color: rgba(27, 26, 23, 0.62);
+      font-size: 0.64rem;
+      font-weight: 750;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .tabmode-open-card-title {
+      align-items: flex-start;
+      color: var(--tab-ink);
+      font-family: var(--font-display);
+      font-size: 1.28rem;
+      font-weight: 600;
+      line-height: 1.08;
+      letter-spacing: -0.025em;
+    }
+
+    .tabmode-open-card-title span:last-child {
+      display: -webkit-box;
+      overflow: hidden;
+      white-space: normal;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+
+    .tabmode-open-card-snippet { color: rgba(27, 26, 23, 0.68); font-size: 0.82rem; line-height: 1.52; -webkit-line-clamp: 3; }
+
+    .tabmode-blank {
+      max-width: 640px;
+      margin: 20px auto 0;
+      padding: 72px 24px;
+      border-color: var(--line-strong);
+      border-radius: 16px;
+      background: var(--panel);
+    }
+
+    @media (max-width: 980px) {
+      .tabmode { grid-template-columns: minmax(190px, 224px) minmax(0, 1fr); gap: 18px; }
+      .tabmode-side-filters { grid-template-columns: 1fr; }
+      .tabmode-open-card,
+      .tabmode-open-card:nth-child(n) { grid-column: span 6; }
+    }
+
+    @media (max-width: 860px) {
+      .tabmode.app-shell { width: min(100% - 32px, 1420px); }
+      .tabmode { grid-template-columns: minmax(0, 1fr); padding-top: 14px; }
+      .tabmode-sidebar { position: static; max-height: 300px; }
+      .tabmode-side-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .tabmode-main { min-height: calc(100vh - 80px); }
+      .tabmode-tabstrip { top: 56px; }
+      .tabmode-content { min-height: 50vh; padding: 24px 0 0; }
+    }
+
+    @media (max-width: 640px) {
+      .tabmode.app-shell { width: 100%; }
+      .tabmode { gap: 12px; padding: 10px 12px 40px; }
+      .tabmode-sidebar { max-height: 270px; border-radius: 14px; padding: 16px 12px 12px; }
+      .tabmode-side-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .tabmode-tabstrip { margin-inline: -12px; padding-inline: 8px; }
+      .tabmode-tabs { gap: 4px; }
+      .tabmode-tab { max-width: 178px; min-width: 128px; }
+      .tabmode-tab-label { max-width: 108px; }
+      .tabmode-content { padding-top: 16px; }
+      .tabmode-doc {
+        gap: 16px;
+        padding: 30px 20px 38px;
+        border-radius: 13px 13px 9px 9px;
+        background: linear-gradient(rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.08)), var(--tab-paper, #ffb488);
+      }
+      .tabmode-doc-head { display: grid; gap: 18px; }
+      .tabmode-doc-head h2 { font-size: clamp(2rem, 12vw, 3.3rem); }
+      .tabmode-doc-actions { justify-self: start; }
+      .tabmode-landing { gap: 20px; }
+      .tabmode-landing-head { grid-template-columns: 46px minmax(0, 1fr); }
+      .tabmode-landing-head .landing-icon { width: 46px; height: 46px; }
+      .tabmode-landing-search { grid-column: 1 / -1; }
+      .tabmode-landing-grid { grid-template-columns: 1fr; gap: 12px; }
+      .tabmode-open-card,
+      .tabmode-open-card:nth-child(n) { grid-column: 1; min-height: 154px; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       .result-card { animation: none; transition: none; }
+      .tabmode-tab,
+      .tabmode-side-item,
+      .tabmode-open-card { transition: none; }
     }
   </style>
 </head>
@@ -6691,7 +7177,10 @@
     <section class="tabmode app-shell" id="tabMode" aria-label="Tab workspace" hidden>
       <aside class="tabmode-sidebar" id="tabSidebar">
         <div class="tabmode-side-head">
-          <span class="tabmode-side-title"><i data-lucide="library"></i> Notes</span>
+          <span class="tabmode-side-title">
+            <i data-lucide="library"></i>
+            <span><small>Workspace</small>Note index</span>
+          </span>
           <button class="icon-button tiny-button" id="tabSidebarClose" type="button" aria-label="Hide sidebar" title="Hide sidebar">
             <i data-lucide="panel-left-close"></i>
           </button>
@@ -11540,7 +12029,7 @@
       const sig = state.tabs.map((tab) => {
         const entry = tab.entryId ? tabFindEntry(tab.entryId) : null;
         const title = entry ? (entry.title || "Untitled") : (tab.entryId ? "Unavailable" : "New tab");
-        return `${tab.id}~${tab.entryId || ""}~${title}`;
+        return `${tab.id}~${tab.entryId || ""}~${title}~${entry ? entryKindKey(entry.kind) : "blank"}`;
       }).join("|") + "::" + state.activeTabId;
       if (sig === tabStripSig) {
         updateTabScrollButtons();
@@ -11552,8 +12041,10 @@
         const entry = tab.entryId ? tabFindEntry(tab.entryId) : null;
         const title = entry ? (entry.title || "Untitled") : (tab.entryId ? "Unavailable note" : "New tab");
         const isActive = tab.id === state.activeTabId;
+        const kindClass = entry ? kindClassOf(entry) : "blank";
+        const paperColor = entry ? entryPaperColor(entry.kind) : "#f7f1e5";
         return `
-          <div class="tabmode-tab${isActive ? " is-active" : ""}" role="tab" tabindex="0" draggable="true" data-tab-action="focus" data-tab-id="${escapeHtml(tab.id)}" aria-selected="${isActive}" title="${escapeHtml(title)}">
+          <div class="tabmode-tab kind-${escapeHtml(kindClass)}${isActive ? " is-active" : ""}" style="--tab-paper:${paperColor}" role="tab" tabindex="0" draggable="true" data-tab-action="focus" data-tab-id="${escapeHtml(tab.id)}" aria-selected="${isActive}" title="${escapeHtml(title)}">
             <i data-lucide="${entry ? "file-text" : "file-plus"}"></i>
             <span class="tabmode-tab-label">${escapeHtml(title)}</span>
             <button class="tabmode-tab-close" type="button" data-tab-action="close" data-tab-id="${escapeHtml(tab.id)}" aria-label="Close ${escapeHtml(title)}">
@@ -11648,8 +12139,10 @@
         els.tabSideList.innerHTML = rows.map((entry) => {
           const isActive = activeEntry === entry.id;
           const stateClass = isActive ? " is-active" : (openIds.has(entry.id) ? " is-open" : "");
+          const paperColor = entryPaperColor(entry.kind);
           return `
-            <button class="tabmode-side-item${stateClass}" type="button" data-entry-id="${escapeHtml(entry.id)}" title="${escapeHtml(entry.title || "Untitled")}">
+            <button class="tabmode-side-item kind-${escapeHtml(kindClassOf(entry))}${stateClass}" style="--tab-paper:${paperColor}" type="button" data-entry-id="${escapeHtml(entry.id)}" title="${escapeHtml(entry.title || "Untitled")}">
+              <span class="tabmode-side-item-mark" aria-hidden="true"></span>
               <span class="tabmode-side-item-title">${escapeHtml(entry.title || "Untitled")}</span>
             </button>
           `;
@@ -11686,8 +12179,11 @@
 
       return rows.slice(0, 24).map((entry) => {
         const snippet = String(entry.body || (entry.imageUrl ? "Image reference" : "")).replace(/\s+/g, " ").trim().slice(0, 120);
+        const kindClass = kindClassOf(entry);
+        const paperColor = entryPaperColor(entry.kind);
         return `
-          <button class="tabmode-open-card" type="button" data-open-entry="${escapeHtml(entry.id)}">
+          <button class="tabmode-open-card kind-${escapeHtml(kindClass)}" style="--tab-paper:${paperColor}" type="button" data-open-entry="${escapeHtml(entry.id)}">
+            <span class="tabmode-open-card-kicker">${escapeHtml(entry.kind || "note")}</span>
             <span class="tabmode-open-card-title"><span>${escapeHtml(entry.title || "Untitled")}</span></span>
             <p class="tabmode-open-card-snippet">${escapeHtml(snippet || "No preview text.")}</p>
           </button>
@@ -11752,7 +12248,7 @@
         : `<p class="tabmode-doc-body">Image reference saved without text.</p>`;
 
       return `
-        <article class="tabmode-doc">
+        <article class="tabmode-doc kind-${escapeHtml(kindClass)}" style="--tab-paper:${entryPaperColor(entry.kind)}">
           <div class="tabmode-doc-head">
             <h2>${escapeHtml(entry.title || "Untitled")}</h2>
             <div class="tabmode-doc-actions">
