@@ -5582,41 +5582,54 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 20px;
+      gap: 6px;
       margin-top: 54px;
     }
 
     .rail-color {
+      --rail-paint: #ffb488;
       position: relative;
-      width: 21px;
-      height: 21px;
+      display: grid;
+      width: 44px;
+      height: 44px;
       padding: 0;
       border: 0;
       border-radius: 50%;
-      background: #ffb488;
-      box-shadow: inset 0 0 0 1px rgba(23,23,19,.05);
-      transition: transform 180ms ease, box-shadow 180ms ease;
+      place-items: center;
+      background: transparent;
       cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .rail-color::after {
+      content: "";
+      width: 21px;
+      height: 21px;
+      border-radius: 50%;
+      background: var(--rail-paint);
+      box-shadow: inset 0 0 0 1px rgba(23,23,19,.05);
+      transition: transform 180ms cubic-bezier(.2,.8,.2,1), box-shadow 180ms ease, filter 180ms ease, opacity 180ms ease;
     }
 
     /* All notes = a mix of every type's colour (rainbow). */
-    .rail-color.rail-all {
+    .rail-color.rail-all::after {
       background: conic-gradient(from 210deg, #ffb488, #f5ca68, #b196f2, #ffffff, #dce873, #ffb488);
     }
-    .rail-color:nth-child(2) { background: #ffb488; }  /* Notes — peach */
-    .rail-color:nth-child(3) { background: #f5ca68; }  /* Templates — yellow */
-    .rail-color:nth-child(4) { background: #b196f2; }  /* Processes — violet */
+    .rail-color:nth-child(2) { --rail-paint: #ffb488; }  /* Notes — peach */
+    .rail-color:nth-child(3) { --rail-paint: #f5ca68; }  /* Templates — yellow */
+    .rail-color:nth-child(4) { --rail-paint: #b196f2; }  /* Processes — violet */
     /* Images — white (needs a firmer ring to read against the sidebar). */
-    .rail-color:nth-child(5) {
-      background: #ffffff;
+    .rail-color:nth-child(5) { --rail-paint: #ffffff; }
+    .rail-color:nth-child(5)::after {
       box-shadow: inset 0 0 0 1px var(--line-strong);
     }
 
     /* Tab workspace lives at the foot of the rail as a plain lime action dot,
        set apart by a short separator with breathing room above and below. */
     .rail-color.rail-tabmode {
-      margin-top: 22px;
-      background: #cfe06a;
+      --rail-paint: #cfe06a;
+      margin-top: 14px;
     }
     .rail-color.rail-tabmode::before {
       content: "";
@@ -5629,8 +5642,12 @@
       background: var(--line-strong);
     }
 
-    .rail-color:hover { transform: scale(1.18); }
-    .rail-color.is-active { box-shadow: 0 0 0 3px var(--sidebar), 0 0 0 4px var(--text); }
+    .rail-color:hover::after { transform: scale(1.18); }
+    .rail-color:active::after { transform: scale(.84); }
+    .rail-color.is-active::after { box-shadow: 0 0 0 3px var(--sidebar), 0 0 0 4px var(--text); }
+    .rail-color:focus-visible { outline: 2px solid var(--text); outline-offset: 1px; }
+    .rail-color.requires-sign-in::after { opacity: .52; filter: saturate(.4); }
+    .rail-color.is-denied::after { animation: controlDenied 320ms ease both; }
 
     .side-nav,
     #moreMenu,
@@ -5832,6 +5849,10 @@
       font-size: .92rem;
       font-weight: 500;
       letter-spacing: -.025em;
+      cursor: pointer;
+      touch-action: manipulation;
+      transition: color 180ms ease, transform 140ms ease, opacity 180ms ease;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .library-tab svg { width: 18px; height: 18px; stroke-width: 1.45; }
@@ -5850,6 +5871,15 @@
     .library-tab:hover,
     .library-tab.is-active { color: var(--text); }
     .library-tab.is-active::after { transform: scaleX(1); }
+    .library-tab:active { color: var(--text); transform: translateY(1px) scale(.98); }
+    .library-tab.requires-sign-in { opacity: .52; }
+    .library-tab.is-denied { animation: controlDenied 320ms ease both; }
+
+    @keyframes controlDenied {
+      0%, 100% { transform: translateX(0); }
+      30% { transform: translateX(-3px); }
+      65% { transform: translateX(3px); }
+    }
 
     .library-sort {
       position: relative;
@@ -6359,7 +6389,16 @@
       .sidebar-head { min-height: 62px; }
       .sidebar .brand-name { display: block !important; }
       .new-note { margin-top: 16px; }
-      .rail-colors { flex-direction: row; justify-content: center; margin-top: 36px; }
+      .rail-colors {
+        display: grid;
+        width: 100%;
+        grid-template-columns: repeat(3, 44px);
+        justify-content: center;
+        gap: 8px 14px;
+        margin-top: 28px;
+      }
+      .rail-color.rail-tabmode { margin-top: 0; }
+      .rail-color.rail-tabmode::before { display: none; }
       .sidebar-foot { flex-direction: row; justify-content: center; margin-top: auto; }
       .app-shell { padding-inline: 20px; }
       .hero { padding-top: 28px; }
@@ -6368,9 +6407,14 @@
       #heroTitle { font-size: clamp(4rem, 21vw, 6rem); }
       .workspace { padding-top: 24px; }
       .library-toolbar { align-items: flex-start; flex-direction: column; gap: 0; }
-      .library-tabs { width: 100%; gap: 24px; overflow-x: auto; }
-      .library-tabs { justify-content: space-between; gap: 10px; overflow: hidden; }
-      .library-tab { flex: 0 1 auto; gap: 5px; font-size: .76rem; white-space: nowrap; }
+      .library-tabs {
+        width: 100%;
+        justify-content: flex-start;
+        gap: 10px;
+        overflow-x: auto;
+        overscroll-behavior-inline: contain;
+      }
+      .library-tab { flex: 0 0 auto; gap: 6px; padding: 0 6px; font-size: .8rem; white-space: nowrap; }
       .library-tab svg { width: 15px; height: 15px; }
       .library-sort { margin: 12px 0; }
       .result-card,
@@ -7118,6 +7162,8 @@
       currentUser: null,
       userName: "",
       firebaseReady: false,
+      authResolved: false,
+      pendingLibraryKind: "",
       fire: null,
       db: null,
       auth: null,
@@ -8139,9 +8185,30 @@
       document.querySelectorAll("[data-library-kind], [data-rail-kind]").forEach((button) => {
         const kind = button.dataset.libraryKind || button.dataset.railKind;
         const active = kind === state.kind || (kind === "all" && state.kind === "favorite");
+        const requiresSignIn = !canSeeAll && ["note", "process", "image"].includes(kind);
         button.classList.toggle("is-active", active);
+        button.classList.toggle("requires-sign-in", requiresSignIn);
+        button.setAttribute("aria-disabled", String(requiresSignIn));
+        if (!button.dataset.availableTitle) {
+          button.dataset.availableTitle = button.getAttribute("title") || button.textContent.trim();
+        }
+        button.title = requiresSignIn
+          ? `Sign in to view ${kind === "note" ? "notes" : kind === "process" ? "processes" : "images"}`
+          : button.dataset.availableTitle;
         if (button.hasAttribute("role")) button.setAttribute("aria-selected", String(active));
       });
+    }
+
+    function showDeniedControlFeedback(control, message) {
+      if (control) {
+        control.classList.remove("is-denied");
+        // Restart the short feedback motion even when the same control is
+        // clicked again after the previous animation completed.
+        void control.offsetWidth;
+        control.classList.add("is-denied");
+        window.setTimeout(() => control.classList.remove("is-denied"), 360);
+      }
+      showToast(message);
     }
 
     function collectAllTags() {
@@ -8553,6 +8620,7 @@
         els.brandInitial.textContent = source ? source.charAt(0).toUpperCase() : "?";
       }
 
+      syncFilterButtons();
       renderResults(true);
       // Load / swap / drop the tab workspace to match whoever is signed in.
       syncTabsForUser();
@@ -8567,6 +8635,7 @@
 
     async function initFirebase() {
       if (!isFirebaseConfigured()) {
+        state.authResolved = true;
         setSource("Local demo", "Add Firebase config when you are ready to sync online.");
         updateAuthUI();
         return;
@@ -8707,6 +8776,7 @@
             }
           }
 
+          state.authResolved = true;
           state.currentUser = user;
           state.userName = loadUserName(user);
           if (user && els.authDialog.open) closeAuthDialog();
@@ -8724,6 +8794,18 @@
           }
           subscribeEntries();
           updateAuthUI();
+          const pendingLibraryKind = state.pendingLibraryKind;
+          state.pendingLibraryKind = "";
+          if (user && pendingLibraryKind) {
+            window.requestAnimationFrame(() => {
+              const pendingButton = document.querySelector(
+                `[data-library-kind="${CSS.escape(pendingLibraryKind)}"], [data-rail-kind="${CSS.escape(pendingLibraryKind)}"]`
+              );
+              if (pendingButton) pendingButton.click();
+            });
+          } else if (!user && pendingLibraryKind) {
+            showToast("Sign in to view notes, processes, and images.");
+          }
           if (user && !state.userName) {
             // Let the sign-in dialog finish closing before opening the required
             // one-time, browser-local name prompt.
@@ -8733,8 +8815,10 @@
 
       } catch (error) {
         console.warn("Firebase init failed", error);
+        state.authResolved = true;
         setSource("Local fallback", "Firebase setup failed, so local demo data is showing.");
         showToast("Firebase setup failed. Showing local data.");
+        updateAuthUI();
       }
     }
 
@@ -10619,7 +10703,18 @@
       els.userNameDialog.addEventListener("cancel", (event) => event.preventDefault());
       els.addButton.addEventListener("click", () => openEntryDialog());
 
-      const openLibraryKind = (kind) => {
+      const openLibraryKind = (kind, sourceControl) => {
+        const requiresSignIn = ["note", "process", "image"].includes(kind) && !viewerSignedIn();
+        if (requiresSignIn) {
+          if (!state.authResolved) {
+            state.pendingLibraryKind = kind;
+            showDeniedControlFeedback(sourceControl, "Checking your access…");
+          } else {
+            showDeniedControlFeedback(sourceControl, "Sign in to view notes, processes, and images.");
+          }
+          return;
+        }
+        state.pendingLibraryKind = "";
         if (state.tabMode) leaveTabModeForBrowse();
         if (state.composeOpen) closeEntryDialog();
         state.kind = kind || "all";
@@ -10633,7 +10728,7 @@
 
       els.libraryTabs.addEventListener("click", (event) => {
         const target = event.target.closest("[data-library-kind]");
-        if (target) openLibraryKind(target.dataset.libraryKind);
+        if (target) openLibraryKind(target.dataset.libraryKind, target);
       });
 
       els.railColors.addEventListener("click", (event) => {
@@ -10647,7 +10742,7 @@
           return;
         }
         const target = event.target.closest("[data-rail-kind]");
-        if (target) openLibraryKind(target.dataset.railKind);
+        if (target) openLibraryKind(target.dataset.railKind, target);
       });
 
       els.librarySortSelect.addEventListener("change", () => {
