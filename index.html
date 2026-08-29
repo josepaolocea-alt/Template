@@ -7558,6 +7558,10 @@
       browseMode: true,
       sort: "relevance",
       editingId: null,
+      // When an edit is launched from a card's detail modal, this holds that
+      // entry's id so closing the compose view (save or cancel) can drop the
+      // user back onto the card instead of the list behind it.
+      returnToDetailId: null,
       isAdmin: false,
       currentUser: null,
       userName: "",
@@ -9293,7 +9297,7 @@
 
     // The composer is a full-page view rather than a modal: opening it hides
     // the hero, results, and AI panel via the compose-active class.
-    function openEntryDialog(entryId = null) {
+    function openEntryDialog(entryId = null, returnToDetailId = null) {
       if (!state.currentUser && !state.isAdmin) {
         showToast("Sign in to add data.");
         return;
@@ -9311,6 +9315,7 @@
       }
 
       state.editingId = entry ? entry.id : null;
+      state.returnToDetailId = returnToDetailId;
       resetEntryForm();
       els.entryDialogTitle.textContent = entry ? "Edit note" : "New note";
       els.saveEntryLabel.textContent = entry ? "Update entry" : "Save entry";
@@ -9352,12 +9357,25 @@
 
     function closeEntryDialog() {
       state.editingId = null;
+      state.returnToDetailId = null;
       state.composeOpen = false;
       els.entryDialogTitle.textContent = "New note";
       els.saveEntryLabel.textContent = "Save entry";
       document.documentElement.classList.remove("compose-active");
       els.composeView.hidden = true;
       setComposeKind("template");
+    }
+
+    // Close the compose view and, if the edit was launched from a card's detail
+    // modal, reopen that card so the user lands back where they started rather
+    // than on the list. Used by the Back/Cancel controls; saveEntry does the
+    // same by hand so it can slot the reopen after its "Entry updated." toast.
+    function closeEntryDialogAndReturn() {
+      const returnId = state.returnToDetailId;
+      closeEntryDialog();
+      if (returnId && state.entries.some((item) => item.id === returnId)) {
+        openEntryDetailDialog(returnId);
+      }
     }
 
     function resizeEntryBody() {
@@ -9937,6 +9955,9 @@
       const finish = () => {
         window.clearTimeout(closeTimer);
         drawer.removeEventListener("animationend", onEnd);
+        // If the drawer was reopened mid-close (openDrawerDialog clears
+        // is-closing), abort so this stale close doesn't yank it shut again.
+        if (!drawer.classList.contains("is-closing")) return;
         drawer.classList.remove("is-closing");
         drawer.close();
         if (onClosed) onClosed();
@@ -9956,7 +9977,10 @@
       drawer.classList.remove("is-closing");
       drawer.scrollTop = 0;
       if (typeof drawer.showModal === "function") {
-        drawer.showModal();
+        // showModal() throws if the dialog is already open — which happens when
+        // it is reopened before a prior close animation finished. Clearing
+        // is-closing above keeps it open; skip the redundant showModal.
+        if (!drawer.open) drawer.showModal();
       } else {
         drawer.setAttribute("open", "");
       }
@@ -10919,9 +10943,15 @@
           render();
         }
 
+        const returnId = state.returnToDetailId;
         closeEntryDialog();
         resetEntryForm();
         showToast(wasEditing ? "Entry updated." : "Entry saved.");
+        // If this edit began in a card's detail modal, reopen it so the user
+        // sees the just-updated card instead of dropping back to the list.
+        if (returnId && state.entries.some((item) => item.id === returnId)) {
+          openEntryDetailDialog(returnId);
+        }
       } catch (error) {
         console.warn("Could not save entry", error);
         const code = error && error.code ? ` (${error.code})` : "";
@@ -11373,8 +11403,9 @@
             break;
           case "edit":
             // Editing and deleting swap modals, so close the detail view first.
+            // Pass the id as the return target so saving/cancelling reopens it.
             closeEntryDetailDialog();
-            openEntryDialog(id);
+            openEntryDialog(id, id);
             break;
           case "delete":
             closeEntryDetailDialog();
@@ -11389,8 +11420,8 @@
       els.exportCsv.addEventListener("click", () => downloadExport("csv"));
       els.exportTxt.addEventListener("click", () => downloadExport("txt"));
       els.backfillButton.addEventListener("click", backfillEmbeddings);
-      els.closeDialog.addEventListener("click", closeEntryDialog);
-      els.cancelEntry.addEventListener("click", closeEntryDialog);
+      els.closeDialog.addEventListener("click", closeEntryDialogAndReturn);
+      els.cancelEntry.addEventListener("click", closeEntryDialogAndReturn);
       els.entryForm.addEventListener("submit", saveEntry);
       els.entryBody.addEventListener("input", resizeEntryBody);
       // Keep the textarea selection when a format button is pressed.
