@@ -5451,11 +5451,19 @@
       overflow: hidden;
       border: 1px solid rgba(23,23,19,.14);
       border-radius: 2px;
-      background: #e7e0d4;
+      /* Neutral "media well" shown while a thumbnail loads or if it fails.
+         Tied to the card's dark-ink family so it reads correctly on any
+         pastel card in both themes (was #e7e0d4 warm beige). */
+      background: rgba(23, 23, 19, 0.08);
     }
-    .result-image img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.74) contrast(.96); }
+    /* Thumbnails render at true colour; the old saturate(.74) contrast(.96)
+       muted them to suit the retired warm palette. */
+    .result-image img { width: 100%; height: 100%; object-fit: cover; }
     .result-image-affordance { display: none; }
-    .result-card.has-image { min-height: 420px; padding: 26px 18px 62px; background-color: #f5f0e7; }
+    /* Cards with an image keep the kind colour (--paper, cyan for image kind)
+       like the detail modal does — the old hardcoded #f5f0e7 cream was a
+       leftover from the warm palette and made image cards read off-white. */
+    .result-card.has-image { min-height: 420px; padding: 26px 18px 62px; }
     .result-card.has-image .result-head h2,
     .result-card.has-image .result-text { padding-inline: 10px; }
     .result-card.has-image .result-head .tag-row { left: 28px; }
