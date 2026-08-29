@@ -1507,6 +1507,16 @@
       background: color-mix(in srgb, var(--danger) 12%, transparent);
     }
 
+    .pin-button.is-pinned {
+      color: var(--accent-ink);
+      border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+      background: color-mix(in srgb, var(--accent) 13%, transparent);
+    }
+
+    .pin-button.is-pinned svg {
+      fill: currentColor;
+    }
+
     /* Action icons in the entry-detail modal head: favorite, hide, edit, delete,
        copy — the same set the cards carry, so both surfaces act the same. The
        colour rules are scoped under .modal-head so they beat the generic
@@ -1548,6 +1558,10 @@
 
     .modal-head .entry-detail-tools .hide-button.is-hidden-on {
       color: var(--danger);
+    }
+
+    .modal-head .entry-detail-tools .pin-button.is-pinned {
+      color: var(--accent-ink);
     }
 
     .entry-detail-tools svg {
@@ -6674,6 +6688,7 @@
           <div class="filter-stack" id="filterStack">
             <button class="side-sub-item active" type="button" data-kind="all"><i data-lucide="layout-grid"></i><span>All</span></button>
             <button class="side-sub-item" type="button" data-kind="favorite"><i data-lucide="star"></i><span>Favorites</span></button>
+            <button class="side-sub-item" type="button" data-kind="pin"><i data-lucide="pin"></i><span>Pinned</span></button>
             <button class="side-sub-item" type="button" data-kind="template"><i data-lucide="copy-check"></i><span>Templates</span></button>
             <button class="side-sub-item" type="button" data-kind="note"><i data-lucide="notebook-tabs"></i><span>Notes</span></button>
             <button class="side-sub-item" type="button" data-kind="process"><i data-lucide="workflow"></i><span>Process</span></button>
@@ -6726,6 +6741,10 @@
         <button class="side-item" id="favoritesButton" type="button">
           <i data-lucide="star"></i>
           <span>Favorites</span>
+        </button>
+        <button class="side-item" id="pinnedButton" type="button">
+          <i data-lucide="pin"></i>
+          <span>Pinned</span>
         </button>
         <button class="side-item" id="hiddenButton" type="button" hidden>
           <i data-lucide="eye-off"></i>
@@ -6811,7 +6830,7 @@
           <button class="library-tab" type="button" role="tab" data-library-kind="process" aria-selected="false"><i data-lucide="workflow"></i><span>Processes</span></button>
           <button class="library-tab" type="button" role="tab" data-library-kind="image" aria-selected="false"><i data-lucide="image"></i><span>Images</span></button>
           <button class="library-tab" type="button" role="tab" data-library-kind="favorite" aria-selected="false"><i data-lucide="star"></i><span>Favorites</span></button>
-          <button class="library-tab" type="button" role="tab" data-library-kind="hidden" aria-selected="false" hidden><i data-lucide="eye-off"></i><span>Hidden</span></button>
+          <button class="library-tab" type="button" role="tab" data-library-kind="pin" aria-selected="false"><i data-lucide="pin"></i><span>Pinned</span></button>
         </div>
         <label class="library-sort">
           <span class="visually-hidden">Sort notes</span>
@@ -7205,6 +7224,7 @@
     const THEME_KEY = "promptvault.theme";
     const SIDEBAR_MINIMIZED_KEY = "promptvault.sidebarMinimized.v1";
     const FAVORITES_KEY = "promptvault.favorites.v1";
+    const PINS_KEY = "promptvault.pins.v1";
     // Firestore's first snapshot cannot arrive until the SDK has downloaded and
     // auth has resolved, which leaves the workspace empty for a beat on every
     // load. So each snapshot is also mirrored to localStorage, per account, and
@@ -7275,6 +7295,7 @@
     const state = {
       entries: [],
       favorites: new Set(),
+      pins: new Set(),
       query: "",
       tagFilter: "",
       tagsOpen: false,
@@ -7346,6 +7367,7 @@
       homeButton: document.querySelector("#homeButton"),
       libraryButton: document.querySelector("#libraryButton"),
       favoritesButton: document.querySelector("#favoritesButton"),
+      pinnedButton: document.querySelector("#pinnedButton"),
       hiddenButton: document.querySelector("#hiddenButton"),
       libraryPanel: document.querySelector("#libraryPanel"),
       signInButton: document.querySelector("#signInButton"),
@@ -7711,6 +7733,50 @@
         showToast("Added to favorites.");
       }
       persistFavorites();
+      renderResults();
+    }
+
+    // Pins are a personal, per-browser preference too — like favorites they live
+    // in localStorage keyed by entry id, never on the shared entry documents. So
+    // one person's pinned cards are their own and differ from everyone else's.
+    function loadPins() {
+      try {
+        const stored = JSON.parse(localStorage.getItem(PINS_KEY) || "null");
+        return new Set(Array.isArray(stored) ? stored.map(String) : []);
+      } catch (error) {
+        console.warn("Could not load pins", error);
+        return new Set();
+      }
+    }
+
+    function persistPins() {
+      try {
+        localStorage.setItem(PINS_KEY, JSON.stringify([...state.pins]));
+      } catch (error) {
+        showToast("This browser could not save your pins.");
+        console.warn("Could not save pins", error);
+      }
+    }
+
+    function isPinned(id) {
+      return state.pins.has(String(id));
+    }
+
+    function togglePin(id) {
+      const entry = state.entries.find((item) => item.id === id);
+      if (!entry) {
+        showToast("That entry could not be found.");
+        return;
+      }
+      const key = String(id);
+      if (state.pins.has(key)) {
+        state.pins.delete(key);
+        showToast("Removed from pinned.");
+      } else {
+        state.pins.add(key);
+        showToast("Pinned.");
+      }
+      persistPins();
       renderResults();
     }
 
@@ -8240,6 +8306,8 @@
           // isAdmin guard is belt-and-braces: the first filter above already
           // strips hidden entries for non-admins, so this view is empty for them.
           if (state.kind === "hidden") return state.isAdmin && Boolean(entry.hidden);
+          // Personal, per-browser pinned view — mirrors favorites.
+          if (state.kind === "pin") return state.pins.has(String(entry.id));
           if (state.kind === "favorite") return state.favorites.has(String(entry.id));
           if (state.kind === "image") return entry.kind === "image" || Boolean(entry.imageUrl);
           return entry.kind === state.kind;
@@ -8289,7 +8357,7 @@
 
     function syncFilterButtons() {
       const canSeeAll = Boolean(viewerSignedIn() || state.isAdmin);
-      if (!canSeeAll && state.kind !== "all" && state.kind !== "template" && state.kind !== "favorite") {
+      if (!canSeeAll && state.kind !== "all" && state.kind !== "template" && state.kind !== "favorite" && state.kind !== "pin") {
         state.kind = "all";
       }
       // "Hidden entries" is an admin-only view — never leave a non-admin stuck on it.
@@ -8309,7 +8377,7 @@
         // favorites view. The library tab bar DOES have a Favorites tab, so there
         // "all" must not also light up — only the matching tab should.
         const active = kind === state.kind
-          || (kind === "all" && state.kind === "favorite" && Boolean(button.dataset.railKind));
+          || (kind === "all" && (state.kind === "favorite" || state.kind === "pin") && Boolean(button.dataset.railKind));
         // The Hidden view is admin-only, so its tab only exists for admins.
         if (kind === "hidden") button.hidden = !state.isAdmin;
         const requiresSignIn = !canSeeAll && ["note", "process", "image"].includes(kind);
@@ -8459,6 +8527,8 @@
       const shouldShow = true;
       const kindLabel = state.kind === "favorite"
         ? "favorites"
+        : state.kind === "pin"
+          ? "pinned"
         : state.kind === "hidden"
           ? "hidden entries"
           : ((viewerSignedIn() || state.isAdmin)
@@ -8484,6 +8554,8 @@
       } else if (hasKindFilter) {
         els.resultsHeading.textContent = state.kind === "favorite"
           ? "Favorites"
+          : state.kind === "pin"
+            ? "Pinned"
           : state.kind === "hidden"
             ? "Hidden entries"
             : `${state.kind.charAt(0).toUpperCase()}${state.kind.slice(1)}`;
@@ -8498,7 +8570,7 @@
       // whole list, which replays the card entrance animation — the visible
       // "blink". If nothing that shows on a card changed, skip the rebuild.
       const rowsSignature = rows
-        .map(({ entry }) => `${entry.id}~${getTimestamp(entry.updatedAt)}~${isFavorite(entry.id) ? 1 : 0}~${entry.hidden ? 1 : 0}`)
+        .map(({ entry }) => `${entry.id}~${getTimestamp(entry.updatedAt)}~${isFavorite(entry.id) ? 1 : 0}~${isPinned(entry.id) ? 1 : 0}~${entry.hidden ? 1 : 0}`)
         .join("|");
       const viewer = state.isAdmin ? "a" : (state.currentUser ? "m" : "t");
       const viewKey = `${state.kind}::${state.query.trim()}::${state.tagFilter}::${state.sort}::${viewer}`;
@@ -8513,11 +8585,14 @@
         const emptySignature = `empty::${state.kind}::${viewer}`;
         if (resultsSignature !== emptySignature) {
           const noFavorites = state.kind === "favorite";
+          const noPinned = state.kind === "pin";
           const noHidden = state.kind === "hidden";
-          const emptyIcon = noFavorites ? "star" : noHidden ? "eye-off" : "search-x";
-          const emptyTitle = noFavorites ? "No favorites yet" : noHidden ? "No hidden entries" : "No matches yet";
+          const emptyIcon = noFavorites ? "star" : noPinned ? "pin" : noHidden ? "eye-off" : "search-x";
+          const emptyTitle = noFavorites ? "No favorites yet" : noPinned ? "No pinned entries yet" : noHidden ? "No hidden entries" : "No matches yet";
           const emptyHint = noFavorites
             ? "Tap the star on any entry to save it here."
+            : noPinned
+              ? "Tap the pin on any entry to keep it here."
             : noHidden
               ? "Use the eye toggle on an entry to hide it from other users."
               : ((viewerSignedIn() || state.isAdmin) ? "Try another phrase or add a new entry." : "Try another phrase to search public templates.");
@@ -8564,11 +8639,12 @@
             <i data-lucide="star"></i>
           </button>
         `;
-        const hideToggle = state.isAdmin ? `
-          <button class="icon-button tiny-button hide-button${entry.hidden ? " is-hidden-on" : ""}" type="button" data-action="toggle-hidden" data-id="${escapeHtml(entry.id)}" aria-pressed="${entry.hidden ? "true" : "false"}" aria-label="${entry.hidden ? "Make visible to everyone" : "Hide from other users"}" title="${entry.hidden ? "Hidden from others — click to make visible" : "Visible to everyone — click to hide"}">
-            <i data-lucide="${entry.hidden ? "eye-off" : "eye"}"></i>
+        const pinned = isPinned(entry.id);
+        const pinButton = `
+          <button class="icon-button tiny-button pin-button${pinned ? " is-pinned" : ""}" type="button" data-action="pin" data-id="${escapeHtml(entry.id)}" aria-pressed="${pinned}" aria-label="${pinned ? "Unpin entry" : "Pin entry"}" title="${pinned ? "Pinned — click to unpin" : "Pin this entry"}">
+            <i data-lucide="pin"></i>
           </button>
-        ` : "";
+        `;
         const adminActions = canManageEntry(entry) ? `
           <button class="icon-button tiny-button" type="button" data-action="edit" data-id="${escapeHtml(entry.id)}" aria-label="Edit entry">
             <i data-lucide="pencil"></i>
@@ -8634,7 +8710,7 @@
               <div class="result-foot-time">${entryTimeTags(entry)}</div>
               <div class="result-actions">
                 ${favoriteButton}
-                ${hideToggle}
+                ${pinButton}
                 ${adminActions}
                 ${attachmentActions}
                 <button class="icon-button tiny-button" type="button" data-action="copy" data-id="${escapeHtml(entry.id)}" aria-label="Copy text">
@@ -9473,10 +9549,11 @@
         <button class="icon-button tiny-button favorite-button${favorited ? " is-favorite" : ""}" type="button" data-detail-action="favorite" data-id="${id}" aria-pressed="${favorited}" aria-label="${favorited ? "Remove from favorites" : "Add to favorites"}" title="${favorited ? "Remove from favorites" : "Add to favorites"}">
           <i data-lucide="star"></i>
         </button>`;
-      const hide = state.isAdmin ? `
-        <button class="icon-button tiny-button hide-button${entry.hidden ? " is-hidden-on" : ""}" type="button" data-detail-action="toggle-hidden" data-id="${id}" aria-pressed="${entry.hidden ? "true" : "false"}" aria-label="${entry.hidden ? "Make visible to everyone" : "Hide from other users"}" title="${entry.hidden ? "Hidden from others — click to make visible" : "Visible to everyone — click to hide"}">
-          <i data-lucide="${entry.hidden ? "eye-off" : "eye"}"></i>
-        </button>` : "";
+      const pinned = isPinned(entry.id);
+      const pin = `
+        <button class="icon-button tiny-button pin-button${pinned ? " is-pinned" : ""}" type="button" data-detail-action="pin" data-id="${id}" aria-pressed="${pinned}" aria-label="${pinned ? "Unpin entry" : "Pin entry"}" title="${pinned ? "Pinned — click to unpin" : "Pin this entry"}">
+          <i data-lucide="pin"></i>
+        </button>`;
       const manage = canManageEntry(entry) ? `
         <button class="icon-button tiny-button" type="button" data-detail-action="edit" data-id="${id}" aria-label="Edit entry" title="Edit entry">
           <i data-lucide="pencil"></i>
@@ -9488,7 +9565,7 @@
         <button class="icon-button tiny-button" type="button" data-detail-action="copy" data-id="${id}" aria-label="Copy text" title="Copy text">
           <i data-lucide="copy"></i>
         </button>`;
-      return `${favorite}${hide}${manage}${copy}`;
+      return `${favorite}${pin}${manage}${copy}`;
     }
 
     // Repaint the open detail modal's tools and meta from the latest entry data.
@@ -10843,6 +10920,9 @@
       els.favoritesButton.addEventListener("click", () => {
         openSearchResultsView("favorite", true);
       });
+      els.pinnedButton.addEventListener("click", () => {
+        openSearchResultsView("pin", true);
+      });
       els.hiddenButton.addEventListener("click", () => {
         if (!state.isAdmin) return; // admin-only view
         openSearchResultsView("hidden", true);
@@ -10993,6 +11073,10 @@
           case "favorite":
             // renderResults() (via toggleFavorite) refreshes the modal's tools.
             toggleFavorite(id);
+            break;
+          case "pin":
+            // renderResults() (via togglePin) refreshes the modal's tools.
+            togglePin(id);
             break;
           case "toggle-hidden":
             // Async write; the snapshot re-render refreshes the modal in place.
@@ -11349,6 +11433,10 @@
           toggleFavorite(target.dataset.id);
         }
 
+        if (target.dataset.action === "pin") {
+          togglePin(target.dataset.id);
+        }
+
         if (target.dataset.action === "toggle-hidden") {
           toggleHidden(target.dataset.id);
         }
@@ -11406,6 +11494,7 @@
       const savedTheme = localStorage.getItem(THEME_KEY) || "dark";
       applyTheme(savedTheme);
       state.favorites = loadFavorites();
+      state.pins = loadPins();
       state.entries = loadLocalEntries();
       preparePremiumTooltips();
       setSidebarMinimized(sidebarIsMinimized(), false);
