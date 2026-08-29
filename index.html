@@ -9240,15 +9240,11 @@
 
         authMod.onAuthStateChanged(state.auth, (user) => {
           const adminEmails = APP_CONFIG.adminEmails.map((email) => email.toLowerCase());
-          if (user) {
-            const email = (user.email || "").toLowerCase();
-            const usedGoogle = (user.providerData || []).some((p) => p && p.providerId === "google.com");
-            if (usedGoogle && !adminEmails.includes(email)) {
-              showToast("This Google account is not listed as an admin. Use email/password instead.", 8000);
-              authMod.signOut(state.auth);
-              return;
-            }
-          }
+          // Any Google account may sign in. Accounts on the adminEmails list get
+          // admin rights (see hidden entries, edit and delete anything); everyone
+          // else is a member. Members are held to the same limits the Firestore
+          // rules enforce server-side: they may only touch entries they own, and
+          // may not publish templates or hide anything.
 
           state.authResolved = true;
           state.currentUser = user;
