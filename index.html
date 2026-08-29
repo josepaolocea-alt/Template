@@ -6625,6 +6625,217 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
+
+    /* ==== Premium compose polish ============================================
+       Cohesive, flat refinements for the Tags field, the Image & attachment
+       section and the admin hide control. Appended last so it wins the
+       cascade over the earlier redesign layers. */
+
+    /* Field label row — label text with an optional trailing hint. */
+    .field-label-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .field-label-hint {
+      color: var(--soft);
+      font-size: .68rem;
+      font-weight: 500;
+      letter-spacing: .01em;
+    }
+
+    /* Inputs with a leading icon (Tags, Image URL, Attachment URL). */
+    .field-input-wrap {
+      position: relative;
+      display: block;
+      margin-top: 4px;
+    }
+
+    .compose-more-body .field-input-wrap {
+      margin-top: 0;
+    }
+
+    .field-input-icon {
+      position: absolute;
+      left: 13px;
+      top: 50%;
+      width: 16px;
+      height: 16px;
+      transform: translateY(-50%);
+      color: var(--soft);
+      stroke-width: 1.8;
+      pointer-events: none;
+      transition: color var(--motion-fast) ease;
+    }
+
+    .field-input-wrap input {
+      margin-top: 0;
+      padding-left: 40px;
+    }
+
+    .field-input-wrap:focus-within .field-input-icon {
+      color: var(--compose-accent);
+    }
+
+    /* Image dropzone empty state. */
+    .compose-more .image-preview {
+      transition: border-color var(--motion-fast) ease, background var(--motion-fast) ease;
+    }
+
+    .compose-more .image-preview:hover {
+      border-color: var(--compose-accent-line);
+      background: color-mix(in srgb, var(--panel) 84%, var(--compose-accent-soft));
+    }
+
+    .image-preview-empty {
+      display: grid;
+      justify-items: center;
+      gap: 4px;
+      padding: 6px;
+      text-align: center;
+    }
+
+    .image-preview-empty svg {
+      width: 26px;
+      height: 26px;
+      margin-bottom: 4px;
+      color: var(--compose-accent);
+      stroke-width: 1.6;
+      opacity: .9;
+    }
+
+    .image-preview-empty strong {
+      color: var(--text);
+      font-size: .82rem;
+      font-weight: 650;
+    }
+
+    .image-preview-empty small {
+      max-width: 30ch;
+      color: var(--soft);
+      font-size: .72rem;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    /* Attachment preview — icon badge + copy, on one flat row. */
+    .compose-more .source-pill {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 14px;
+      text-align: left;
+    }
+
+    .compose-more .source-pill.has-attachment {
+      border-style: solid;
+      border-color: var(--compose-accent-line);
+      background: color-mix(in srgb, var(--panel) 86%, var(--compose-accent-soft));
+    }
+
+    .source-pill-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: var(--compose-accent-soft);
+      color: var(--compose-accent);
+    }
+
+    .source-pill-icon svg {
+      width: 18px;
+      height: 18px;
+      stroke-width: 1.8;
+    }
+
+    .source-pill-copy {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .compose-more .source-pill-copy strong {
+      color: var(--text);
+      font-size: .82rem;
+      font-weight: 650;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .compose-more .source-pill-copy > span {
+      color: var(--soft);
+      font-size: .74rem;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    /* Admin hide control — accent-tinted card that reads as a special toggle. */
+    .hidden-field {
+      align-items: center;
+      gap: 13px;
+      padding: 14px 15px;
+      border-color: color-mix(in srgb, var(--accent) 24%, var(--line-strong));
+      background: color-mix(in srgb, var(--accent) 5%, var(--panel));
+    }
+
+    .hidden-field:hover {
+      border-color: color-mix(in srgb, var(--accent) 40%, var(--line-strong));
+      transform: none;
+      box-shadow: none;
+    }
+
+    .hidden-field-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      background: var(--compose-accent-soft);
+      color: var(--accent-ink);
+    }
+
+    .hidden-field-icon svg {
+      width: 17px;
+      height: 17px;
+      stroke-width: 1.8;
+    }
+
+    .hidden-field-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .hidden-field-badge {
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--compose-accent-soft);
+      color: var(--accent-ink);
+      font-size: .62rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    /* Format toolbar — Bold / Italic / Underline sit as a neat icon group. */
+    .compose-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .format-button:active {
+      transform: translateY(1px);
+    }
   </style>
 </head>
 <body>
@@ -6902,18 +7113,29 @@
 
         <div class="compose-body">
           <textarea id="entryBody" name="body" placeholder="Write or paste the note, template, caption, or searchable details..."></textarea>
-          <div class="format-toolbar compose-toolbar">
+          <div class="format-toolbar compose-toolbar" role="group" aria-label="Text formatting">
             <button type="button" id="entryBoldButton" class="format-button" title="Bold (Ctrl+B)" aria-label="Bold selected text">
               <i data-lucide="bold"></i>
               <span>Bold</span>
             </button>
-            <span class="format-hint">Select text, then Bold or Ctrl+B, to wrap it in **asterisks**.</span>
+            <button type="button" id="entryItalicButton" class="format-button" title="Italic (Ctrl+I)" aria-label="Italic selected text">
+              <i data-lucide="italic"></i>
+              <span>Italic</span>
+            </button>
+            <button type="button" id="entryUnderlineButton" class="format-button" title="Underline (Ctrl+U)" aria-label="Underline selected text">
+              <i data-lucide="underline"></i>
+              <span>Underline</span>
+            </button>
+            <span class="format-hint">Select text, then a button (or Ctrl+B / I / U) to format it.</span>
           </div>
         </div>
 
         <label class="compose-field">
-          Tags
-          <input id="entryTags" name="tags" type="text" placeholder="voip, sms, sms & voip" />
+          <span class="field-label-row">Tags<span class="field-label-hint">Separate with commas</span></span>
+          <span class="field-input-wrap">
+            <i data-lucide="tags" class="field-input-icon" aria-hidden="true"></i>
+            <input id="entryTags" name="tags" type="text" placeholder="voip, sms, sms & voip" />
+          </span>
         </label>
 
         <details class="compose-more" id="composeMore">
@@ -6925,7 +7147,10 @@
             <div class="field-grid">
               <label>
                 Image URL
-                <input id="entryImageUrl" name="imageUrl" type="text" inputmode="url" placeholder="https://... or saved image data" />
+                <span class="field-input-wrap">
+                  <i data-lucide="link" class="field-input-icon" aria-hidden="true"></i>
+                  <input id="entryImageUrl" name="imageUrl" type="text" inputmode="url" placeholder="https://... or saved image data" />
+                </span>
               </label>
               <label class="file-picker-field">
                 <span>Image file</span>
@@ -6944,25 +7169,39 @@
             </div>
 
             <div class="image-preview" id="imagePreview">
-              <span>No image selected</span>
+              <span class="image-preview-empty">
+                <i data-lucide="image" aria-hidden="true"></i>
+                <strong>No image selected</strong>
+                <small>Paste a URL or choose a file to preview it here.</small>
+              </span>
             </div>
 
             <label>
               Attachment URL
-              <input id="entryAttachmentUrl" name="attachmentUrl" type="url" placeholder="Paste a public PDF, document, or file link" />
+              <span class="field-input-wrap">
+                <i data-lucide="paperclip" class="field-input-icon" aria-hidden="true"></i>
+                <input id="entryAttachmentUrl" name="attachmentUrl" type="url" placeholder="Paste a public PDF, document, or file link" />
+              </span>
             </label>
 
             <div class="source-pill" id="attachmentPreview">
-              <strong>No attachment</strong><br />
-              <span>Paste a PDF or document link to show a preview and download button on this entry.</span>
+              <span class="source-pill-icon" aria-hidden="true"><i data-lucide="paperclip"></i></span>
+              <span class="source-pill-copy">
+                <strong>No attachment</strong>
+                <span>Paste a PDF or document link to show a preview and download button on this entry.</span>
+              </span>
             </div>
           </div>
         </details>
 
         <label class="hidden-field" id="entryHiddenField" hidden>
           <input id="entryHidden" name="hidden" type="checkbox" />
+          <span class="hidden-field-icon" aria-hidden="true"><i data-lucide="eye-off"></i></span>
           <span class="hidden-field-copy">
-            <strong>Hide from other users (admin only)</strong>
+            <span class="hidden-field-title">
+              <strong>Hide from other users</strong>
+              <span class="hidden-field-badge">Admin only</span>
+            </span>
             <span>Only admin accounts can see this entry. Members and signed-out visitors won't find it in search or lists.</span>
           </span>
         </label>
@@ -7421,6 +7660,8 @@
       entryKind: document.querySelector("#entryKind"),
       entryBody: document.querySelector("#entryBody"),
       entryBoldButton: document.querySelector("#entryBoldButton"),
+      entryItalicButton: document.querySelector("#entryItalicButton"),
+      entryUnderlineButton: document.querySelector("#entryUnderlineButton"),
       entryDetailDialog: document.querySelector("#entryDetailDialog"),
       closeEntryDetailDialog: document.querySelector("#closeEntryDetailDialog"),
       entryDetailTitle: document.querySelector("#entryDetailTitle"),
@@ -7548,13 +7789,31 @@
     // markers so highlighting and bolding compose cleanly — a matched word that
     // sits inside **bold** gets both. highlightMatches escapes each segment on
     // its own, so the HTML escaping always stays intact.
+    // Inline formatting: **bold**, *italic*, __underline__. Bold is matched
+    // before italic so the double-asterisk marker wins over the single one, and
+    // every plain run is escaped/highlighted on its own so the markup can never
+    // break HTML escaping.
     function renderBodyHtml(value = "", query = state.query) {
-      return String(value || "")
-        .split(/\*\*([\s\S]+?)\*\*/g)
-        .map((segment, i) => (i % 2
-          ? `<strong>${highlightMatches(segment, query)}</strong>`
-          : highlightMatches(segment, query)))
-        .join("");
+      const raw = String(value || "");
+      // Bold **..** and underline __..__ first; italic *..* last and only when a
+      // non-space hugs each marker, so "* bullet" lines are never italicised.
+      const pattern = /\*\*([\s\S]+?)\*\*|__([\s\S]+?)__|\*(\S[\s\S]*?\S|\S)\*/g;
+      let out = "";
+      let last = 0;
+      let match;
+      while ((match = pattern.exec(raw)) !== null) {
+        out += highlightMatches(raw.slice(last, match.index), query);
+        if (match[1] !== undefined) {
+          out += `<strong>${highlightMatches(match[1], query)}</strong>`;
+        } else if (match[2] !== undefined) {
+          out += `<u>${highlightMatches(match[2], query)}</u>`;
+        } else {
+          out += `<em>${highlightMatches(match[3], query)}</em>`;
+        }
+        last = match.index + match[0].length;
+      }
+      out += highlightMatches(raw.slice(last), query);
+      return out;
     }
 
     // Wraps every occurrence of the active search terms in an orange highlight so
@@ -9103,9 +9362,14 @@
     }
 
     // Toggle **bold** markers around the current textarea selection.
-    function toggleEntryBodyBold() {
+    function toggleEntryBodyBold() { toggleEntryBodyWrap("**"); }
+    function toggleEntryBodyItalic() { toggleEntryBodyWrap("*"); }
+    function toggleEntryBodyUnderline() { toggleEntryBodyWrap("__"); }
+
+    // Wrap (or unwrap) the current selection in an inline marker: ** for bold,
+    // * for italic, __ for underline. Mirrors the markup renderBodyHtml parses.
+    function toggleEntryBodyWrap(marker) {
       const ta = els.entryBody;
-      const marker = "**";
       const value = ta.value;
       const start = ta.selectionStart;
       const end = ta.selectionEnd;
@@ -9895,7 +10159,14 @@
         return;
       }
 
-      els.imagePreview.innerHTML = "<span>No image selected</span>";
+      els.imagePreview.innerHTML = `
+        <span class="image-preview-empty">
+          <i data-lucide="image" aria-hidden="true"></i>
+          <strong>No image selected</strong>
+          <small>Paste a URL or choose a file to preview it here.</small>
+        </span>
+      `;
+      refreshIcons();
     }
 
     function formatBytes(bytes = 0) {
@@ -9966,10 +10237,15 @@
 
     function renderAttachmentPreview(entryOrFile) {
       if (!entryOrFile || (!entryOrFile.name && !entryOrFile.attachmentUrl)) {
+        els.attachmentPreview.classList.remove("has-attachment");
         els.attachmentPreview.innerHTML = `
-          <strong>No attachment</strong><br />
-          <span>Paste a PDF or document link to show a download button on this entry.</span>
+          <span class="source-pill-icon" aria-hidden="true"><i data-lucide="paperclip"></i></span>
+          <span class="source-pill-copy">
+            <strong>No attachment</strong>
+            <span>Paste a PDF or document link to show a download button on this entry.</span>
+          </span>
         `;
+        refreshIcons();
         return;
       }
 
@@ -9978,10 +10254,15 @@
       const type = entryOrFile.type || entryOrFile.attachmentType || "External link";
       const detail = [type, formatBytes(size)].filter(Boolean).join(" - ");
 
+      els.attachmentPreview.classList.add("has-attachment");
       els.attachmentPreview.innerHTML = `
-        <strong>${escapeHtml(name)}</strong><br />
-        <span>${escapeHtml(detail || "Ready to download")}</span>
+        <span class="source-pill-icon" aria-hidden="true"><i data-lucide="file-text"></i></span>
+        <span class="source-pill-copy">
+          <strong>${escapeHtml(name)}</strong>
+          <span>${escapeHtml(detail || "Ready to download")}</span>
+        </span>
       `;
+      refreshIcons();
     }
 
     // Keep uploaded images well under Firestore's 1 MB-per-document hard limit
@@ -11107,13 +11388,27 @@
       els.cancelEntry.addEventListener("click", closeEntryDialog);
       els.entryForm.addEventListener("submit", saveEntry);
       els.entryBody.addEventListener("input", resizeEntryBody);
-      // Keep the textarea selection when the Bold button is pressed.
-      els.entryBoldButton.addEventListener("mousedown", (event) => event.preventDefault());
-      els.entryBoldButton.addEventListener("click", toggleEntryBodyBold);
+      // Keep the textarea selection when a format button is pressed.
+      [
+        [els.entryBoldButton, toggleEntryBodyBold],
+        [els.entryItalicButton, toggleEntryBodyItalic],
+        [els.entryUnderlineButton, toggleEntryBodyUnderline]
+      ].forEach(([button, handler]) => {
+        button.addEventListener("mousedown", (event) => event.preventDefault());
+        button.addEventListener("click", handler);
+      });
       els.entryBody.addEventListener("keydown", (event) => {
-        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "b") {
+        if (!(event.metaKey || event.ctrlKey) || event.altKey) return;
+        const key = event.key.toLowerCase();
+        if (key === "b") {
           event.preventDefault();
           toggleEntryBodyBold();
+        } else if (key === "i") {
+          event.preventDefault();
+          toggleEntryBodyItalic();
+        } else if (key === "u") {
+          event.preventDefault();
+          toggleEntryBodyUnderline();
         }
       });
       els.closeCsvDialog.addEventListener("click", closeCsvDialog);
