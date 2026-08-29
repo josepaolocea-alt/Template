@@ -4620,10 +4620,15 @@
     }
 
     .tag.kind {
-      border-color: color-mix(in srgb, var(--accent) 28%, var(--line));
+      /* Kind chips only ever render on the bright pastel entry surfaces (the
+         detail / image / doc modals), whose --entry-paper ground is the same
+         in both themes. So the chip ink must be a fixed dark tone: --accent-ink
+         flips to a pale lavender in dark mode and washed the label out against
+         the pastel. Dark-on-pastel matches the modal's own body text. */
+      border-color: rgba(23, 23, 19, 0.24);
       border-radius: 5px;
-      background: color-mix(in srgb, var(--accent) 8%, transparent);
-      color: var(--accent-ink);
+      background: rgba(23, 23, 19, 0.06);
+      color: rgba(23, 23, 19, 0.82);
       font-size: 0.62rem;
       font-weight: 700;
       letter-spacing: 0.065em;
