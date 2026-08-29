@@ -5309,12 +5309,12 @@
 
     .result-card:hover {
       z-index: 2;
-      border-color: rgba(23,23,19,.30);
-      box-shadow: none;
-      transform: translateY(-3px);
+      border-color: rgba(23,23,19,.22);
+      box-shadow: 0 4px 6px rgba(24, 26, 48, .12), 0 18px 34px rgba(24, 26, 48, .16);
+      transform: translateY(-5px) rotate(-.35deg);
     }
 
-    .result-card:nth-child(even):hover { transform: translateY(-3px); }
+    .result-card:nth-child(even):hover { transform: translateY(-5px) rotate(.35deg); }
 
     .result-head { display: block; }
     .result-head > div:first-child { min-width: 0; }
@@ -6486,8 +6486,6 @@
     .modal {
       background-image: none !important;
       background-blend-mode: normal !important;
-    }
-    .modal.entry-modal {
       box-shadow: var(--shadow) !important;
     }
 
