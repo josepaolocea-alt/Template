@@ -6868,6 +6868,29 @@
       transform: translateY(1px);
     }
 
+    /* The concealed Hidden tab. Sits quieter than its neighbours so the tab bar
+       does not visibly gain a control, and slides in when the dwell reveals it. */
+    .library-tab-secret {
+      color: var(--soft);
+    }
+
+    .library-tab-secret svg {
+      opacity: .8;
+    }
+
+    .library-tab-secret.just-revealed {
+      animation: secretTabIn 240ms var(--ease-out) both;
+    }
+
+    @keyframes secretTabIn {
+      from { opacity: 0; transform: translateX(-8px); }
+      to { opacity: 1; transform: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .library-tab-secret.just-revealed { animation: none; }
+    }
+
     /* ==== Compose paper — the editor wears the colour of the card it will
        become. Same per-kind palette as the swatch picker and the detail
        modal (ENTRY_PAPER_COLORS), so writing a note looks like the note.
@@ -7133,6 +7156,10 @@
           <button class="library-tab" type="button" role="tab" data-library-kind="image" aria-selected="false"><i data-lucide="image"></i><span>Images</span></button>
           <button class="library-tab" type="button" role="tab" data-library-kind="favorite" aria-selected="false"><i data-lucide="star"></i><span>Favorites</span></button>
           <button class="library-tab" type="button" role="tab" data-library-kind="pin" aria-selected="false"><i data-lucide="pin"></i><span>Pinned</span></button>
+          <!-- Admin-only, and concealed until the pointer rests on "All files"
+               for a moment (see the dwell handler). The sidebar's "Hidden
+               entries" button is the keyboard-reachable way to the same view. -->
+          <button class="library-tab library-tab-secret" type="button" role="tab" data-library-kind="hidden" aria-selected="false" hidden><i data-lucide="eye-off"></i><span>Hidden</span></button>
         </div>
         <label class="library-sort">
           <span class="visually-hidden">Sort notes</span>
@@ -7654,6 +7681,10 @@
       firebaseReady: false,
       authResolved: false,
       pendingLibraryKind: "",
+      // The Hidden tab is concealed until an admin rests the pointer on
+      // "All files". Reset whenever the admin leaves the tab bar or opens
+      // another view, so the door closes behind them.
+      hiddenTabRevealed: false,
       fire: null,
       db: null,
       auth: null,
@@ -8164,7 +8195,11 @@
           persistLocalEntries();
           render();
         }
-        showToast(nextHidden ? "Entry hidden from other users." : "Entry is now visible to everyone.");
+        // The card leaves the dashboard on hide, so say where it went — the
+        // dwell gesture is the only pointer route back to it.
+        showToast(nextHidden
+          ? "Entry hidden. Hold the pointer on All files to reach it."
+          : "Entry is now visible to everyone.");
       } catch (error) {
         console.warn("Could not change hidden state", error);
         const code = error && error.code ? ` (${error.code})` : "";
@@ -8652,7 +8687,11 @@
         rawQuery && state.semanticVector && state.semanticQuery === rawQuery
       );
       let rows = state.entries
-        .filter((entry) => state.isAdmin || !entry.hidden)
+        // A hidden entry leaves the dashboard entirely — the admin's too, or
+        // hiding a card would do nothing for the one person who can see it.
+        // It comes back only in the Hidden view. Members and signed-out
+        // visitors never receive hidden entries from Firestore at all.
+        .filter((entry) => !entry.hidden || state.kind === "hidden")
         .filter((entry) => state.isAdmin || viewerSignedIn() || entry.kind === "template")
         .filter((entry) => {
           if (state.kind === "all") return true;
@@ -8732,8 +8771,12 @@
         // "all" must not also light up — only the matching tab should.
         const active = kind === state.kind
           || (kind === "all" && (state.kind === "favorite" || state.kind === "pin") && Boolean(button.dataset.railKind));
-        // The Hidden view is admin-only, so its tab only exists for admins.
-        if (kind === "hidden") button.hidden = !state.isAdmin;
+        // The Hidden view is admin-only, and its tab stays concealed until the
+        // dwell gesture on "All files" opens it — except while that view is the
+        // one on screen, when hiding the tab would strand the admin on it.
+        if (kind === "hidden") {
+          button.hidden = !state.isAdmin || !(state.hiddenTabRevealed || state.kind === "hidden");
+        }
         const requiresSignIn = !canSeeAll && ["note", "process", "image"].includes(kind);
         button.classList.toggle("is-active", active);
         button.classList.toggle("requires-sign-in", requiresSignIn);
@@ -11383,6 +11426,8 @@
         }
         state.pendingLibraryKind = "";
         if (state.composeOpen) closeEntryDialog();
+        // Opening any other view closes the door behind the admin.
+        if (kind !== "hidden") state.hiddenTabRevealed = false;
         state.kind = kind || "all";
         state.query = "";
         state.tagFilter = "";
@@ -11400,6 +11445,57 @@
       els.railColors.addEventListener("click", (event) => {
         const target = event.target.closest("[data-rail-kind]");
         if (target) openLibraryKind(target.dataset.railKind, target);
+      });
+
+      // --- The way back to hidden entries -------------------------------
+      // Hidden cards are out of every list, so the door in is a dwell: rest the
+      // pointer on "All files" (the tab or the rail dot) and the Hidden tab
+      // appears next to Pinned. Nothing is revealed on a passing hover, and
+      // nothing switches views on its own — the admin still clicks the tab.
+      // On touch this reads as a long-press, since pointerenter fires on
+      // touchstart and pointerleave on release.
+      const HIDDEN_DWELL_MS = 800;
+      const HIDDEN_CONCEAL_MS = 2500;
+      let hiddenDwellTimer = 0;
+      let hiddenConcealTimer = 0;
+
+      const revealHiddenTab = () => {
+        window.clearTimeout(hiddenConcealTimer);
+        if (!state.isAdmin || state.hiddenTabRevealed) return;
+        state.hiddenTabRevealed = true;
+        syncFilterButtons();
+        const tab = els.libraryTabs.querySelector('[data-library-kind="hidden"]');
+        if (tab) {
+          // Restart the entrance motion when it is revealed a second time.
+          tab.classList.remove("just-revealed");
+          void tab.offsetWidth;
+          tab.classList.add("just-revealed");
+        }
+        refreshIcons();
+      };
+
+      const concealHiddenTab = () => {
+        // Never pull the tab out from under the view it opened.
+        if (!state.hiddenTabRevealed || state.kind === "hidden") return;
+        state.hiddenTabRevealed = false;
+        syncFilterButtons();
+      };
+
+      document.querySelectorAll('[data-library-kind="all"], [data-rail-kind="all"]').forEach((button) => {
+        button.addEventListener("pointerenter", () => {
+          if (!state.isAdmin) return;
+          window.clearTimeout(hiddenDwellTimer);
+          hiddenDwellTimer = window.setTimeout(revealHiddenTab, HIDDEN_DWELL_MS);
+        });
+        button.addEventListener("pointerleave", () => window.clearTimeout(hiddenDwellTimer));
+      });
+
+      // Leaving the tab bar closes the door again after a grace period, so the
+      // admin has time to travel from "All files" across to the Hidden tab.
+      els.libraryTabs.addEventListener("pointerenter", () => window.clearTimeout(hiddenConcealTimer));
+      els.libraryTabs.addEventListener("pointerleave", () => {
+        window.clearTimeout(hiddenConcealTimer);
+        hiddenConcealTimer = window.setTimeout(concealHiddenTab, HIDDEN_CONCEAL_MS);
       });
 
       els.librarySortSelect.addEventListener("change", () => {
