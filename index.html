@@ -6868,6 +6868,19 @@
       transform: translateY(1px);
     }
 
+    /* The hide toggle's "on" state. Favorite and pin show theirs by filling the
+       glyph, which an outline eye-off cannot do legibly, so this one carries a
+       colour instead. Two things the earlier rules get wrong here: on cards
+       `.result-actions .icon-button` (0,2,0, later in the sheet) beats the
+       original `.hide-button.is-hidden-on`, so the tint never landed; and both
+       surfaces are bright pastel in *either* theme, where --danger's dark-mode
+       coral washes out — hence a literal red, the same reasoning .tag.kind
+       documents for its ink. */
+    .result-actions .hide-button.is-hidden-on,
+    .modal-head .entry-detail-tools .hide-button.is-hidden-on {
+      color: #b3202b;
+    }
+
     /* The concealed Hidden tab. Sits quieter than its neighbours so the tab bar
        does not visibly gain a control, and slides in when the dwell reveals it. */
     .library-tab-secret {
@@ -9042,6 +9055,14 @@
             <i data-lucide="pin"></i>
           </button>
         `;
+        // Admin-only. Follows the same one-icon-plus-active-tint pattern as
+        // favorite and pin: the eye-off icon stays put and turns red while the
+        // entry is hidden, so the button reads as a state, not two controls.
+        const hideButton = state.isAdmin ? `
+          <button class="icon-button tiny-button hide-button${entry.hidden ? " is-hidden-on" : ""}" type="button" data-action="toggle-hidden" data-id="${escapeHtml(entry.id)}" aria-pressed="${Boolean(entry.hidden)}" aria-label="${entry.hidden ? "Show this entry to everyone" : "Hide from other users"}" title="${entry.hidden ? "Hidden — click to show to everyone" : "Hide from other users"}">
+            <i data-lucide="eye-off"></i>
+          </button>
+        ` : "";
         const adminActions = canManageEntry(entry) ? `
           <button class="icon-button tiny-button" type="button" data-action="edit" data-id="${escapeHtml(entry.id)}" aria-label="Edit entry">
             <i data-lucide="pencil"></i>
@@ -9108,6 +9129,7 @@
               <div class="result-actions">
                 ${favoriteButton}
                 ${pinButton}
+                ${hideButton}
                 ${adminActions}
                 ${attachmentActions}
                 <button class="icon-button tiny-button" type="button" data-action="copy" data-id="${escapeHtml(entry.id)}" aria-label="Copy text">
@@ -9954,9 +9976,10 @@
     // (favoriting, hiding, edits landing over the wire) can refresh it in place.
     let openDetailEntryId = null;
 
-    // The same action set the cards carry — favorite, hide (admin), edit/delete
-    // (when the viewer can manage the entry), and copy — rendered for the detail
-    // modal head. Kept as one builder so the card and modal never drift apart.
+    // The same action set the cards carry — favorite, pin, hide (admin),
+    // edit/delete (when the viewer can manage the entry), and copy — rendered
+    // for the detail modal head. Kept as one builder so the card and modal
+    // never drift apart.
     function renderEntryDetailTools(entry) {
       const favorited = isFavorite(entry.id);
       const id = escapeHtml(entry.id);
@@ -9969,6 +9992,10 @@
         <button class="icon-button tiny-button pin-button${pinned ? " is-pinned" : ""}" type="button" data-detail-action="pin" data-id="${id}" aria-pressed="${pinned}" aria-label="${pinned ? "Unpin entry" : "Pin entry"}" title="${pinned ? "Pinned — click to unpin" : "Pin this entry"}">
           <i data-lucide="pin"></i>
         </button>`;
+      const hide = state.isAdmin ? `
+        <button class="icon-button tiny-button hide-button${entry.hidden ? " is-hidden-on" : ""}" type="button" data-detail-action="toggle-hidden" data-id="${id}" aria-pressed="${Boolean(entry.hidden)}" aria-label="${entry.hidden ? "Show this entry to everyone" : "Hide from other users"}" title="${entry.hidden ? "Hidden — click to show to everyone" : "Hide from other users"}">
+          <i data-lucide="eye-off"></i>
+        </button>` : "";
       const manage = canManageEntry(entry) ? `
         <button class="icon-button tiny-button" type="button" data-detail-action="edit" data-id="${id}" aria-label="Edit entry" title="Edit entry">
           <i data-lucide="pencil"></i>
@@ -9980,7 +10007,7 @@
         <button class="icon-button tiny-button" type="button" data-detail-action="copy" data-id="${id}" aria-label="Copy text" title="Copy text">
           <i data-lucide="copy"></i>
         </button>`;
-      return `${favorite}${pin}${manage}${copy}`;
+      return `${favorite}${pin}${hide}${manage}${copy}`;
     }
 
     // Repaint the open detail modal's tools and meta from the latest entry data.
