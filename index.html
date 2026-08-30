@@ -1952,6 +1952,24 @@
     /* ===================================================================
        Modals & forms
        =================================================================== */
+    /* Scroll lock. `showModal()` blocks clicks on the page behind a dialog but
+       not the wheel, so scrolling over the backdrop would drift the grid
+       underneath the open card. Freezing the viewport while any dialog is open
+       leaves the card's own body as the only thing that scrolls. Scrollbars are
+       hidden app-wide, so nothing shifts width when the page stops scrolling. */
+    html:has(dialog[open]),
+    html:has(dialog[open]) body {
+      overflow: hidden;
+    }
+
+    /* Reaching the end of a scrollable dialog body must not chain the leftover
+       scroll out to the page (or trigger pull-to-refresh on touch). */
+    .drawer-body,
+    .image-dialog-body,
+    .doc-dialog-body {
+      overscroll-behavior: contain;
+    }
+
     .modal {
       width: min(680px, calc(100% - 24px));
       border: 1px solid var(--line-strong);
