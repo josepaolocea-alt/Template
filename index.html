@@ -6867,6 +6867,44 @@
     .format-button:active {
       transform: translateY(1px);
     }
+
+    /* ==== Compose paper — the editor wears the colour of the card it will
+       become. Same per-kind palette as the swatch picker and the detail
+       modal (ENTRY_PAPER_COLORS), so writing a note looks like the note.
+       setComposeKind() stamps data-compose-kind on the section; template is
+       the default because that pill starts active in the markup. */
+    .compose { --compose-paper: #ffc861; }
+    .compose[data-compose-kind="note"]     { --compose-paper: #ff9b72; }
+    .compose[data-compose-kind="template"] { --compose-paper: #ffc861; }
+    .compose[data-compose-kind="process"]  { --compose-paper: #b693fd; }
+    .compose[data-compose-kind="image"]    { --compose-paper: #4dc9e6; }
+
+    .compose-body {
+      /* Ink is pinned dark on the pastel, the way .modal.entry-modal does it:
+         the theme's --text flips pale in dark mode and would vanish here.
+         Scoped to this box, so the rest of the composer keeps theme colours. */
+      --text: #171713;
+      --muted: rgba(23, 23, 19, 0.68);
+      --soft: rgba(23, 23, 19, 0.54);
+      --line: rgba(23, 23, 19, 0.12);
+      --line-strong: rgba(23, 23, 19, 0.20);
+      --hover: rgba(23, 23, 19, 0.08);
+      /* Focus reads in the kind's own colour instead of the violet accent. */
+      --compose-accent-line: color-mix(in srgb, var(--compose-paper) 60%, #17131f);
+      --compose-focus: 0 0 0 3px color-mix(in srgb, var(--compose-paper) 34%, transparent);
+      /* Softened toward white: a full-strength pastel behind 300px of body
+         text is heavy. Raise this one percentage for a stronger tint. */
+      background: color-mix(in srgb, var(--compose-paper) 46%, white);
+      border-color: color-mix(in srgb, var(--compose-paper) 52%, rgba(23, 23, 19, 0.2));
+      color: var(--text);
+      transition: background var(--motion-fast) ease, border-color var(--motion-fast) ease;
+    }
+
+    /* A shade deeper than the paper so the toolbar reads as its own footer. */
+    .compose-toolbar {
+      border-top-color: var(--line);
+      background: color-mix(in srgb, var(--compose-paper) 62%, white);
+    }
   </style>
 </head>
 <body>
@@ -9315,6 +9353,9 @@
       els.kindPills.forEach((pill) => {
         pill.classList.toggle("active", pill.dataset.composeKind === value);
       });
+      // Drives the editor's paper colour — the CSS keys the --compose-paper
+      // tint off this, so the body tints to the card this entry will become.
+      els.composeView.dataset.composeKind = value;
     }
 
     // The composer is a full-page view rather than a modal: opening it hides
