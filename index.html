@@ -6879,19 +6879,41 @@
     .compose[data-compose-kind="process"]  { --compose-paper: #b693fd; }
     .compose[data-compose-kind="image"]    { --compose-paper: #4dc9e6; }
 
-    .compose-body {
+    /* Every card in the composer is paper. Their innards are all token-driven
+       (--panel, --compose-accent*, --text…), so re-pointing the tokens at the
+       kind colour here retints inputs, file pickers, previews, the hide
+       checkbox and their hover states in one place. The type picker is left
+       out on purpose — it is the control that *chooses* the colour. */
+    .compose-body,
+    .compose-field,
+    .compose-more,
+    .hidden-field {
       /* Ink is pinned dark on the pastel, the way .modal.entry-modal does it:
          the theme's --text flips pale in dark mode and would vanish here.
-         Scoped to this box, so the rest of the composer keeps theme colours. */
+         Scoped to these boxes, so the rest of the composer keeps theme colours. */
       --text: #171713;
       --muted: rgba(23, 23, 19, 0.68);
       --soft: rgba(23, 23, 19, 0.54);
       --line: rgba(23, 23, 19, 0.12);
       --line-strong: rgba(23, 23, 19, 0.20);
       --hover: rgba(23, 23, 19, 0.08);
-      /* Focus reads in the kind's own colour instead of the violet accent. */
+      /* Surfaces nested in the paper: --panel sits lighter than the card (file
+         picker, image dropzone, attachment pill), --bg deeper (the tags input),
+         which keeps the contrast direction the white version had. */
+      --panel: color-mix(in srgb, var(--compose-paper) 30%, white);
+      --panel-solid: color-mix(in srgb, var(--compose-paper) 20%, white);
+      --bg: color-mix(in srgb, var(--compose-paper) 64%, white);
+      /* Accents read in the kind's own colour instead of the violet one —
+         icons, focus rings, the checked hide box, the ADMIN ONLY badge. */
+      --accent: color-mix(in srgb, var(--compose-paper) 52%, #17131f);
+      --accent-strong: color-mix(in srgb, var(--compose-paper) 38%, #17131f);
+      --accent-ink: #17131f;
+      --compose-accent: color-mix(in srgb, var(--compose-paper) 52%, #17131f);
+      --compose-accent-soft: color-mix(in srgb, var(--compose-paper) 55%, white);
       --compose-accent-line: color-mix(in srgb, var(--compose-paper) 60%, #17131f);
       --compose-focus: 0 0 0 3px color-mix(in srgb, var(--compose-paper) 34%, transparent);
+      --premium-border: rgba(23, 23, 19, 0.18);
+      --premium-glow: rgba(23, 23, 19, 0.10);
       /* Softened toward white: a full-strength pastel behind 300px of body
          text is heavy. Raise this one percentage for a stronger tint. */
       background: color-mix(in srgb, var(--compose-paper) 46%, white);
