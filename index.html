@@ -7135,6 +7135,38 @@
         scroll-padding-inline: 20px;
       }
     }
+
+    @media (max-width: 760px) {
+      /* Reading an entry on a phone.
+         Two things made the viewer a small, hard-to-read box:
+
+         1. It sized itself to its content, so a short note opened as a little
+            card floating in the middle of the screen with ~180px of dead space
+            above and below it. min-height gives it a proper reading surface
+            without forcing a full-height sheet on top of two lines of text.
+         2. max-height was min(82vh, 760px). On iOS, vh is the LARGE viewport —
+            it ignores the address bar — so 82vh could resolve taller than the
+            area actually on screen and push the foot (and its actions) under
+            the browser chrome. The page is scroll-frozen while a dialog is
+            open, so nothing could bring it back into view. dvh tracks the
+            visible viewport instead.
+
+         The earlier @media (max-width: 640px) `.modal` rule already tried to
+         set a dvh max-height here, but `.modal.entry-modal` out-specifies it
+         (0,2,0 vs 0,1,0), so it never applied. Matching that specificity and
+         landing later in the sheet is what makes this stick.
+
+         `overflow: hidden` on the dialog is deliberate and stays: the dialog is
+         a flex column whose .drawer-body is the scroller, which keeps the head
+         and the action row pinned while the note text scrolls under them. */
+      .modal.entry-modal,
+      .modal.entry-modal.entry-detail-has-image {
+        width: calc(100% - 20px);
+        max-width: calc(100% - 20px);
+        min-height: min(62dvh, 520px);
+        max-height: calc(100dvh - 24px);
+      }
+    }
   </style>
 </head>
 <body>
