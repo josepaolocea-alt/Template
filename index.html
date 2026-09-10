@@ -147,6 +147,9 @@
 
     body {
       min-height: 100vh;
+      /* dvh tracks the shrinking/growing mobile URL bar; vh above is the
+         fallback for browsers without dynamic viewport units. */
+      min-height: 100dvh;
       margin: 0;
       background: var(--bg);
       color: var(--text);
@@ -202,7 +205,12 @@
       z-index: 1;
       margin-left: var(--sidebar-w);
       min-height: 100vh;
-      will-change: transform;
+      min-height: 100dvh;
+      /* No `will-change: transform` here: main is as tall as the whole result
+         list (40 000px+ with a full library on a one-column phone layout).
+         Promoting an element that size to its own composited layer costs a
+         large amount of GPU memory and can exceed the max texture size on
+         mobile, and nothing animates main's transform. */
     }
 
     .app-shell {
@@ -4846,6 +4854,7 @@
 
     main {
       min-height: 100vh;
+      min-height: 100dvh;
       margin-left: var(--sidebar-w) !important;
       transition: none;
     }
@@ -5505,6 +5514,7 @@
     /* Full-page paper editor */
     .compose {
       min-height: 100vh;
+      min-height: 100dvh;
       padding-top: 28px;
       padding-bottom: 42px;
       background: var(--bg);
@@ -5547,6 +5557,7 @@
       column-gap: 56px;
       max-width: 1420px;
       min-height: calc(100vh - 126px);
+      min-height: calc(100dvh - 126px);
       margin: 0 auto;
       padding: 62px 34px 36px;
       border: 0;
@@ -7018,6 +7029,111 @@
     select:autofill {
       filter: none;
       background-image: none;
+    }
+
+    /* ===================================================================
+       Mobile fixes — last layer so it wins over the earlier mobile blocks
+       that later desktop-oriented layers had been overriding.
+       =================================================================== */
+
+    /* iOS Safari zooms the whole page in when a focused control's text is
+       smaller than 16px, and the user is then left scrolled sideways. The
+       @media (max-width: 640px) block already guarded the modal fields, but
+       later unmediated rules re-shrank these three, so they lost the guard:
+       the vault search (0.9rem), the library sort <select>, and the sort
+       filter input. IDs here so nothing downstream can out-specify them. */
+    @media (max-width: 760px) {
+      #searchInput,
+      #librarySortSelect,
+      #sortSearch,
+      .promptbar input {
+        font-size: 16px;
+      }
+    }
+
+    @media (max-width: 760px) {
+      /* Touch targets. The three card actions were 32x32 with a 1px gap
+         between them — inside the WCAG 2.5.8 minimum but well under the 44px
+         Apple/Android guideline, and close enough together to mis-tap "pin"
+         when reaching for "copy". Widening them needs room in the footer, so
+         the card's side padding comes in to pay for it (which also gives the
+         title and body text more width on a narrow screen). */
+      .result-card {
+        padding-inline: 18px;
+      }
+
+      .result-foot {
+        left: 18px;
+        right: 12px;
+        gap: 10px;
+      }
+
+      /* Long/localised dates now ellipsise instead of being cut mid-glyph. */
+      .result-foot-time {
+        min-width: 0;
+        text-overflow: ellipsis;
+      }
+
+      .result-actions {
+        gap: 4px;
+      }
+
+      .result-card .tiny-button,
+      .result-actions .icon-button.tiny-button {
+        width: 44px;
+        height: 44px;
+      }
+
+      /* The bar's menu/search buttons were 38px. */
+      .mobile-bar .icon-button,
+      .mobile-bar .icon-hold {
+        width: 44px;
+        height: 44px;
+      }
+
+      /* Keep the glyphs at their designed size — only the hit area grows. */
+      .result-card .tiny-button svg,
+      .mobile-bar .icon-button svg,
+      .mobile-bar .icon-hold svg {
+        width: 17px;
+        height: 17px;
+      }
+    }
+
+    @media (max-width: 760px) {
+      /* The library is one column on a phone, so the full result list is
+         ~40 000px tall and every card paints on load. content-visibility lets
+         the browser skip layout and paint for cards that are off-screen.
+         contain-intrinsic-size is the placeholder used for a card that has not
+         been rendered yet, and it describes the CONTENT box — the card's 90px
+         of vertical padding and its border are added on top, landing on the
+         ~248px cards actually measure. (Passing the full 245px border-box
+         height here instead inflates every unseen card to 337px and makes the
+         page a third longer than it should be.) `auto` means a card that has
+         been on screen once is remembered at its real height. */
+      .result-card {
+        content-visibility: auto;
+        contain-intrinsic-size: auto 156px;
+      }
+
+      /* With cards being un-rendered and re-rendered as they scroll past, the
+         entry animation would replay on every pass. It also means 156
+         simultaneous animations on load. Same treatment the reduced-motion
+         block already applies. */
+      .result-card {
+        animation: none;
+      }
+
+      /* The tab strip scrolls but was clipped flush against the app-shell
+         padding, so "Processes" looked like a rendering bug rather than a hint
+         that the row scrolls. Bleeding it to the screen edge makes the cut-off
+         read as scrollable, and iOS gets its momentum scrolling back. */
+      .library-tabs {
+        margin-inline: -20px;
+        padding-inline: 20px;
+        -webkit-overflow-scrolling: touch;
+        scroll-padding-inline: 20px;
+      }
     }
   </style>
 </head>
